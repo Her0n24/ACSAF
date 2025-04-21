@@ -321,6 +321,9 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
     # Plot the threshold line
     ax.axhline(y=threshold, color='r', linestyle='--', label=f'{threshold}% threshold')
     
+    if avg_first_three > 10 and avg_first_three < threshold and avg_path < threshold:
+        ax.axhline(y=avg_first_three, color='orange', linestyle='--', label=f'Local cloud cover {avg_first_three}%')
+        
     if ~np.isnan(distance_below_threshold):
         ax.axvline(x=distance_below_threshold, color='r', linestyle='--', label=f'{threshold}% threshold')
     ax.legend()
@@ -586,14 +589,14 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
     x = avg_first_three / 50.0  # normalised
     y = avg_path / 50.0         # normalised
-
+    
     # Optionally, use quadratic emphasis:
     x_score = x**2              # rewards higher values more
-    y_score = (1 - y)**2        # penalises higher values more
+    y_score = y**2  # now y_score is directly increasing with avg_path
 
-    # Final weighted score
-    cloud_cover_score = 0.5 * x_score + 0.5 * y_score
+    cloud_cover_score = 0.5 * x_score - 0.5 * y_score
     
+    print(f"Cloud cover score: {cloud_cover_score}")
     
     if geom_condition == True:
         # Constants
@@ -606,12 +609,12 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         
     elif geom_condition == False:
         # Constants
-        geom_condition_weight = 0.5
+        geom_condition_weight = 0.7
         aod_weight = 0.05
         dust_aod_ratio_weight = 0.05
-        cloud_cover_weight = 0.2
-        cloud_base_lvl_weight = 0.1
-        theta_weight = 0.1
+        cloud_cover_weight = 0.05
+        cloud_base_lvl_weight = 0.05
+        theta_weight = 0.05
         
     # Normalise cloud_base_lvl to 0 to 1
     cloud_base_score = np.clip(cloud_base_score/9000, 0, 1)
@@ -622,13 +625,12 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     # Compute weighted index
     likelihood_index = (
         (geom_flag ** 1) * geom_condition_weight +
-        (aod_score ** 1.5)* aod_weight +
-        (dust_ratio_score ** 0.8 )* dust_aod_ratio_weight +
-        (cloud_cover_score ** 0.8) * cloud_cover_weight +
-        (cloud_base_score ** 2) * cloud_base_lvl_weight +
+        (aod_score ** 2)* aod_weight +
+        (dust_ratio_score ** 5 )* dust_aod_ratio_weight +
+        (cloud_cover_score ** 2) * cloud_cover_weight +
+        (cloud_base_score ** 1) * cloud_base_lvl_weight +
         (theta_score ** 3 )* theta_weight
 )   
-    
     likelihood_index = np.clip(likelihood_index, 0, 1)  # Ensure it's between 0 and 1
     
     # Scale to 0-100 and round to whole number
