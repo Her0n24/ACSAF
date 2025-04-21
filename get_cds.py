@@ -34,7 +34,7 @@ def get_cams_aod(today, run, city):
             "total_aerosol_optical_depth_550nm"
         ],
         "date": [f"{today}/{today}"],
-        "time": ["00:00"],
+        "time": [f"{run}:00"],
         "leadtime_hour": [
             "18",
             "42"

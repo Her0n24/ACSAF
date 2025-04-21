@@ -1,5 +1,5 @@
 """
-Project ACSAF: Aerosol & Cloud geometry based Sunset/Sunrise cloud Afterglow Forecaster
+Project ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow Forecaster
 
 This script uses the ECMWF AIFS cloud cover data and CAMS AOD550 data to visualize the cloud cover maps and calculate various parameters related to afterglow.
 
@@ -37,15 +37,15 @@ s_tmr = sun(city.observer, date=today + datetime.timedelta(days=1))
 sunrise = s_tmr['sunrise']
 sunset_tmr = s_tmr['sunset']
 
-url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
-download_file(url, f"input/{today_str}{run}0000-18h-oper-fc.grib2")
+# url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
+# download_file(url, f"input/{today_str}{run}0000-18h-oper-fc.grib2")
 
-url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   
-download_file(url, f"input/{today_str}{run}0000-42h-oper-fc.grib2")
+# url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   
+# download_file(url, f"input/{today_str}{run}0000-42h-oper-fc.grib2")
 
-print(city.name)
-from get_cds import get_cams_aod
-get_cams_aod(today, run, city.name)
+# print(city.name)
+# from get_cds import get_cams_aod
+# get_cams_aod(today, run, city.name)
 
 def max_solar_elevation(city, date):
     tz = pytz.timezone(city.timezone)
@@ -304,12 +304,20 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
     
     if below_threshold_index > 0:  # Ensure that the threshold is met somewhere in the data
         distance_below_threshold = np.linspace(0, distance_km, len(cloud_cover_data))[below_threshold_index]
-
+        avg_first_three = np.mean(cloud_cover_data[:3])
+        avg_path = np.mean(cloud_cover_data[4:])
+        print(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%.")
         print(f"The cloud cover falls below {threshold}% at {distance_below_threshold} km.")
     else:
         print(f"Cloud cover does not fall below {threshold}%.")
         distance_below_threshold = np.nan
-        
+        avg_first_three = np.mean(cloud_cover_data[:3])
+        avg_path = np.mean(cloud_cover_data[4:])
+        if avg_first_three > 10 and avg_first_three < threshold and avg_path < threshold: # We still think there are cloud if local above 10% total cloud cover
+            distance_below_threshold = 10
+            print(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%. Meet Criteria even threshold requirement not met.")
+            print(f"There is cloud cover above, we assume disance below thres is {distance_below_threshold} km.")
+            
     # Plot the threshold line
     ax.axhline(y=threshold, color='r', linestyle='--', label=f'{threshold}% threshold')
     
@@ -327,7 +335,7 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
     
     plt.savefig(save_path + f"/{today_str}{run}0000_{fcst_hr}h_AIFS_cloud_cover_azimuth_{city.name}.png")
     plt.close()
-    return distance_below_threshold
+    return distance_below_threshold, avg_first_three, avg_path
     
 # cloud_cover_data = extract_cloud_cover_along_azimuth(ds_18_tcc, lon, lat, sunset_azimuth, 500, num_points=20)
 # cloud_cover_data_42 = extract_cloud_cover_along_azimuth(ds_42_tcc, lon, lat, sunset_azimuth_42, 500, num_points=20)
@@ -373,16 +381,7 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
     if data is None:
         cloud_lvl_used = 'tcc' 
         data = data_dict['tcc']
-            
-    # if cloud_base_lvl > 0.0 and cloud_base_lvl <= 2000.0:
-    #     data = data_dict['lcc']
-    #     cloud_lvl_used = 'lcc'
-    # if cloud_base_lvl > 2000.0 and cloud_base_lvl <= 6000.0:
-    #     data = data_dict['mcc']
-    #     cloud_lvl_used = 'mcc'
-    # if cloud_base_lvl > 6000.0:
-    #     data = data_dict['hcc']
-    #     cloud_lvl_used = 'hcc'
+        
     if np.all(np.isnan(cloud_base_lvl)): 
         print(f"Cloud base level {cloud_base_lvl} is invalid. There is no cloud cover. Afterglow not probable.")
         print("Trying to use tcc for cloud cover data")
@@ -391,7 +390,7 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
         cloud_present = False
         try:
             cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-            distance_below_threshold = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
+            distance_below_threshold, avg_first_three, avg_path  = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
         except:
             print(f"Cloud cover data is not available for forecast hour {fcst_hr}.")
             cloud_present = False
@@ -402,12 +401,12 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
         return cloud_present
     else:
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
+        distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
     distance_below_threshold = distance_below_threshold * 1000 # convert to meters
-    return distance_below_threshold, key
+    return distance_below_threshold, key, avg_first_three, avg_path
 
-distance_below_threshold_18, key_18 = get_cloud_extent(cloud_vars_18, lon, lat, sunset_azimuth, cloud_base_lvl_18, '18')
-distance_below_threshold_42, key_42 = get_cloud_extent(cloud_vars_42, lon, lat, sunset_azimuth, cloud_base_lvl_42, '42')
+distance_below_threshold_18, key_18, avg_first_three_18, avg_path_18 = get_cloud_extent(cloud_vars_18, lon, lat, sunset_azimuth, cloud_base_lvl_18, '18')
+distance_below_threshold_42, key_42, avg_first_three_42, avg_path_42 = get_cloud_extent(cloud_vars_42, lon, lat, sunset_azimuth, cloud_base_lvl_42, '42')
 
 def geom_condition(cloud_base_height, cloud_extent, LCL):
     """
@@ -534,7 +533,7 @@ from calc_aod import calc_aod
 dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, city.name) #Array of shape (2,) first is 18h , second is 42h
 
 # Weighted likelihod index
-def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, max_RH, theta):
+def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, theta, avg_first_three, avg_path):
     """
     Calculate the weighted likelihood index based on AOD, afterglow time, cloud base level, geometric condition, and cloud extent.
     
@@ -548,18 +547,12 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     Returns:
     - likelihood_index: Weighted likelihood index for afterglow
     """
-    if np.isnan(cloud_base_lvl):
+    if np.isnan(cloud_base_lvl) or cloud_base_lvl <= 0:
         cloud_base_score = 0
-    if cloud_base_lvl <= 1000.0 and cloud_base_lvl > 0.0:
-        cloud_base_score = -1
-    elif cloud_base_lvl <= 2000.0 and cloud_base_lvl > 1000.0:
-        cloud_base_score = -0.5
-    elif cloud_base_lvl <= 4000.0 and cloud_base_lvl > 2000.0:
-        cloud_base_score = 0.5
-    elif cloud_base_lvl <= 6000.0 and cloud_base_lvl > 4000.0:
-        cloud_base_score = 0.9
     else:
-        cloud_base_score = 1
+        max_lvl = 6000.0
+        norm_lvl = min(cloud_base_lvl, max_lvl) / max_lvl
+        cloud_base_score = (norm_lvl ** 2)
     
     if aod >= 0 and aod <= 0.3:
         aod_score = 1
@@ -588,35 +581,36 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     elif np.isnan(theta):
         theta_score = 0 
     
-    if max_RH <= 70: 
-        rh_score = -0.5
-    if max_RH > 70 and max_RH <= 80:
-        rh_score = 0.2
-    if max_RH > 80 and max_RH <= 85:
-        rh_score = 0.5
-    if max_RH > 85 and max_RH <= 95:
-        rh_score = 1
-    if max_RH > 95:
-        rh_score = 0.2
-    if np.isnan(max_RH):
-        rh_score = 0
+    avg_first_three = min(avg_first_three, 50)
+    avg_path = min(avg_path, 50)
+
+    x = avg_first_three / 50.0  # normalised
+    y = avg_path / 50.0         # normalised
+
+    # Optionally, use quadratic emphasis:
+    x_score = x**2              # rewards higher values more
+    y_score = (1 - y)**2        # penalises higher values more
+
+    # Final weighted score
+    cloud_cover_score = 0.5 * x_score + 0.5 * y_score
+    
     
     if geom_condition == True:
         # Constants
         geom_condition_weight = 0.3
         aod_weight = 0.15
-        dust_aod_ratio_weight = 0.1
-        max_RH_weight = 0.05
-        cloud_base_lvl_weight = 0.3
+        dust_aod_ratio_weight = 0.05
+        cloud_cover_weight = 0.2
+        cloud_base_lvl_weight = 0.2
         theta_weight = 0.1
         
     elif geom_condition == False:
         # Constants
-        geom_condition_weight = 0.7
+        geom_condition_weight = 0.5
         aod_weight = 0.05
         dust_aod_ratio_weight = 0.05
-        max_RH_weight = 0.05
-        cloud_base_lvl_weight = 0.05
+        cloud_cover_weight = 0.2
+        cloud_base_lvl_weight = 0.1
         theta_weight = 0.1
         
     # Normalise cloud_base_lvl to 0 to 1
@@ -630,7 +624,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         (geom_flag ** 1) * geom_condition_weight +
         (aod_score ** 1.5)* aod_weight +
         (dust_ratio_score ** 0.8 )* dust_aod_ratio_weight +
-        (rh_score ** 0.8) * max_RH_weight +
+        (cloud_cover_score ** 0.8) * cloud_cover_weight +
         (cloud_base_score ** 2) * cloud_base_lvl_weight +
         (theta_score ** 3 )* theta_weight
 )   
@@ -641,8 +635,8 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     likelihood_index = round(likelihood_index * 100)
     return likelihood_index
 
-likelihood_index_18 = weighted_likelihood_index(geom_cond_18, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_18, RH_cb_18, theta_18)
-likelihood_index_42 = weighted_likelihood_index(geom_cond_42, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_42, RH_cb_42, theta_42)
+likelihood_index_18 = weighted_likelihood_index(geom_cond_18, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_18, theta_18, avg_first_three_18, avg_path_18)
+likelihood_index_42 = weighted_likelihood_index(geom_cond_42, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_42, theta_42, avg_first_three_42, avg_path_42)
 print(likelihood_index_18)
 print(likelihood_index_42)
 
