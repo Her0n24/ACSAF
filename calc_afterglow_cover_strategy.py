@@ -37,15 +37,15 @@ s_tmr = sun(city.observer, date=today + datetime.timedelta(days=1))
 sunrise = s_tmr['sunrise']
 sunset_tmr = s_tmr['sunset']
 
-# url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
-# download_file(url, f"input/{today_str}{run}0000-18h-oper-fc.grib2")
+url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
+download_file(url, f"input/{today_str}{run}0000-18h-oper-fc.grib2")
 
-# url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   
-# download_file(url, f"input/{today_str}{run}0000-42h-oper-fc.grib2")
+url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   
+download_file(url, f"input/{today_str}{run}0000-42h-oper-fc.grib2")
 
-# print(city.name)
-# from get_cds import get_cams_aod
-# get_cams_aod(today, run, city.name)
+print(city.name)
+from get_cds import get_cams_aod
+get_cams_aod(today, run, city.name)
 
 def max_solar_elevation(city, date):
     tz = pytz.timezone(city.timezone)
@@ -365,7 +365,6 @@ cloud_cover_data_42_all = {
 def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, distance_km = 500, num_points=20, threshold=50.0):
     priority_order = ["lcc", "mcc", "hcc"]
     cloud_lvl_used = None
-    data = None
     
     for key in priority_order:
         if key in data_dict:
@@ -378,14 +377,13 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
             if avg_first_three > threshold:
                 cloud_lvl_used = key 
                 data = data_dict[key]  # Return the first key that meets the criteria
-                break
-        
+                avg_first_three_met = True
+            else:
+                avg_first_three_met = False
     # Check if data is empty
-    if data is None:
+    if avg_first_three_met is False:
         cloud_lvl_used = 'tcc' 
         data = data_dict['tcc']
-        
-    if np.all(np.isnan(cloud_base_lvl)): 
         print(f"Cloud base level {cloud_base_lvl} is invalid. There is no cloud cover. Afterglow not probable.")
         print("Trying to use tcc for cloud cover data")
         data = data_dict['tcc']
@@ -397,11 +395,11 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
         except:
             print(f"Cloud cover data is not available for forecast hour {fcst_hr}.")
             cloud_present = False
-    # Check if data is associated with a value or a NaN
-    if np.all(np.isnan(data)):
-        print(f"Cloud cover NaN for forecast hour {fcst_hr}. There is no stratiform cloud cover. Afterglow not probable.")
-        cloud_present = False
-        return cloud_present
+    # # Check if data is associated with a value or a NaN
+    # if data is None:
+    #     print(f"Cloud cover NaN for forecast hour {fcst_hr}. There is no stratiform cloud cover. Afterglow not probable.")
+    #     cloud_present = False
+    #     return cloud_present
     else:
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
         distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
@@ -584,17 +582,44 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     elif np.isnan(theta):
         theta_score = 0 
     
-    avg_first_three = min(avg_first_three, 50)
-    avg_path = min(avg_path, 50)
+    if (cloud_base_lvl < 2000 and cloud_base_lvl > 0 ) or np.isnan(cloud_base_lvl):
+        avg_first_three = min(avg_first_three, 50)
+        avg_path = min(avg_path, 50)
 
-    x = avg_first_three / 50.0  # normalised
-    y = avg_path / 50.0         # normalised
+        x = avg_first_three / 50.0  # normalised
+        y = avg_path / 50.0         # normalised
+        
+        # Optionally, use quadratic emphasis:
+        x_score = x**2              # rewards higher values more
+        y_score = y**2  # now y_score is directly increasing with avg_path
+        
+        cloud_cover_score = 0.5 * x_score - 0.5 * y_score
     
-    # Optionally, use quadratic emphasis:
-    x_score = x**2              # rewards higher values more
-    y_score = y**2  # now y_score is directly increasing with avg_path
+    if cloud_base_lvl < 4000 and cloud_base_lvl >= 2000:
+        avg_first_three = min(avg_first_three, 50)
+        avg_path = min(avg_path, 50)
 
-    cloud_cover_score = 0.5 * x_score - 0.5 * y_score
+        x = avg_first_three / 50.0  # normalised
+        y = avg_path / 50.0         # normalised
+        
+        # Optionally, use quadratic emphasis:
+        x_score = x**2              # rewards higher values more
+        y_score = y**2  # now y_score is directly increasing with avg_path
+        
+        cloud_cover_score = 0.5 * x_score - 0.5 * y_score
+        
+    if cloud_base_lvl >= 4000:
+        avg_first_three = min(avg_first_three, 50)
+        avg_path = min(avg_path, 50)
+
+        x = avg_first_three / 50.0  # normalised
+        y = avg_path / 50.0         # normalised
+        
+        # Optionally, use quadratic emphasis:
+        x_score = x**4              # rewards higher values more
+        y_score = y**2  # now y_score is directly increasing with avg_path
+        
+        cloud_cover_score = x_score
     
     print(f"Cloud cover score: {cloud_cover_score}")
     

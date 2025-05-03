@@ -67,7 +67,7 @@ def calc_cloud_base(T2m, Td2m, T, RH, p, lat, lon):
     T_C = T - 273.15
     
     # Define mask based on temperature-dependent RH threshold to account for ice clouds
-    condition = ((T_C > 0) & (RH >= 85)) | ((T_C <= 0) & (RH >= 75))
+    condition = ((T_C > 0) & (RH >= 85)) | ((T_C <= 0) & (RH >= 70))
     
     print("RH")
     print(RH)
