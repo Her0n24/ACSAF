@@ -362,7 +362,7 @@ cloud_cover_data_42_all = {
 # print(cloud_cover_data_18_all)
 
 
-def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, distance_km = 500, num_points=20, threshold=50.0):
+def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, distance_km = 500, num_points=20, threshold=60.0):
     priority_order = ["lcc", "mcc", "hcc"]
     cloud_lvl_used = None
     
@@ -667,7 +667,7 @@ likelihood_index_42 = weighted_likelihood_index(geom_cond_42, total_aod550[1], d
 print(likelihood_index_18)
 print(likelihood_index_42)
 
-def possible_colours(cloud_base_lvl, total_aod_550, key):
+def possible_colours(cloud_base_lvl, lcl_lvl, total_aod_550, key):
     """
     Determine the possible colours for the afterglow based on cloud base level, inferred cloud cover and AOD_550.
     Cloud cover is inferred through RH of the cloud base level. 
@@ -675,7 +675,10 @@ def possible_colours(cloud_base_lvl, total_aod_550, key):
     Parameters:
     """
     if np.isnan(cloud_base_lvl):
-        color = ('none',)
+        if np.isnan(lcl_lvl):
+            color = ('none',)
+        else:
+            cloud_base_lvl = lcl_lvl
     if cloud_base_lvl <= 2000.0:
         if total_aod_550 <= 0.2:
             color = ('orange-red',)
@@ -699,8 +702,8 @@ def possible_colours(cloud_base_lvl, total_aod_550, key):
     
     return color
 
-possible_colors_18 = possible_colours(cloud_base_lvl_18, total_aod550[0], key_18)
-possible_colors_42 = possible_colours(cloud_base_lvl_42, total_aod550[1], key_42)
+possible_colors_18 = possible_colours(cloud_base_lvl_18, z_lcl_18, total_aod550[0], key_18)
+possible_colors_42 = possible_colours(cloud_base_lvl_42, z_lcl_42, total_aod550[1], key_42)
 print(f"Possible colors for afterglow 18: {possible_colors_18}")
 print(f"Possible colors for afterglow 42: {possible_colors_42}")
 

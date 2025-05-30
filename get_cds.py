@@ -44,4 +44,4 @@ def get_cams_aod(today, run, city):
         "area": [53, -2, 49, 0]
     }
 
-    client.retrieve(dataset, request,f'/home/heron_ng/dev/Afterglow/input/cams_AOD550_{today_str}{run}0000_{city}.grib')
+    client.retrieve(dataset, request,f'input/cams_AOD550_{today_str}{run}0000_{city}.grib')

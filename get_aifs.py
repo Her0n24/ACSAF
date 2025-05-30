@@ -13,11 +13,6 @@ from tqdm import tqdm
 # Define run to 2 digits
 run = "00"
 run = run.zfill(2)
-today = datetime.date.today() #- datetime.timedelta(days=1)
-today_str = today.strftime("%Y%m%d")
-print(run)
-print(today)
-print(today_str)
 
 # Define a function that use reponse to donwload the file from a given url
 def download_file(url, local_filename):
