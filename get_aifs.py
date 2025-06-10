@@ -9,6 +9,7 @@ Where ROOT is ECMWF:  https://data.ecmwf.int/forecasts
 import datetime
 import requests
 from tqdm import tqdm
+import os
 
 # Define run to 2 digits
 run = "00"
@@ -16,6 +17,9 @@ run = run.zfill(2)
 
 # Define a function that use reponse to donwload the file from a given url
 def download_file(url, local_filename):
+    if os.path.exists(local_filename):
+        print(f"File {local_filename} already exists. Skipping download.")
+        return
     # NOTE the stream=True parameter below
     r = requests.get(url, stream=True)
     if r.status_code == 200:
