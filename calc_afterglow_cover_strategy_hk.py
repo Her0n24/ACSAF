@@ -898,7 +898,7 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
         "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
         ha='left', va='bottom', color='white', fontsize=8
     )
-    fig.text(0.99, 0.01, f"Her0n24. V2025.6.10", fontsize=8)
+    fig.text(0.89, 0.01, f"Her0n24. V2025.6.10", color='white', fontsize=8)
     
     plt.savefig(f'output/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}_hk.png', dpi=400)
 
