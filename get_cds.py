@@ -21,55 +21,54 @@ run = run.zfill(2)
 today = datetime.date.today() #- datetime.timedelta(days=1)
 today_str = today.strftime("%Y%m%d")
 
-city = "Reading"
-
 def get_cams_aod(today, run, city, today_str):
     if os.path.exists(f'input/cams_AOD550_{today_str}{run}0000_{city}.grib'):
         print("CAMS grib already exists. Skipping download.")
         return
-    if city == "Reading":
-        client = cdsapi.Client()
-        today_str = today.strftime("%Y%m%d")
-        dataset = "cams-global-atmospheric-composition-forecasts"
-        request = {
-            "variable": [
-                "black_carbon_aerosol_optical_depth_550nm",
-                "dust_aerosol_optical_depth_550nm",
-                "organic_matter_aerosol_optical_depth_550nm",
-                "total_aerosol_optical_depth_550nm"
-            ],
-            "date": [f"{today}/{today}"],
-            "time": [f"{run}:00"],
-            "leadtime_hour": [
-                "18",
-                "42"
-            ],
-            "type": ["forecast"],
-            "data_format": "grib",
-            "area": [53, -2, 49, 0]
-        }
-    elif city =='HongKong':
-        client = cdsapi.Client()
-        today_str = today.strftime("%Y%m%d")
-        dataset = "cams-global-atmospheric-composition-forecasts"
-        request = {
-            "date": [f"{today}/{today}"],
-            "time": [f"{run}:00"],
-            "leadtime_hour": [
-                "24",
-                "48"
-            ],
-            "type": ["forecast"],
-            "data_format": "grib",
-            "variable": [
-                "black_carbon_aerosol_optical_depth_550nm",
-                "dust_aerosol_optical_depth_550nm",
-                "organic_matter_aerosol_optical_depth_550nm",
-                "total_aerosol_optical_depth_550nm"
-            ],
-            "area": [23, 113, 21, 115] 
-            }
     else:
-        raise ValueError("City not supported. Please use 'Reading' or 'HongKong'.")
+        if city == "Reading":
+            client = cdsapi.Client()
+            today_str = today.strftime("%Y%m%d")
+            dataset = "cams-global-atmospheric-composition-forecasts"
+            request = {
+                "date": [f"{today}/{today}"],
+                "time": [f"{run}:00"],
+                "leadtime_hour": [
+                    "18",
+                    "42"
+                ],
+                "type": ["forecast"],
+                "data_format": "grib",
+                "variable": [
+                    "black_carbon_aerosol_optical_depth_550nm",
+                    "dust_aerosol_optical_depth_550nm",
+                    "organic_matter_aerosol_optical_depth_550nm",
+                    "total_aerosol_optical_depth_550nm"
+                ],
+                "area": [53, -2, 49, 0]
+                }
+        elif city =='HongKong':
+            client = cdsapi.Client()
+            today_str = today.strftime("%Y%m%d")
+            dataset = "cams-global-atmospheric-composition-forecasts"
+            request = {
+                "date": [f"{today}/{today}"],
+                "time": [f"{run}:00"],
+                "leadtime_hour": [
+                    "24",
+                    "48"
+                ],
+                "type": ["forecast"],
+                "data_format": "grib",
+                "variable": [
+                    "black_carbon_aerosol_optical_depth_550nm",
+                    "dust_aerosol_optical_depth_550nm",
+                    "organic_matter_aerosol_optical_depth_550nm",
+                    "total_aerosol_optical_depth_550nm"
+                ],
+                "area": [23, 113, 21, 115] 
+                }
+        else:
+            raise ValueError("City not supported. Please use 'Reading' or 'HongKong'.")
 
-    client.retrieve(dataset, request,f'input/cams_AOD550_{today_str}{run}0000_{city}.grib')
+        client.retrieve(dataset, request,f'input/cams_AOD550_{today_str}{run}0000_{city}.grib')

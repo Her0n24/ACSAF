@@ -75,6 +75,7 @@ def get_or_save_latlon(location_name, filename="location_latlon.txt"):
 
 # Usage:
 lat, lon = get_or_save_latlon("Hong Kong")
+lat, lon = round(lat, 1), round(lon, 1)  # Round to 1 decimal place
 
 # print(location): print the name of the location
 
@@ -421,7 +422,7 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
                 data_dict[key], lon, lat, azimuth, distance_km, num_points
             )
             # Calculate the average of the first 3 indices
-            avg_first_three = np.mean(cloud_cover_data[:3])
+            avg_first_three = np.nanmean(cloud_cover_data[:3])
             if avg_first_three > threshold:
                 cloud_lvl_used = key 
                 data = data_dict[key]  # Return the first key that meets the criteria
@@ -436,8 +437,8 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
                 data_dict[key], lon, lat, azimuth, distance_km, num_points
             )
             # Calculate the average of the first 3 indices
-            avg_first_three = np.mean(cloud_cover_data[:3])
-            avg_path = np.mean(cloud_cover_data[4:])
+            avg_first_three = np.nanmean(cloud_cover_data[:3])
+            avg_path = np.nanmean(cloud_cover_data[4:])
             if avg_first_three > threshold:
                 cloud_lvl_used = key 
                 data = data_dict[key]
@@ -479,8 +480,8 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
         print('hcc condition is True. We will assume a distance below threshold of 100 km.')
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
         distance_below_threshold = 100
-        avg_first_three = np.mean(cloud_cover_data[:3])
-        avg_path = np.mean(cloud_cover_data[4:])
+        avg_first_three = np.nanmean(cloud_cover_data[:3])
+        avg_path = np.nanmean(cloud_cover_data[4:])
     distance_below_threshold = distance_below_threshold * 1000 # convert to meters
     return distance_below_threshold, key, avg_first_three, avg_path
 
@@ -612,7 +613,8 @@ from calc_aod import calc_aod
 dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, yesterday_str, city.name) #Array of shape (2,) first is 18h , second is 42h
 
 # Weighted likelihod index
-def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, theta, avg_first_three, avg_path):
+# Weighted likelihod index
+def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, lcl_lvl, theta, avg_first_three, avg_path):
     """
     Calculate the weighted likelihood index based on AOD, afterglow time, cloud base level, geometric condition, and cloud extent.
     
@@ -627,7 +629,11 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     - likelihood_index: Weighted likelihood index for afterglow
     """
     if np.isnan(cloud_base_lvl) or cloud_base_lvl <= 0:
-        cloud_base_score = 0
+        cloud_base_lvl = lcl_lvl
+        print("Used LCL level for computation")
+        max_lvl = 6000.0
+        norm_lvl = min(cloud_base_lvl, max_lvl) / max_lvl
+        cloud_base_score = (norm_lvl ** 2)
     else:
         max_lvl = 6000.0
         norm_lvl = min(cloud_base_lvl, max_lvl) / max_lvl
@@ -660,7 +666,10 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     elif np.isnan(theta):
         theta_score = 0 
     
-    if (cloud_base_lvl < 2000 and cloud_base_lvl > 0 ) or np.isnan(cloud_base_lvl):
+    if np.isnan(cloud_base_lvl):
+        cloud_base_lvl = lcl_lvl
+
+    if (cloud_base_lvl < 2000 and cloud_base_lvl > 0 ):
         avg_first_three = min(avg_first_three, 50)
         avg_path = min(avg_path, 50)
 
@@ -723,7 +732,6 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     
     # Binary flag for geom_condition
     geom_flag = 1 if geom_condition else 0
-
     # Compute weighted index
     likelihood_index = (
         (geom_flag ** 1) * geom_condition_weight +
@@ -739,8 +747,8 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     likelihood_index = round(likelihood_index * 100)
     return likelihood_index
 
-likelihood_index_18 = weighted_likelihood_index(geom_cond_18, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_18, theta_18, avg_first_three_18, avg_path_18)
-likelihood_index_42 = weighted_likelihood_index(geom_cond_42, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_42, theta_42, avg_first_three_42, avg_path_42)
+likelihood_index_18 = weighted_likelihood_index(geom_cond_18, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_18, z_lcl_18, theta_18, avg_first_three_18, avg_path_18)
+likelihood_index_42 = weighted_likelihood_index(geom_cond_42, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_42, z_lcl_42, theta_42, avg_first_three_42, avg_path_42)
 print(likelihood_index_18)
 print(likelihood_index_42)
 
@@ -890,6 +898,8 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
         "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
         ha='left', va='bottom', color='white', fontsize=8
     )
+    fig.text(0.99, 0.01, f"Her0n24. V2025.6.10", fontsize=8)
+    
     plt.savefig(f'output/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}_hk.png', dpi=400)
 
 create_dashboard(
