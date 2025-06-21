@@ -456,6 +456,9 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
                     hcc_condition = True
                     cloud_lvl_used = key 
                     data = data_dict[key]
+                else:
+                    hcc_condition = False
+                    avg_first_three_met = False
 
     # Check if data is empty
     if avg_first_three_met is False:
@@ -655,7 +658,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         dust_ratio_score = 0.2
     elif dust_aod_ratio > 0.3 and dust_aod_ratio <= 0.4:
         dust_ratio_score = 0.8
-    elif dust_aod_ratio > 0.5:
+    elif dust_aod_ratio > 0.4:
         dust_ratio_score = 1
         
     if theta >= 0 and theta <= np.deg2rad(5):
@@ -712,6 +715,8 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         cloud_cover_score = x_score
     
     print(f"Cloud cover score: {cloud_cover_score}")
+
+    # import pdb; pdb.set_trace()  # Debugging point to inspect variables
     
     if geom_condition == True:
         # Constants

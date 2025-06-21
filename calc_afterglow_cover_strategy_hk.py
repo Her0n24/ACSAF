@@ -62,7 +62,7 @@ def get_or_save_latlon(location_name, filename="location_latlon.txt"):
     if os.path.exists(filename):
         with open(filename, "r", encoding="utf-8") as f:
             line = f.readline().strip()
-            name, lat, lon = line.split(",")
+            name, lat, lon = line.split(",", 2)
             if name == location_name:
                 return float(lat), float(lon)
     # If not found or name mismatch, geocode and save
@@ -74,7 +74,7 @@ def get_or_save_latlon(location_name, filename="location_latlon.txt"):
     return lat, lon
 
 # Usage:
-lat, lon = get_or_save_latlon("Hong Kong")
+lat, lon = get_or_save_latlon("HongKong")
 lat, lon = round(lat, 1), round(lon, 1)  # Round to 1 decimal place
 
 # print(location): print the name of the location
@@ -410,7 +410,6 @@ cloud_cover_data_42_all = {
 # print("Cloud cover data for +18h forecast:")
 # print(cloud_cover_data_18_all)
 
-
 def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, distance_km = 500, num_points=20, threshold=60.0):
     priority_order = ["lcc", "mcc", "hcc"]
     cloud_lvl_used = None
@@ -452,6 +451,9 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
                     hcc_condition = True
                     cloud_lvl_used = key 
                     data = data_dict[key]
+                else:
+                    hcc_condition = False
+                    avg_first_three_met = False
 
     # Check if data is empty
     if avg_first_three_met is False:
