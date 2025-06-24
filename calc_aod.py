@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 # today = datetime.date.today() #- datetime.timedelta(days=1)
 # today_str = today.strftime("%Y%m%d")
 
-def calc_aod(run, today_str, city):
-    ds_aod550 = xr.open_dataset(f'input/cams_AOD550_{today_str}{run}0000_{city}.grib', engine = 'cfgrib') 
+def calc_aod(run, today_str, city, input_path):
+    ds_aod550 = xr.open_dataset(f'{input_path}/cams_AOD550_{today_str}{run}0000_{city}.grib', engine = 'cfgrib') 
     # Average values over all latitude and longitude to get a single value
     # Grid spacing is different to the cloud cover product, so different strategy here
     ds_aod550 = ds_aod550.mean(dim=['latitude', 'longitude'])

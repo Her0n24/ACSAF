@@ -21,8 +21,8 @@ run = run.zfill(2)
 today = datetime.date.today() #- datetime.timedelta(days=1)
 today_str = today.strftime("%Y%m%d")
 
-def get_cams_aod(today, run, city, today_str):
-    if os.path.exists(f'input/cams_AOD550_{today_str}{run}0000_{city}.grib'):
+def get_cams_aod(today, run, city, today_str, input_path):
+    if os.path.exists(f'{input_path}/cams_AOD550_{today_str}{run}0000_{city}.grib'):
         print("CAMS grib already exists. Skipping download.")
         return
     else:
@@ -71,4 +71,4 @@ def get_cams_aod(today, run, city, today_str):
         else:
             raise ValueError("City not supported. Please use 'Reading' or 'HongKong'.")
 
-        client.retrieve(dataset, request,f'input/cams_AOD550_{today_str}{run}0000_{city}.grib')
+        client.retrieve(dataset, request,f'{input_path}/cams_AOD550_{today_str}{run}0000_{city}.grib')

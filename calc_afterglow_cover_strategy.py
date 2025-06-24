@@ -30,7 +30,8 @@ run = "00"
 run = run.zfill(2)
 today = datetime.date.today() #- datetime.timedelta(days=1)
 today_str = today.strftime("%Y%m%d")
-
+output_path = '/home/tsing/Documents/dev/Afterglow/output'
+input_path = '/home/tsing/Documents/dev/Afterglow/input'
 
 def get_or_save_latlon(location_name, filename="location_latlon.txt"):
     """
@@ -68,14 +69,14 @@ sunset_tmr = s_tmr['sunset']
 print(city.name, lat, lon)
 
 url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
-download_file(url, f"input/{today_str}{run}0000-18h-oper-fc.grib2")
+download_file(url, f"{input_path}/{today_str}{run}0000-18h-oper-fc.grib2")
 
 url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   
-download_file(url, f"input/{today_str}{run}0000-42h-oper-fc.grib2")
+download_file(url, f"{input_path}/{today_str}{run}0000-42h-oper-fc.grib2")
 
 print(city.name)
 
-get_cams_aod(today, run, city.name, today_str)
+get_cams_aod(today, run, city.name, today_str, input_path)
 
 def max_solar_elevation(city, date):
     tz = pytz.timezone(city.timezone)
@@ -153,12 +154,12 @@ def calc_cloud_hole_size(z):
 lat_min, lat_max = lat - 3, lat + 3
 lon_min, lon_max = lon - 5, lon + 1
 
-ds_18 = xr.open_dataset(f'input/{today_str}{run}0000-18h-oper-fc.grib2', engine = 'cfgrib')
-ds_42 = xr.open_dataset(f'input/{today_str}{run}0000-42h-oper-fc.grib2', engine = 'cfgrib')
+ds_18 = xr.open_dataset(f'{input_path}/{today_str}{run}0000-18h-oper-fc.grib2', engine = 'cfgrib')
+ds_42 = xr.open_dataset(f'{input_path}/{today_str}{run}0000-42h-oper-fc.grib2', engine = 'cfgrib')
 
 # t2m at 2m
-ds_18_2m = cfgrib.open_dataset(f'input/{today_str}{run}0000-18h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
-ds_42_2m = cfgrib.open_dataset(f'input/{today_str}{run}0000-42h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+ds_18_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-18h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+ds_42_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-42h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
 
 def extract_variable(ds, var_name, lat_min, lat_max, lon_min, lon_max, verbose=False):
     var = getattr(ds, var_name)
@@ -193,7 +194,7 @@ cloud_vars_42 = {
 }
 
 
-def plot_cloud_cover_map(data_dict, city, lon, lat, title_prefix, fcst_hr, sunset_azimuth, save_path='output', cmap='gray'):
+def plot_cloud_cover_map(data_dict, city, lon, lat, title_prefix, fcst_hr, sunset_azimuth, save_path= output_path, cmap='gray'):
     """
     Plot 2x2 cloud cover maps: TCC, LCC, MCC, HCC.
 
@@ -245,11 +246,11 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, title_prefix, fcst_hr, sunse
     
 plot_cloud_cover_map(cloud_vars_18, city, lon, lat,
                      f'{today_str} {run}z +18h EC AIFS cloud cover (today sunset)',
-                     '18', sunset_azimuth, save_path='output', cmap='gray')
+                     '18', sunset_azimuth, save_path= output_path, cmap='gray')
 
 plot_cloud_cover_map(cloud_vars_42, city, lon, lat,
                      f'{today_str} {run}z +42h EC AIFS cloud cover (tomorrow sunset)',
-                     '42', sunset_azimuth, save_path='output', cmap='gray')
+                     '42', sunset_azimuth, save_path= output_path, cmap='gray')
 
 RH_18, p_18 = specific_to_relative_humidity(ds_18.q, ds_18.t, ds_18.isobaricInhPa, lat, lon)
 cloud_base_lvl_18, z_lcl_18, RH_cb_18 = calc_cloud_base(ds_18_2m["t2m"], ds_18_2m["d2m"], ds_18.t, RH_18, ds_18.isobaricInhPa, lat, lon)
@@ -337,7 +338,7 @@ def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km,
     
     return cloud_cover_data
 
-def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output'):
+def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path= output_path):
     """
     Plot cloud cover data along the azimuth line.
     
@@ -471,7 +472,7 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
         cloud_present = False
         try:
             cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-            distance_below_threshold, avg_first_three, avg_path  = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
+            distance_below_threshold, avg_first_three, avg_path  = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path= output_path)
         except:
             print(f"Cloud cover data is not available for forecast hour {fcst_hr}.")
             cloud_present = False
@@ -482,7 +483,7 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
     #     return cloud_present
     elif hcc_condition is False:
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path='output')
+        distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path= output_path)
     elif hcc_condition is True:
         print('hcc condition is True. We will assume a distance below threshold of 100 km.')
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
@@ -617,7 +618,7 @@ actual_afterglow_time_42 = get_afterglow_time(lat, today, distance_below_thresho
 
 # Incorporate AOD
 from calc_aod import calc_aod
-dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, city.name) #Array of shape (2,) first is 18h , second is 42h
+dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, city.name, input_path) #Array of shape (2,) first is 18h , second is 42h
 
 # Weighted likelihod index
 def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, lcl_lvl, theta, avg_first_three, avg_path):
@@ -891,9 +892,9 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
         "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
          ha='left', va='bottom', color='white', fontsize=8)
     
-    fig.text(0.89, 0.01, f"Her0n24. V2025.6.10", color='white',fontsize=8)
+    fig.text(0.89, 0.01, f"Her0n24. V2025.6.23", color='white',fontsize=8)
 
-    plt.savefig(f'output/{today_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
+    plt.savefig(f'{output_path}/{today_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
 
 create_dashboard(
     likelihood_index_18, likelihood_index_42, city, lat, lon, sunset_azimuth, actual_afterglow_time_18, actual_afterglow_time_42, possible_colors_18, possible_colors_42, cloud_base_lvl_18, cloud_base_lvl_42,
