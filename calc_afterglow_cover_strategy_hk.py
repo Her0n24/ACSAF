@@ -367,7 +367,7 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
         avg_first_three = np.mean(cloud_cover_data[:3])
         avg_path = np.mean(cloud_cover_data[4:])
         if avg_first_three > 10 and avg_first_three < threshold and avg_path < threshold: # We still think there are cloud if local above 10% total cloud cover
-            distance_below_threshold = 300
+            distance_below_threshold = 250  # Assume a distance below threshold of 250 km
             print(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%. Meet Criteria even threshold requirement not met.")
             print(f"There is cloud cover above, we assume disance below thres is {distance_below_threshold} km.")
             
@@ -484,14 +484,14 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
         distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path= output_path)
     elif hcc_condition is True:
-        print('hcc condition is True. We will assume a distance below threshold of 300 km.')
+        print('hcc condition is True. We will assume a distance below threshold of 250 km.')
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold = 300
+        distance_below_threshold = 250
         avg_first_three = np.nanmean(cloud_cover_data[:3])
         avg_path = np.nanmean(cloud_cover_data[4:])
     distance_below_threshold = distance_below_threshold * 1000 # convert to meters
 
-    if avg_first_three < 10.0:
+    if avg_first_three < 15.0:
         cloud_present = False
 
     return distance_below_threshold, key, avg_first_three, avg_path, cloud_present
@@ -859,9 +859,10 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
     ax[0].text(0.9, 0.1, "Tomorrow", fontsize=18, ha='center', va='center', color='white', fontweight='bold')
 
     if cloud_present_18 is False:
-        ax[0].text(0.1, 0.2, "No cloud cover", fontsize=15, ha='center', va='center', color='white', fontweight='bold')
+        ax[0].text(0.1, 0.3, "No cloud cover", fontsize=15, ha='center', va='center', color='white')
     if cloud_present_42 is False:
-        ax[0].text(0.9, 0.2, "No cloud cover", fontsize=15, ha='center', va='center', color='white', fontweight='bold')
+        ax[0].text(0.9, 0.3, "No cloud cover", fontsize=15, ha='center', va='center', color='white')
+
 
     # Title for the left subplot
     ax[0].axis('off')  # Turn off axis for this subplot
