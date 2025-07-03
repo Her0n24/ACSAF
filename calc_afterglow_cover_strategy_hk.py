@@ -415,12 +415,13 @@ cloud_cover_data_42_all = {
 # print(cloud_cover_data_18_all)
 
 
-def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, distance_km = 500, num_points=20, threshold=60.0):
-    priority_order = ["lcc", "mcc", "hcc"]
+def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, distance_km = 500, num_points=25, threshold=60.0):
+    priority_order = [("lcc",2000), ("mcc",4000), ("hcc",6000)]
     cloud_lvl_used = None
     cloud_present = True
+    local_cloud_cover_dict = {}
     
-    for key in priority_order:
+    for key, base_height in priority_order:
         if key == 'lcc' or key == 'mcc':
             #Extract cloud_cover data along the azimuth
             cloud_cover_data = extract_cloud_cover_along_azimuth(
@@ -428,6 +429,8 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
             )
             # Calculate the average of the first 3 indices
             avg_first_three = np.nanmean(cloud_cover_data[:3])
+            local_cloud_cover_dict[key] = cloud_cover_data[0]
+
             if avg_first_three > threshold:
                 cloud_lvl_used = key 
                 data = data_dict[key]  # Return the first key that meets the criteria
@@ -443,6 +446,8 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
             )
             # Calculate the average of the first 3 indices
             avg_first_three = np.nanmean(cloud_cover_data[:3])
+            local_cloud_cover_dict[key] = cloud_cover_data[0]
+
             avg_path = np.nanmean(cloud_cover_data[4:])
             if avg_first_three > threshold:
                 cloud_lvl_used = key 
@@ -460,12 +465,20 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
                 else:
                     hcc_condition = False
                     avg_first_three_met = False
+    
+    # Check if cloud base level is NAN. We assign the cloud base level to the first layer with cloud cover >= 15% if it is NaN.
+    # We pick the first (lowest) layer so we put a break 
+    if np.isnan(cloud_base_lvl):
+        for key, base_height in priority_order:
+            if local_cloud_cover_dict.get(key, 0) >= 15:
+                cloud_base_lvl = base_height
+                break
 
     # Check if data is empty
     if avg_first_three_met is False:
         cloud_lvl_used = 'tcc' 
         data = data_dict['tcc']
-        print(f"Cloud base level {cloud_base_lvl} is invalid. There is no cloud cover. Afterglow not probable.")
+        print(f"RH requirement not met. Cloud base level {cloud_base_lvl} is assumed based on the first layer with cloud cover >= 15%")
         print("Trying to use tcc for cloud cover data")
         data = data_dict['tcc']
         cloud_lvl_used = 'tcc'
@@ -494,10 +507,10 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
     if avg_first_three < 15.0:
         cloud_present = False
 
-    return distance_below_threshold, key, avg_first_three, avg_path, cloud_present
+    return distance_below_threshold, key, avg_first_three, avg_path, cloud_present, cloud_base_lvl
 
-distance_below_threshold_18, key_18, avg_first_three_18, avg_path_18, cloud_present_18 = get_cloud_extent(cloud_vars_18, lon, lat, sunset_azimuth, cloud_base_lvl_18, '24')
-distance_below_threshold_42, key_42, avg_first_three_42, avg_path_42, cloud_present_42 = get_cloud_extent(cloud_vars_42, lon, lat, sunset_azimuth, cloud_base_lvl_42, '48')
+distance_below_threshold_18, key_18, avg_first_three_18, avg_path_18, cloud_present_18, cloud_base_lvl_18  = get_cloud_extent(cloud_vars_18, lon, lat, sunset_azimuth, cloud_base_lvl_18, '24')
+distance_below_threshold_42, key_42, avg_first_three_42, avg_path_42, cloud_present_42, cloud_base_lvl_42= get_cloud_extent(cloud_vars_42, lon, lat, sunset_azimuth, cloud_base_lvl_42, '48')
 
 def geom_condition(cloud_base_height, cloud_extent, LCL):
     """
@@ -882,7 +895,7 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
         f"Sunset Time 日落時間(HKT): {sunset_local.strftime('%H:%M:%S')} \n"
         f"Sunset Azimuth 太陽方位角: {round(azimuth)}°\n"
         f"Length 火燒雲時長: {round(afterglow_length_18)} s\n"
-        f"Cloud Base 雲底: {int(round(cloud_base_lvl_18, -2))} m\n"
+        f"Cloud Height 雲高: {int(round(cloud_base_lvl_18, -2))} m\n"
         f"Aerosol OD 氣溶膠光學厚度(550nm) : {total_aod550[0]:.2f} \n"
         f"Colors 顏色: {', '.join(possible_colors_18) }\n"
     )
@@ -894,7 +907,7 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
     info_text = (
         f"Tomorrow 明日: {(today + datetime.timedelta(days=1)).strftime('%Y-%m-%d')}\n"
         f"Length 火燒雲時長: {round(afterglow_length_42)} s\n"
-        f"Cloud Base 雲底: {int(round(cloud_base_lvl_42, -2))} m\n"
+        f"Cloud Height 雲高: {int(round(cloud_base_lvl_42, -2))} m\n"
         f"Aerosol OD 氣溶膠光學厚度(550nm) : {total_aod550[1]:.2f} \n"
         f"Colors 顏色: {', '.join(possible_colors_42)}\n"
     )
@@ -917,7 +930,7 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
         "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
         ha='left', va='bottom', color='white', fontsize=8
     )
-    fig.text(0.89, 0.01, f"Her0n24. V2025.6.27", color='white', fontsize=8)
+    fig.text(0.89, 0.01, f"Her0n24. V2025.7.3", color='white', fontsize=8)
     
     plt.savefig(f'{output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}_hk.png', dpi=400)
     print(f"Dashboard saved to {output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}_hk.png")
