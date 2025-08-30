@@ -1,6 +1,11 @@
 import xarray as xr
 import numpy as np
 import pytz
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt= '%Y-%m-%d %H:%M:%S',
+                    )
 
 def specific_to_relative_humidity(q,T,p, lat, lon):
     """
@@ -69,9 +74,9 @@ def calc_cloud_base(T2m, Td2m, T, RH, p, lat, lon):
     # Define mask based on temperature-dependent RH threshold to account for ice clouds
     condition = ((T_C > 0) & (RH >= 85)) | ((T_C <= 0) & (RH >= 70))
     
-    print("RH")
-    print(RH)
-    
+    logging.info("RH")
+    logging.info(RH)
+
     # Check if any True values exist in the condition
     if np.any(condition):
         # Find the first index where the condition is True

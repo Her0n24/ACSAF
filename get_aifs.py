@@ -10,15 +10,20 @@ import datetime
 import requests
 from tqdm import tqdm
 import os
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt= '%Y-%m-%d %H:%M:%S',
+                    )
 
 # Define run to 2 digits
 run = "00"
 run = run.zfill(2)
 
 # Define a function that use reponse to donwload the file from a given url
-def download_file(url, local_filename):
+def download_file(url, local_filename) -> None:
     if os.path.exists(local_filename):
-        print(f"File {local_filename} already exists. Skipping download.")
+        logging.info(f"File {local_filename} already exists. Skipping download.")
         return
     # NOTE the stream=True parameter below
     r = requests.get(url, stream=True)
@@ -35,11 +40,11 @@ def download_file(url, local_filename):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                     bar.update(len(chunk))
-        print(f"Downloaded: {local_filename}")
+        logging.info(f"Downloaded: {local_filename}")
     else:
-        print(f"Failed to download: {url} - Status code: {r.status_code}")
-        
-# url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
+        logging.error(f"Failed to download: {url} - Status code: {r.status_code}")
+
+# url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"
 # download_file(url, f"input/{today_str}{run}0000-18h-oper-fc.grib2")
 
 # url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   

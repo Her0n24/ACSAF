@@ -24,3 +24,8 @@ Thumbs.db
 *.jpg
 *.png
 *.gif
+
+# Others
+##################
+*.yml
+*.yaml

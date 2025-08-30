@@ -12,10 +12,14 @@ CAMS Global analyses and forecasts:
 12 UTC forecast data availability guaranteed by 22:00 UTC
 
 """
-
 import cdsapi
 import datetime
 import os
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt= '%Y-%m-%d %H:%M:%S',
+                    )
 run = "00"
 run = run.zfill(2)
 today = datetime.date.today() #- datetime.timedelta(days=1)
@@ -23,7 +27,7 @@ today_str = today.strftime("%Y%m%d")
 
 def get_cams_aod(today, run, city, today_str, input_path):
     if os.path.exists(f'{input_path}/cams_AOD550_{today_str}{run}0000_{city}.grib'):
-        print("CAMS grib already exists. Skipping download.")
+        logging.info("CAMS grib already exists. Skipping download.")
         return
     else:
         if city == "Reading":
@@ -69,6 +73,7 @@ def get_cams_aod(today, run, city, today_str, input_path):
                 "area": [23, 113, 21, 115] 
                 }
         else:
+            logging.error("City not supported. Please use 'Reading' or 'HongKong'.")
             raise ValueError("City not supported. Please use 'Reading' or 'HongKong'.")
 
         client.retrieve(dataset, request,f'{input_path}/cams_AOD550_{today_str}{run}0000_{city}.grib')
