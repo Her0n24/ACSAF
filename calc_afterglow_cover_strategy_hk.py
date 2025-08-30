@@ -52,10 +52,23 @@ plt.rcParams['font.family'] = font_prop.get_name()
 plt.rcParams['font.sans-serif'] = [font_prop.get_name()]
 plt.rcParams['axes.unicode_minus'] = False
 
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Afterglow Forecaster for Hong Kong")
+    parser.add_argument('--date', type=str, default=None,
+                        help="Specify the date in YYYYMMDD format (default: today)")
+    return parser.parse_args()
+
+args = parse_args()
+
+if args.date:
+    today = datetime.datetime.strptime(args.date, "%Y%m%d").date()
+else:
+    today = datetime.date.today() + datetime.timedelta(days=1)  # default
 
 run = "12"
 run = run.zfill(2)
-today = datetime.date.today() + datetime.timedelta(days=1) # Remember to uncomment after fixing the script
 today_str = today.strftime("%Y%m%d")
 yesterday = today - datetime.timedelta(days=1)
 yesterday_str = yesterday.strftime("%Y%m%d")

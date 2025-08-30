@@ -32,6 +32,21 @@ logging.basicConfig(
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
 
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Afterglow Forecaster")
+    parser.add_argument('--date', type=str, default=None,
+                        help="Specify the date in YYYYMMDD format (default: today)")
+    return parser.parse_args()
+
+args = parse_args()
+
+if args.date:
+    today = datetime.datetime.strptime(args.date, "%Y%m%d").date()
+else:
+    today = datetime.date.today()
+
 run = "00"
 run = run.zfill(2)
 today = datetime.date.today() #- datetime.timedelta(days=1) # Remember to comment after fixing the script
