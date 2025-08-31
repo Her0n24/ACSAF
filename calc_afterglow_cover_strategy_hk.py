@@ -949,8 +949,8 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
     )
     fig.text(0.89, 0.01, f"Her0n24. V2025.8.29", color='white', fontsize=8)
     
-    plt.savefig(f'{output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}_hk.png', dpi=400)
-    logging.info(f"Dashboard saved to {output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}_hk.png")
+    plt.savefig(f'{output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
+    logging.info(f"Dashboard saved to {output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}.png")
 
 create_dashboard(
     likelihood_index_18, likelihood_index_42, city, lat, lon, sunset_azimuth, actual_afterglow_time_18, actual_afterglow_time_42, possible_colors_18, possible_colors_42, cloud_base_lvl_18, cloud_base_lvl_42,
