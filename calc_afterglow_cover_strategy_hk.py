@@ -63,7 +63,7 @@ def parse_args():
 args = parse_args()
 
 if args.date:
-    today = datetime.datetime.strptime(args.date, "%Y%m%d").date()
+    today = datetime.datetime.strptime(args.date, "%Y%m%d").date() + datetime.timedelta(days=1)
 else:
     today = datetime.date.today() + datetime.timedelta(days=1)  # default
 
