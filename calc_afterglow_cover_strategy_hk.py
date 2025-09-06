@@ -37,6 +37,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib.font_manager")
 font_path = '/home/tsing/.local/share/fonts/SourceHanSerifTC-Bold.otf'  # Update this path as needed
+#font_path = '/Users/hng/Documents/dev/SourceHanSerifTC-Bold.otf'
 output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
 input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
 import logging
@@ -471,18 +472,23 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
                 data = data_dict[key]
                 avg_first_three_met = True
                 hcc_condition = False
+            else:
+                hcc_condition = False
+                avg_first_three_met = False
             if avg_first_three < avg_path:
                 avg_first_three_met = True
                 logging.info(f"Average first three cloud cover {avg_first_three}% is less than average path cloud cover {avg_path}%.")
-                # IF avg first three is above 10% and below 90%
-                if avg_first_three > 10.00 and avg_first_three < 90.00 and avg_path < 70.00:
-                    hcc_condition = True
+                if avg_path < 85.00:
                     cloud_lvl_used = key 
                     data = data_dict[key]
+                    hcc_condition = True
+                    avg_first_three_met = False
+                    logging.info("HCC condition met")
                 else:
                     hcc_condition = False
                     avg_first_three_met = False
-    
+                    logging.info("HCC condition not met")
+
     # Check if cloud base level is NAN. We assign the cloud base level to the first layer with cloud cover >= 15% if it is NaN.
     # We pick the first (lowest) layer so we put a break 
     if np.isnan(cloud_base_lvl):
@@ -510,18 +516,18 @@ def get_cloud_extent(data_dict, lon, lat, azimuth, cloud_base_lvl: float, fcst_h
     #     logging.info(f"Cloud cover NaN for forecast hour {fcst_hr}. There is no stratiform cloud cover. Afterglow not probable.")
     #     cloud_present = False
     #     return cloud_present
-    elif hcc_condition is False:
-        cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path= output_path)
-    elif hcc_condition is True:
+    if hcc_condition is True:
         logging.info('hcc condition is True. We will assume a distance below threshold of 250 km.')
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
         distance_below_threshold = 250
         avg_first_three = np.nanmean(cloud_cover_data[:3])
         avg_path = np.nanmean(cloud_cover_data[4:])
+    elif hcc_condition is False:
+        cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
+        distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, save_path= output_path)
     distance_below_threshold = distance_below_threshold * 1000 # convert to meters
 
-    if avg_first_three < 15.0:
+    if avg_first_three < 10.0:
         cloud_present = False
 
     return distance_below_threshold, key, avg_first_three, avg_path, cloud_present, cloud_base_lvl
@@ -947,7 +953,7 @@ def create_dashboard(index_today, index_tomorrow, city, latitude, longitude,
         "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
         ha='left', va='bottom', color='white', fontsize=8
     )
-    fig.text(0.89, 0.01, f"Her0n24. V2025.8.29", color='white', fontsize=8)
+    fig.text(0.89, 0.01, f"Her0n24. V2025.9.7", color='white', fontsize=8)
     
     plt.savefig(f'{output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
     logging.info(f"Dashboard saved to {output_path}/{yesterday_str}{run}0000_afterglow_dashboard_{city.name}.png")
