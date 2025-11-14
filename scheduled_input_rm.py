@@ -6,10 +6,10 @@ logging.basicConfig(
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
 
-def rm_old_files(folder_paths: list[str], age_threshold_day: int = 7) -> None:
+def rm_old_files(folder_paths: list[str], age_threshold_day: int = 2) -> None:
     logging.info("Starting scheduled file cleanup...")
 
-    age_threshold = age_threshold_day * 24 * 60 * 60  # 7 days in seconds
+    age_threshold = age_threshold_day * 24 * 60 * 60  # 2 days in seconds
     now = time.time()
     logging.info(f"Deletion age threshold set to {age_threshold/(24 * 60 * 60)} days")
 

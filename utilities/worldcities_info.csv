@@ -1,0 +1,1714 @@
+city,lat,lng,country,admin
+New York,40.6943,-73.9249,United States,admin
+Los Angeles,34.1141,-118.4068,United States,admin
+London,51.5072,-0.1275,United Kingdom,admin
+Chicago,41.8375,-87.6866,United States,admin
+Miami,25.784,-80.2101,United States,admin
+Houston,29.786,-95.3885,United States,admin
+Dallas,32.7935,-96.7667,United States,admin
+Philadelphia,40.0077,-75.1339,United States,admin
+Atlanta,33.7628,-84.422,United States,admin
+Washington,38.9047,-77.0163,United States,admin
+Boston,42.3188,-71.0852,United States,admin
+Phoenix,33.5722,-112.0892,United States,admin
+Detroit,42.3834,-83.1024,United States,admin
+Seattle,47.6211,-122.3244,United States,admin
+San Francisco,37.7558,-122.4449,United States,admin
+San Diego,32.8313,-117.1222,United States,admin
+Minneapolis,44.9635,-93.2678,United States,admin
+Tampa,27.9945,-82.4447,United States,admin
+Brooklyn,40.6501,-73.9496,United States,admin
+Denver,39.762,-104.8758,United States,admin
+Birmingham,52.48,-1.9025,United Kingdom,admin
+Queens,40.7498,-73.7976,United States,admin
+Riverside,33.9381,-117.3949,United States,admin
+Las Vegas,36.2333,-115.2654,United States,admin
+Baltimore,39.3051,-76.6144,United States,admin
+St. Louis,38.6359,-90.2451,United States,admin
+Portland,45.5371,-122.65,United States,admin
+San Antonio,29.4632,-98.5238,United States,admin
+Sacramento,38.5677,-121.4685,United States,admin
+Austin,30.3005,-97.7522,United States,admin
+Orlando,28.4773,-81.337,United States,admin
+San Jose,37.3012,-121.848,United States,admin
+Indianapolis,39.7771,-86.1458,United States,admin
+Pittsburgh,40.4397,-79.9763,United States,admin
+Cincinnati,39.1413,-84.506,United States,admin
+Manhattan,40.7834,-73.9662,United States,admin
+Kansas City,39.1238,-94.5541,United States,admin
+Cleveland,41.4764,-81.6805,United States,admin
+Columbus,39.9862,-82.9855,United States,admin
+Bronx,40.8501,-73.8662,United States,admin
+Charlotte,35.2083,-80.8303,United States,admin
+Virginia Beach,36.7335,-76.0435,United States,admin
+Jacksonville,30.3322,-81.6749,United States,admin
+Milwaukee,43.0642,-87.9675,United States,admin
+Providence,41.823,-71.4187,United States,admin
+Nashville,36.1715,-86.7842,United States,admin
+Salt Lake City,40.7776,-111.9311,United States,admin
+Raleigh,35.8324,-78.6429,United States,admin
+Richmond,37.5295,-77.4756,United States,admin
+Memphis,35.1087,-89.9663,United States,capital
+Oklahoma City,35.4676,-97.5136,United States,primary
+Hartford,41.7661,-72.6834,United States,primary
+Reading,51.4542,-0.9731,United Kingdom,
+Manchester,53.479,-2.2452,United Kingdom,
+Cambridge,52.205,0.1225,United Kingdom,
+Tokyo,35.687,139.7495,Japan,admin
+Jakarta,-6.175,106.8275,Indonesia,admin
+Delhi,28.61,77.23,India,admin
+Guangzhou,23.13,113.26,China,admin
+Mumbai,19.0761,72.8775,India,admin
+Manila,14.5958,120.9772,Philippines,admin
+Shanghai,31.2286,121.4747,China,admin
+Sao Paulo,-23.5504,-46.6339,Brazil,admin
+Seoul,37.5667,126.9833,"Korea, South",admin
+Mexico City,19.4333,-99.1333,Mexico,admin
+Kolkata,22.5675,88.37,India,admin
+Cairo,30.0444,31.2358,Egypt,admin
+Karachi,24.86,67.01,Pakistan,admin
+Dhaka,23.7289,90.3944,Bangladesh,admin
+Beijing,39.9067,116.3975,China,admin
+Bangkok,13.7525,100.4942,Thailand,admin
+Shenzhen,22.5415,114.0596,China,admin
+Moscow,55.7506,37.6175,Russia,admin
+Buenos Aires,-34.6036,-58.3814,Argentina,admin
+Bangalore,12.9789,77.5917,India,admin
+Ho Chi Minh City,10.7756,106.7019,Vietnam,admin
+Osaka,34.6939,135.5022,Japan,admin
+Chengdu,30.66,104.0633,China,admin
+Istanbul,41.0136,28.955,Turkey,admin
+Rio de Janeiro,-22.9111,-43.2056,Brazil,admin
+Chennai,13.0825,80.275,India,admin
+Xi'an,34.2611,108.9422,China,admin
+Lahore,31.5497,74.3436,Pakistan,admin
+Chongqing,29.5637,106.5504,China,admin
+Paris,48.8567,2.3522,France,admin
+Linyi,35.1038,118.3564,China,admin
+Dongguan,23.021,113.752,China,admin
+Baoding,38.874,115.464,China,admin
+Hyderabad,17.3617,78.4747,India,admin
+Tianjin,39.1336,117.2054,China,admin
+Wuhan,30.5934,114.3046,China,admin
+Nanyang,32.9902,112.5285,China,admin
+Hangzhou,30.267,120.153,China,admin
+Nagoya,35.1833,136.9,Japan,admin
+Foshan,23.0214,113.1216,China,admin
+Kuala Lumpur,3.1686,101.698,Malaysia,admin
+Zhoukou,33.6367,114.7014,China,admin
+Tongshan,34.261,117.1859,China,admin
+Hanoi,21,105.85,Vietnam,admin
+Nanjing,32.0608,118.7789,China,admin
+Heze,35.2343,115.4796,China,admin
+Pune,18.5203,73.8567,India,admin
+Jining,35.4151,116.5871,China,admin
+Bogota,4.7111,-74.0722,Colombia,admin
+Ahmedabad,23.0225,72.5714,India,admin
+Shenyang,41.8025,123.4281,China,admin
+Johannesburg,-26.2044,28.0456,South Africa,admin
+Fuyang,32.89,115.814,China,admin
+Hong Kong,22.3,114.2,Hong Kong,admin
+Ganzhou,25.831,114.933,China,admin
+Shangqiu,34.415,115.656,China,admin
+Cangzhou,38.3047,116.8387,China,admin
+Riyadh,24.65,46.71,Saudi Arabia,admin
+Santiago,-33.4372,-70.6506,Chile,admin
+Zhumadian,33.014,114.022,China,admin
+Zhanjiang,21.2701,110.3575,China,admin
+Yancheng,33.35,120.1569,China,admin
+Bijie,27.284,105.292,China,admin
+Xingtai,37.0717,114.5048,China,admin
+Hengyang,26.894,112.572,China,admin
+Shaoyang,27.2395,111.4679,China,admin
+Surabaya,-7.2458,112.7378,Indonesia,admin
+Surat,21.205,72.84,India,admin
+Quanzhou,24.8744,118.6757,China,admin
+Shangrao,28.4551,117.9431,China,admin
+Zunyi,27.722,107.031,China,admin
+Maoming,21.6627,110.9255,China,admin
+Xinyang,32.149,114.091,China,admin
+Singapore,1.3,103.8,Singapore,admin
+Prayagraj,25.4358,81.8464,India,admin
+Huanggang,30.4537,114.8724,China,admin
+Dalian,38.9,121.6,China,admin
+Ankara,39.93,32.85,Turkey,admin
+Qingdao,36.0669,120.3827,China,admin
+Yulin,22.654,110.181,China,admin
+Liaocheng,36.4559,115.9852,China,admin
+Qujing,25.491,103.796,China,admin
+Nangandao,35.3036,113.9268,China,admin
+Addis Ababa,9.03,38.74,Ethiopia,admin
+Toronto,43.7417,-79.3733,Canada,admin
+Zhengzhou,34.764,113.684,China,admin
+Nanchong,30.8372,106.1106,China,admin
+Jinan,36.6702,117.0207,China,admin
+Giza,29.987,31.2118,Egypt,admin
+Saint Petersburg,59.9375,30.3086,Russia,admin
+Jieyang,23.551,116.3727,China,admin
+Dezhou,37.436,116.359,China,admin
+Guadalajara,20.6767,-103.3475,Mexico,admin
+Tai'an,36.202,117.087,China,admin
+Dazhou,31.2093,107.4678,China,admin
+Belo Horizonte,-19.9281,-43.9419,Brazil,admin
+Suzhou,33.648,116.964,China,admin
+Monterrey,25.6844,-100.3181,Mexico,admin
+Yongzhou,26.42,111.613,China,admin
+Changde,29.031,111.699,China,admin
+Xiangyang,32.01,112.122,China,admin
+Pudong,31.2347,121.5064,China,admin
+Zhaotong,27.338,103.717,China,admin
+Zhangzhou,24.513,117.647,China,admin
+Yueyang,29.3647,113.1309,China,admin
+Melbourne,-37.8142,144.9631,Australia,admin
+Yichun,27.816,114.417,China,admin
+Guilin,25.275,110.296,China,admin
+Pingdingshan,33.7666,113.1926,China,admin
+Alexandria,31.1975,29.8925,Egypt,admin
+Bozhou,33.8463,115.7786,China,admin
+Sydney,-33.8667,151.2,Australia,admin
+Yuncheng,35.0267,111.007,China,admin
+Cape Town,-33.9253,18.4239,South Africa,admin
+Changsha,28.228,112.939,China,admin
+Suqian,33.963,118.275,China,admin
+Jeddah,21.5428,39.1728,Saudi Arabia,admin
+Weinan,34.5206,109.471,China,admin
+Berlin,52.52,13.405,Germany,admin
+Chenzhou,25.77,113.016,China,admin
+Jiangmen,22.5789,113.0815,China,admin
+Mianyang,31.468,104.679,China,admin
+Jiujiang,29.661,115.954,China,admin
+Huaihua,27.5698,110.0016,China,admin
+Huanglongsi,34.795,114.345,China,admin
+Taizhou,32.4567,119.9229,China,admin
+Belahi,26.4,86.25,India,admin
+Yibin,28.752,104.643,China,admin
+Ji'an,27.0912,114.9668,China,admin
+Yangzhou,32.3944,119.4128,China,admin
+Kunming,25.0464,102.7094,China,admin
+Changchun,43.897,125.326,China,admin
+Lu'an,31.736,116.52,China,admin
+Xinpu,34.5966,119.2214,China,admin
+Langfang,39.5383,116.6835,China,admin
+Urumqi,43.8225,87.6125,China,admin
+Suzhou,31.3,120.6194,China,admin
+Guigang,23.112,109.599,China,admin
+Shantou,23.354,116.682,China,admin
+Jiangguanchi,34.037,113.852,China,admin
+Xiaoganzhan,30.918,113.957,China,admin
+Luzhou,28.871,105.442,China,admin
+Hefei,31.8206,117.2273,China,admin
+Hengshui,37.739,115.669,China,admin
+Fortaleza,-3.7275,-38.5275,Brazil,admin
+Anqing,30.5318,117.1153,China,admin
+Zhangjiakou,40.769,114.886,China,admin
+Zhaoqing,23.05,112.4667,China,admin
+Shijiazhuang,38.0425,114.51,China,admin
+Ningbo,29.8603,121.6245,China,admin
+Qiqihar,47.3549,123.9182,China,admin
+Liuzhou,24.3278,109.4278,China,admin
+Chifeng,42.255,118.8825,China,admin
+Xiaoxita,30.692,111.287,China,admin
+Linfen,36.088,111.519,China,admin
+Xianyang,34.3299,108.7088,China,admin
+Chuzhou,32.256,118.333,China,admin
+Kumasi,6.7,-1.625,Ghana,admin
+Zhuzhou,27.829,113.133,China,admin
+Taiyuan,37.8704,112.5497,China,admin
+Qingyuan,23.682,113.056,China,admin
+Meizhou,24.289,116.122,China,admin
+Yiyang,28.5549,112.356,China,admin
+Nanning,22.8167,108.3275,China,admin
+Harbin,45.7576,126.6409,China,admin
+Loudi,27.6998,111.9944,China,admin
+Yokohama,35.4442,139.6381,Japan,admin
+Suihua,46.654,126.969,China,admin
+Binzhou,37.383,117.971,China,admin
+Zaozhuang,34.8109,117.3238,China,admin
+Xiamen,24.4796,118.0889,China,admin
+Montreal,45.5089,-73.5617,Canada,admin
+Fuzhou,26.0743,119.2964,China,admin
+Wuhu,31.3526,118.4331,China,admin
+Medan,3.5894,98.6739,Indonesia,admin
+Yulinshi,38.2858,109.7341,China,admin
+Fuzhou,27.949,116.358,China,admin
+Wenzhou,27.9938,120.6993,China,admin
+Changzhou,31.811,119.974,China,admin
+Puyang,35.7627,115.0292,China,admin
+Nanchang,28.683,115.858,China,admin
+Baicheng,23.903,106.619,China,admin
+Jiaozuo,35.2157,113.2419,China,admin
+Nadampalaiyam,11.0125,76.9714,India,admin
+Deyang,31.127,104.398,China,admin
+Busan,35.18,129.075,"Korea, South",admin
+Hechi,24.693,108.085,China,admin
+Tangshan,39.6294,118.1739,China,admin
+Lucknow,26.85,80.95,India,admin
+Boankra,6.6919,-1.4051,Ghana,admin
+Dubai,25.2631,55.2972,United Arab Emirates,admin
+Anshan,41.108,122.994,China,admin
+Guozhen,34.3609,107.1751,China,admin
+Baojishi,34.363,107.238,China,admin
+Qinzhou,21.981,108.654,China,admin
+Guiyang,26.647,106.63,China,admin
+Wuxi,31.5667,120.2833,China,admin
+Kannankulam,10.52,76.21,India,admin
+Kotla Qasim Khan,32.5833,73.75,Pakistan,admin
+Casablanca,33.5333,-7.5833,Morocco,admin
+Hanzhong,33.0664,107.0232,China,admin
+Shiyan,32.629,110.7987,China,admin
+Guang'an,30.4564,106.6326,China,admin
+Faisalabad,31.4167,73.0911,Pakistan,admin
+Changzhi,36.195,113.117,China,admin
+Tongren,27.7316,109.1895,China,admin
+Bengbu,32.917,117.389,China,admin
+Leshan,29.552,103.766,China,admin
+Neijiang,29.5802,105.058,China,admin
+Zhenjiang,32.188,119.424,China,admin
+Qinhuangdao,39.8882,119.5202,China,admin
+Bursa,40.1833,29.05,Turkey,admin
+Guayaquil,-2.19,-79.8875,Ecuador,admin
+Jaipur,26.9,75.8,India,admin
+Lanzhou,36.0606,103.8268,China,admin
+Athens,37.9842,23.7281,Greece,admin
+Qincheng,34.5815,105.7248,China,admin
+Izmir,38.42,27.14,Turkey,admin
+Quezon City,14.65,121.0475,Philippines,admin
+Kyiv,50.45,30.5233,Ukraine,admin
+Kottarassheri,10.775,76.651,India,admin
+Meishan,30.0771,103.8484,China,admin
+Incheon,37.4833,126.6333,"Korea, South",admin
+Ningde,26.6662,119.5477,China,admin
+Zhongshan,22.517,113.3925,China,admin
+Putian,25.4526,119.0078,China,admin
+Tongliao,43.654,122.243,China,admin
+Chaoyang,41.571,120.453,China,admin
+Hohhot,40.842,111.749,China,admin
+Shaoguan,24.811,113.597,China,admin
+Taichung,24.1439,120.6794,Taiwan,admin
+Cali,3.4206,-76.5222,Colombia,admin
+Heyuan,23.7443,114.7002,China,admin
+Wuzhou,23.4767,111.279,China,admin
+Pretoria,-25.7461,28.1881,South Africa,admin
+Suining,30.533,105.593,China,admin
+Weihai,37.5133,122.1205,China,admin
+Rizhao,35.417,119.527,China,admin
+Malang,-7.98,112.62,Indonesia,admin
+Stuttgart,48.7775,9.18,Germany,admin
+Daqing,46.589,125.104,China,admin
+Rome,41.8931,12.4828,Italy,admin
+Kaohsiung,22.615,120.2975,Taiwan,admin
+Xiangtan,27.8313,112.9454,China,admin
+Bazhou,31.868,106.748,China,admin
+Handan,36.601,114.487,China,admin
+Brisbane,-27.4678,153.0281,Australia,admin
+Jinzhou,41.129,121.148,China,admin
+Xinzhou,38.416,112.734,China,admin
+Nanping,26.6418,118.1774,China,admin
+Gazipura,23.9234,90.3959,Bangladesh,admin
+Shanwei,22.7872,115.3756,China,admin
+Chaozhou,23.658,116.622,China,admin
+Baotou,40.6213,109.9532,China,admin
+Longyan,25.076,117.017,China,admin
+Weifang,36.708,119.162,China,admin
+Huai'an,33.551,119.113,China,admin
+Zibo,36.8138,118.055,China,admin
+Attadappa,11.8689,75.3555,India,admin
+Munich,48.1375,11.575,Germany,admin
+Gulou,26.0865,119.298,China,admin
+Chattogram,22.335,91.8325,Bangladesh,admin
+Yangjiang,21.857,111.983,China,admin
+Barmhan Kalan,19.1972,72.9722,India,admin
+Medellin,6.2308,-75.5906,Colombia,admin
+Dingxi,35.608,104.592,China,admin
+Shaoxing,30.0511,120.5833,China,admin
+Yantai,37.4646,121.4478,China,admin
+Huizhou,23.112,114.416,China,admin
+Xuanzhou,30.939,118.759,China,admin
+Mirzapur,25.146,82.569,India,admin
+Hamburg,53.55,10,Germany,admin
+Taipei,25.0375,121.5625,Taiwan,admin
+Ankang,32.6854,109.029,China,admin
+Zigong,29.339,104.779,China,admin
+Sanming,26.2634,117.6389,China,admin
+Toluca,19.2925,-99.6569,Mexico,admin
+Huangshi,30.2011,115.039,China,admin
+Zhuhai,22.2742,113.5719,China,admin
+Huludao,40.711,120.837,China,admin
+Baoshan,25.112,99.161,China,admin
+Mecca,21.4225,39.8261,Saudi Arabia,admin
+Vancouver,49.25,-123.1,Canada,admin
+Lianshan,40.7523,120.828,China,admin
+Salvador,-12.9831,-38.4928,Brazil,admin
+Bucharest,44.4325,26.1039,Romania,admin
+Longba,33.3702,104.9603,China,admin
+Nagpur,21.1497,79.0806,India,admin
+Tieling,42.2237,123.726,China,admin
+Yunfu,22.9152,112.0445,China,admin
+Bekasi,-6.2333,107,Indonesia,admin
+Daegu,35.8717,128.6017,"Korea, South",admin
+Ghaziabad,28.67,77.42,India,admin
+Luoyang,34.6197,112.4539,China,admin
+Luohe,33.5804,114.0166,China,admin
+Anshun,26.2531,105.9476,China,admin
+Huainan,32.6314,117.0194,China,admin
+Depok,-6.394,106.8225,Indonesia,admin
+Konya,37.8667,32.4833,Turkey,admin
+Haiphong,20.8651,106.6838,Vietnam,admin
+Yanjiang,30.129,104.627,China,admin
+Guangyuan,32.436,105.844,China,admin
+Baku,40.3667,49.8352,Azerbaijan,admin
+Yingkou,40.625,122.219,China,admin
+Mudanjiang,44.5514,129.6329,China,admin
+Fukuoka,33.59,130.4017,Japan,admin
+Nantong,31.981,120.894,China,admin
+Lincang,23.884,100.089,China,admin
+Haikou,20.0186,110.3488,China,admin
+Yuxi,24.347,102.527,China,admin
+Tangerang,-6.1703,106.6403,Indonesia,admin
+Supaul,26.126,86.605,India,admin
+Almaty,43.24,76.915,Kazakhstan,admin
+Vienna,48.2083,16.3725,Austria,admin
+Xining,36.6224,101.7804,China,admin
+Jincheng,35.491,112.852,China,admin
+Dandong,40.1167,124.3833,China,admin
+Yan'an,36.65,109.494,China,admin
+Qinbaling,35.7091,107.6436,China,admin
+Gaoping,30.7824,106.1281,China,admin
+Taizhou,28.6557,121.4208,China,admin
+Ma'anshan,31.669,118.507,China,admin
+Jiamusi,46.8,130.319,China,admin
+Perth,-31.9558,115.8597,Australia,admin
+Gaziantep,37.0628,37.3792,Turkey,admin
+Lishui,28.468,119.923,China,admin
+Cordoba,-31.4167,-64.1833,Argentina,admin
+Zamboanga City,6.9042,122.0761,Philippines,admin
+Rawalpindi,33.6,73.0333,Pakistan,admin
+Chongzuo,22.377,107.365,China,admin
+Laibin,23.7501,109.2212,China,admin
+Vadodara,22.3,73.2,India,admin
+Qingyang,24.7816,118.5517,China,admin
+Rajkot,22.3,70.7833,India,admin
+Shangzhou,33.8734,109.9186,China,admin
+Vishakhapatnam,17.7042,83.2978,India,admin
+Shengli,37.434,118.6746,China,admin
+Sanmenxia,34.7732,111.2004,China,admin
+Warsaw,52.23,21.0111,Poland,admin
+Gujranwala,32.1567,74.19,Pakistan,admin
+Hezhou,24.4042,111.5672,China,admin
+Tijuana,32.525,-117.0333,Mexico,admin
+Puning,23.298,116.166,China,admin
+Indore,22.7167,75.8472,India,admin
+Huaibei,33.956,116.798,China,admin
+Peshawar,34.0144,71.5675,Pakistan,admin
+Sapporo,43.0619,141.3544,Japan,admin
+Tilburg,51.5572,5.0911,Netherlands,admin
+Davao,7.07,125.6,Philippines,admin
+Songjiang,31.0058,121.2333,China,admin
+Yinchuan,38.485,106.225,China,admin
+Abhepur,39.41,116.38,India,admin
+Thane,19.1972,72.9722,India,admin
+Multan,30.1978,71.4697,Pakistan,admin
+Fushun,41.881,123.957,China,admin
+Tainan,22.9833,120.1833,Taiwan,admin
+Pingliang,35.5424,106.6649,China,admin
+Siping,43.1668,124.3506,China,admin
+Pingxiang,27.659,113.887,China,admin
+Bhopal,23.2599,77.4126,India,admin
+Diyarbakir,37.91,40.24,Turkey,admin
+Curitiba,-25.4297,-49.2719,Brazil,admin
+Shuyangzha,34.1299,118.7734,China,admin
+Adana,37,35.3213,Turkey,admin
+Quito,-0.22,-78.5125,Ecuador,admin
+Agra,27.18,78.02,India,admin
+Peyanvilai,8.9,77.9833,India,admin
+Hyderabad City,25.3792,68.3683,Pakistan,admin
+Pimpri-Chinchwad,18.6186,73.8037,India,admin
+Budapest,47.4983,19.0408,Hungary,admin
+Patna,25.594,85.1376,India,admin
+Beihai,21.481,109.12,China,admin
+Sanzhou,30.82,108.4,China,admin
+Ximeicun,24.9612,118.3849,China,admin
+Caloocan City,14.65,120.97,Philippines,admin
+Ecatepec,19.6097,-99.06,Mexico,admin
+Yushan,31.322,120.985,China,admin
+Fuxin,42.022,121.67,China,admin
+Novosibirsk,55.05,82.95,Russia,admin
+Bilaspur,22.09,82.15,India,admin
+Semarang,-6.99,110.4225,Indonesia,admin
+Jingdezhen,29.2917,117.1986,China,admin
+Ludhiana,30.91,75.85,India,admin
+Liaoyang,41.279,123.176,China,admin
+Jiangyin,31.839,120.295,China,admin
+Shuozhou,39.3317,112.4329,China,admin
+Leon de los Aldama,21.1167,-101.6833,Mexico,admin
+Puebla,19.0333,-98.1833,Mexico,admin
+Bien Hoa,10.95,106.8167,Vietnam,admin
+Chengtangcun,35.0833,117.15,China,admin
+Hebi,35.748,114.297,China,admin
+Madurai,9.9252,78.1198,India,admin
+Huzhou,30.8925,120.0875,China,admin
+Jamshedpur,22.7925,86.1842,India,admin
+Baicheng,45.62,122.838,China,admin
+San Jose,9.9325,-84.08,Costa Rica,admin
+Shaoyang,32.912,119.8526,China,admin
+Palembang,-2.9861,104.7556,Indonesia,admin
+Kawasaki,35.5167,139.7,Japan,admin
+Kobe,34.69,135.1956,Japan,admin
+Jiaxing,30.747,120.756,China,admin
+Zhangjiajie,29.117,110.479,China,admin
+Baiyin,36.5451,104.1389,China,admin
+Guiping,23.4,110.0833,China,admin
+Changshu,31.656,120.753,China,admin
+Jixi,45.295,130.969,China,admin
+Xushan,30.1667,121.2333,China,admin
+Gwangju,35.1653,126.8486,"Korea, South",admin
+Recife,-8.0539,-34.8808,Brazil,admin
+Nasik,19.9975,73.7898,India,admin
+Abu Dhabi,24.4667,54.3667,United Arab Emirates,admin
+Amsterdam,52.3728,4.8936,Netherlands,admin
+Vijayawada,16.5193,80.6305,India,admin
+Zapopan,20.7167,-103.4,Mexico,admin
+Daejeon,36.35,127.385,"Korea, South",admin
+Auckland,-36.8492,174.7653,New Zealand,admin
+Yekaterinburg,56.8356,60.6128,Russia,admin
+Wuwei,37.929,102.638,China,admin
+Jinhua,29.079,119.647,China,admin
+Kyoto,35.0117,135.7683,Japan,admin
+Pizhou,34.398,117.89,China,admin
+Yangshe,31.8767,120.556,China,admin
+Yucheng,30.01,103.0415,China,admin
+Kayseri,38.7225,35.4875,Turkey,admin
+Rui'an,27.7833,120.625,China,admin
+Kharkiv,49.9925,36.2311,Ukraine,admin
+Medina,24.47,39.61,Saudi Arabia,admin
+Sangereng,-6.2889,106.7181,Indonesia,admin
+Faridabad,28.4211,77.3078,India,admin
+Sofia,42.6979,23.3217,Bulgaria,admin
+Ulaanbaatar,47.9214,106.9055,Mongolia,admin
+Adelaide,-34.9275,138.6,Australia,admin
+Prague,50.0875,14.4214,Czechia,admin
+Wenling,28.3667,121.3667,China,admin
+Copenhagen,55.6805,12.5615,Denmark,admin
+Najafgarh,28.6125,76.9847,India,admin
+Lianjiang,21.7333,110.2833,China,admin
+Helsinki,60.1708,24.9375,Finland,admin
+Samsun,41.2903,36.3336,Turkey,admin
+Milan,45.4669,9.19,Italy,admin
+Antalya,36.8874,30.7075,Turkey,admin
+Chizhou,30.6654,117.4916,China,admin
+Makassar,-5.1331,119.4136,Indonesia,admin
+Porto Alegre,-30.0328,-51.23,Brazil,admin
+Huangshan,29.7149,118.3376,China,admin
+Gaozhou,21.9244,110.8422,China,admin
+Barranquilla,10.9833,-74.8019,Colombia,admin
+Benxi,41.3039,123.7649,China,admin
+Saitama,35.8614,139.6456,Japan,admin
+Guarulhos,-23.4667,-46.5333,Brazil,admin
+Leizhou,20.9143,110.0967,China,admin
+Juarez,31.745,-106.485,Mexico,admin
+Yangquan,37.8571,113.5804,China,admin
+Fuqing,25.7167,119.3833,China,admin
+Xintai,35.909,117.768,China,admin
+Wusong,30.945,117.811,China,admin
+Tongling,30.9456,117.8114,China,admin
+Calgary,51.05,-114.0667,Canada,admin
+Meerut,28.98,77.71,India,admin
+Kuaidamao,41.7283,125.9397,China,admin
+Huazhou,21.664,110.6396,China,admin
+Wuzhong,37.9978,106.1986,China,admin
+Belem,-1.4558,-48.5039,Brazil,admin
+Rosario,-32.9575,-60.6394,Argentina,admin
+Tangier,35.7767,-5.8039,Morocco,admin
+Canagatan,18,121.8,Philippines,admin
+Soweto,-26.2678,27.8585,South Africa,admin
+Xiantao,30.328,113.443,China,admin
+Jabalpur,23.1667,79.9333,India,admin
+Huaiyin,33.5819,119.028,China,admin
+Yutan,28.278,112.552,China,admin
+Kazan,55.7964,49.1089,Russia,admin
+Bagam,1.13,104.0531,Indonesia,admin
+Dayan,26.8552,100.2259,China,admin
+Brussels,50.8467,4.3525,Belgium,admin
+Laiwu,36.1833,117.6667,China,admin
+Huazhou,32.688,112.087,China,admin
+Sharjah,25.3575,55.3908,United Arab Emirates,admin
+Kalyan,19.24,73.13,India,admin
+Rucheng,32.246,120.591,China,admin
+Yongcheng,33.9299,116.45,China,admin
+Sumedang,-6.84,107.9208,Indonesia,admin
+Can Tho,10.0333,105.7833,Vietnam,admin
+Suwon,37.2667,127.0167,"Korea, South",admin
+Yiwu,29.3069,120.0753,China,admin
+Vasai-Virar,19.47,72.8,India,admin
+Campinas,-22.9009,-47.0573,Brazil,admin
+Dadukou,26.5824,101.7184,China,admin
+Lingcheng,22.708,110.354,China,admin
+Shuangyashan,46.6762,131.1416,China,admin
+Nizhniy Novgorod,56.3269,44.0075,Russia,admin
+Panipat,29.3875,76.97,India,admin
+Varanasi,25.3189,83.0128,India,admin
+Hiroshima,34.3914,132.4519,Japan,admin
+Chiang Mai,18.7953,98.9986,Thailand,admin
+Kalleli,9.2807,76.8697,India,admin
+Batam Centre,1.1272,104.0556,Indonesia,admin
+Pingdu,36.7769,119.9884,China,admin
+Rongcheng,26.218,104.103,China,admin
+Xinyu,27.8186,114.9167,China,admin
+Doha,25.2867,51.5333,Qatar,admin
+Shymkent,42.3167,69.5958,Kazakhstan,admin
+Srinagar,34.09,74.79,India,admin
+Chelyabinsk,55.1547,61.3758,Russia,admin
+Aurangabad,19.88,75.32,India,admin
+Cilacap,-7.7167,109.017,Indonesia,admin
+Xinhualu,34.3964,113.7402,China,admin
+Guankou,28.1637,113.6433,China,admin
+Bandar Lampung,-5.45,105.2667,Indonesia,admin
+Dhanbad,23.7998,86.4305,India,admin
+Jingling,30.664,113.167,China,admin
+Zhuji,29.7167,120.2333,China,admin
+Samara,53.2028,50.1408,Russia,admin
+Yingtan,28.2721,117.0395,China,admin
+Edmonton,53.5344,-113.4903,Canada,admin
+Guyuan,36.01,106.257,China,admin
+Leiyang,26.4223,112.8598,China,admin
+Krasnodar,45.0333,38.9667,Russia,admin
+Rostov,47.2225,39.71,Russia,admin
+Amritsar,31.64,74.86,India,admin
+Aligarh,27.88,78.08,India,admin
+Zhangye,38.9248,100.4499,China,admin
+Ufa,54.7261,55.9475,Russia,admin
+Ulsan,35.55,129.3167,"Korea, South",admin
+Rongcheng,29.8402,112.9048,China,admin
+Tbilisi,41.7225,44.7925,Georgia,admin
+Guwahati,26.1722,91.7458,India,admin
+Fes,34.0433,-5.0033,Morocco,admin
+Yingchuan,34.142,113.489,China,admin
+Ninh Binh,20.25,105.8333,Vietnam,admin
+Omsk,54.9833,73.3667,Russia,admin
+Mexicali,32.6633,-115.4678,Mexico,admin
+Dingzhou,38.516,114.99,China,admin
+Tamale,9.4075,-0.8533,Ghana,admin
+Yuyao,30.05,121.15,China,admin
+Goiania,-16.6806,-49.2564,Brazil,admin
+Krasnoyarsk,56.0089,92.8719,Russia,admin
+Cologne,50.9364,6.9528,Germany,admin
+Yicheng,31.36,119.815,China,admin
+Ezhou,30.3914,114.8949,China,admin
+Astana,51.1472,71.4222,Kazakhstan,admin
+Zhufeng,36,119.4167,China,admin
+Nezahualcoyotl,19.4081,-99.0186,Mexico,admin
+Haora,22.58,88.3294,India,admin
+Tongjin,37.2333,127.2,"Korea, South",admin
+Ranchi,23.36,85.33,India,admin
+Ciudad Nezahualcoyotl,19.4006,-99.0148,Mexico,admin
+Gwalior,26.2125,78.1775,India,admin
+Ottawa,45.4247,-75.695,Canada,admin
+Haicheng,40.8824,122.6852,China,admin
+Jianguang,28.1958,115.7833,China,admin
+Goyang,37.65,126.8,"Korea, South",admin
+Sendai,38.2682,140.8694,Japan,admin
+Xibeijie,39.7334,98.4943,China,admin
+Chandigarh,30.75,76.78,India,admin
+Voronezh,51.6717,39.2106,Russia,admin
+Zhongwei,37.5002,105.1968,China,admin
+Jiancheng,30.38,104.53,China,admin
+Mersin,36.8,34.6333,Turkey,admin
+Shouguang,36.857,118.791,China,admin
+Liangshi,27.26,111.7442,China,admin
+Sao Luis,-2.53,-44.3028,Brazil,admin
+Jodhpur,26.28,73.02,India,admin
+Sanya,18.2533,109.5036,China,admin
+Rangapukur,25.5206,89.2147,Bangladesh,admin
+Linhai,28.85,121.1167,China,admin
+Perm,58,56.3167,Russia,admin
+Shubra al Khaymah,30.1286,31.2422,Egypt,admin
+Islamabad,33.6931,73.0639,Pakistan,admin
+Xinyi,22.3549,110.9468,China,admin
+Thu Duc,10.8266,106.7609,Vietnam,admin
+Odesa,46.492,30.7081,Ukraine,admin
+Raipur,21.2444,81.6306,India,admin
+Changwon,35.2708,128.6631,"Korea, South",admin
+Volgograd,48.7086,44.5147,Russia,admin
+Morelia,19.7683,-101.1894,Mexico,admin
+Kota,25.18,75.83,India,admin
+Quetta,30.1833,67,Pakistan,admin
+Domaa-Ahenkro,7.2739,-2.8735,Ghana,admin
+Bareilly,28.3667,79.4306,India,admin
+Liaoyuan,42.888,125.1447,China,admin
+Stockholm,59.3275,18.0547,Sweden,admin
+Bordeaux,44.84,-0.58,France,admin
+Taixing,32.159,120.029,China,admin
+Esenyurt,41.0342,28.68,Turkey,admin
+Pekanbaru,0.5092,101.4453,Indonesia,admin
+Bogor,-6.5966,106.7972,Indonesia,admin
+Chiba,35.6073,140.1064,Japan,admin
+Shuizhai,33.4658,114.8753,China,admin
+Qianxi,27.0087,106.0323,China,admin
+Dnipro,48.4675,35.04,Ukraine,admin
+Baishan,41.944,126.4147,China,admin
+Narayanganj,23.6167,90.5,Bangladesh,admin
+Gqeberha,-33.9581,25.6,South Africa,admin
+Huilong,31.87,121.703,China,admin
+Marrakech,31.63,-8.0089,Morocco,admin
+Cebu City,10.32,123.75,Philippines,admin
+Coimbatore,11.0008,76.9633,India,admin
+Maceio,-9.6658,-35.735,Brazil,admin
+Nada,19.5209,109.5808,China,admin
+Fangchenggang,21.6867,108.3547,China,admin
+Solapur,17.68,75.92,India,admin
+Kaiyuan,36.0193,113.86,China,admin
+Seberang Jaya,5.3909,100.4104,Malaysia,admin
+Sale,34.0333,-6.8,Morocco,admin
+Hubli,15.3502,75.1376,India,admin
+Cankaya,39.9244,32.8856,Turkey,admin
+Hwasu-dong,37.1997,126.8314,"Korea, South",admin
+Yingcheng,24.21,113.401,China,admin
+Setagaya,35.6466,139.6532,Japan,admin
+Kecioren,40,32.8667,Turkey,admin
+Luocheng,22.7689,111.5697,China,admin
+Meishan,34.167,112.844,China,admin
+Kitakyushu,33.8833,130.8833,Japan,admin
+Aguascalientes,21.876,-102.296,Mexico,admin
+Khulna,22.8167,89.55,Bangladesh,admin
+Chihuahua,28.6369,-106.0769,Mexico,admin
+Xin'an,34.286,118.355,China,admin
+Mysore,12.3086,76.6531,India,admin
+Kashgar,39.4681,75.9938,China,admin
+Songnam,37.4333,127.15,"Korea, South",admin
+Trichinopoly,10.7903,78.7047,India,admin
+Cartagena,10.4,-75.5,Colombia,admin
+Qingzhou,36.6853,118.4796,China,admin
+Naples,40.8358,14.2486,Italy,admin
+Santiago del Estero,-27.7833,-64.2667,Argentina,admin
+Naucalpan de Juarez,19.4753,-99.2378,Mexico,admin
+Masbate,12.27,123.58,Philippines,admin
+Taishan,22.252,112.794,China,admin
+Jiaozhou,36.2647,120.0334,China,admin
+Wuchuan,21.441,110.779,China,admin
+Wafangdian,39.6271,121.9796,China,admin
+La Plata,-34.9211,-57.9544,Argentina,admin
+Ad Dammam,26.4333,50.1,Saudi Arabia,admin
+Hanchuan,30.6667,113.8333,China,admin
+Quzhou,28.9702,118.8593,China,admin
+Donetsk,48.0028,37.8053,Ukraine,admin
+Ashmun,30.2974,30.9764,Egypt,admin
+Wuchang,44.924,127.158,China,admin
+Sao Goncalo,-22.8269,-43.0539,Brazil,admin
+Hengzhou,22.6799,109.2614,China,admin
+Feicheng,36.1861,116.7719,China,admin
+Bucaramanga,7.1333,-73,Colombia,admin
+Merida,20.9667,-89.6167,Mexico,admin
+Hegang,47.3501,130.298,China,admin
+Osmangazi,40.1983,29.06,Turkey,admin
+Moradabad,28.8319,78.7764,India,admin
+Cancun,21.1606,-86.8475,Mexico,admin
+Zaoyang,32.129,112.772,China,admin
+Dongtai,32.795,120.519,China,admin
+Antipolo,14.5842,121.1763,Philippines,admin
+Taguig City,14.52,121.05,Philippines,admin
+Tabuk,28.3972,36.5789,Saudi Arabia,admin
+Xishan,27.6461,113.497,China,admin
+Zhoushan,29.9856,122.2074,China,admin
+Yichun,47.728,128.841,China,admin
+Klang,3.0223,101.5481,Malaysia,admin
+Tiruppur,11.1085,77.3411,India,admin
+Marseille,43.2964,5.37,France,admin
+Gurgaon,28.456,77.029,India,admin
+Yangchun,22.1704,111.7916,China,admin
+Hai'an,32.535,120.563,China,admin
+Jalandhar,31.326,75.5762,India,admin
+Daye,30.0961,114.9804,China,admin
+Zhongxiang,31.168,112.588,China,admin
+Gaomi,36.3833,119.75,China,admin
+Teresina,-5.0903,-42.8167,Brazil,admin
+Lhasa,29.6534,91.1719,China,admin
+Ipoh,4.6,101.065,Malaysia,admin
+Saltillo,25.4231,-100.9919,Mexico,admin
+Gongzhuling,43.5053,124.8224,China,admin
+Lianyuan,27.692,111.664,China,admin
+Tyumen,57.15,65.5333,Russia,admin
+Hermosillo,29.0989,-110.9542,Mexico,admin
+Cheongju,36.6333,127.4833,"Korea, South",admin
+Shache,38.4261,77.25,China,admin
+Thanh Hoa,19.8075,105.7764,Vietnam,admin
+Macheng,31.173,115.008,China,admin
+Kathmandu,27.71,85.32,Nepal,admin
+Turin,45.0792,7.6761,Italy,admin
+Anqiu,36.478,119.219,China,admin
+Yuci,37.6823,112.7281,China,admin
+Dehui,44.535,125.703,China,admin
+Pietermaritzburg,-29.6167,30.3833,South Africa,admin
+Durban,-29.8833,31.05,South Africa,admin
+Saratov,51.53,46.035,Russia,admin
+Bhubaneshwar,20.27,85.84,India,admin
+Yushu,44.826,126.55,China,admin
+Joao Pessoa,-7.12,-34.88,Brazil,admin
+Samarinda,-0.5,117.1378,Indonesia,admin
+Qingping,34.539,113.391,China,admin
+Rongjiawan,29.15,113.1024,China,admin
+Weichanglu,37.1792,119.9333,China,admin
+Sakai,34.5733,135.4831,Japan,admin
+Eskisehir,39.7767,30.5206,Turkey,admin
+Renqiu,38.686,116.084,China,admin
+Wutong,30.6333,120.5333,China,admin
+Wu'an,36.697,114.204,China,admin
+Sao Bernardo do Campo,-23.6939,-46.565,Brazil,admin
+Narela,28.85,77.1,India,admin
+Bhayandar,19.29,72.85,India,admin
+Culiacan,24.8069,-107.3939,Mexico,admin
+Xiashi,30.5333,120.6833,China,admin
+Cucuta,7.8942,-72.5039,Colombia,admin
+Danyang,32,119.586,China,admin
+Dongyang,29.2667,120.2167,China,admin
+Krakow,50.0614,19.9372,Poland,admin
+Pasig City,14.5605,121.0765,Philippines,admin
+Thessaloniki,40.6403,22.9356,Greece,admin
+Palermo,2.8917,-75.4375,Colombia,admin
+Qamdo,31.143,97.17,China,admin
+Karimnagar,18.4386,79.1288,India,admin
+Hejian,38.4466,116.0995,China,admin
+Seyhan,36.9831,35.3328,Turkey,admin
+Laiyang,36.9758,120.7136,China,admin
+Queretaro,20.5875,-100.3928,Mexico,admin
+Wuxi,26.58,111.841,China,admin
+Yiyang,26.4221,112.3999,China,admin
+Niigata,37.9161,139.0364,Japan,admin
+Vinh,18.6667,105.6667,Vietnam,admin
+Puxi,35.2125,114.735,China,admin
+Hamamatsu,34.7108,137.7275,Japan,admin
+Zijinglu,34.7667,112.9667,China,admin
+Kumila,35.25,73.5,Pakistan,admin
+Xingyi,25.092,104.8955,China,admin
+Xingcheng,24.1347,115.73,China,admin
+Ailan Mubage,43.908,81.2777,China,admin
+Frankfurt,50.1106,8.6822,Germany,admin
+San Luis Potosi,22.1511,-100.9761,Mexico,admin
+Bucheon,37.5,126.7833,"Korea, South",admin
+Fuyang,30.0553,119.95,China,admin
+Korla,41.7259,86.1746,China,admin
+Erzurum,39.9086,41.2769,Turkey,admin
+Zagreb,45.8131,15.9772,Croatia,admin
+Al `Ayn,24.2075,55.7447,United Arab Emirates,admin
+Patiala,30.34,76.38,India,admin
+Bahawalpur,29.3956,71.6836,Pakistan,admin
+Qingnian,36.8494,115.7061,China,admin
+Sanhe,40.0167,117.0833,China,admin
+Winnipeg,49.8844,-97.1464,Canada,admin
+Shishgarh,28.72,79.32,India,admin
+Leping,28.978,117.152,China,admin
+Colombo,6.9167,79.8333,Sri Lanka,admin
+Nerima,35.7356,139.6517,Japan,admin
+Natal,-5.795,-35.2089,Brazil,admin
+Lichuan,30.291,108.9364,China,admin
+Pendik,40.8747,29.235,Turkey,admin
+Gdansk,54.3475,18.6453,Poland,admin
+Licheng,31.4306,119.4788,China,admin
+Santo Andre,-23.6533,-46.528,Brazil,admin
+Ota-ku,35.5614,139.7161,Japan,admin
+Thiruvananthapuram,8.5241,76.9366,India,admin
+Zhuanghe,39.681,122.967,China,admin
+Chengguan,35.4623,113.8054,China,admin
+Bagcilar,41.0344,28.8564,Turkey,admin
+Kumamoto,32.8031,130.7078,Japan,admin
+Lingbao Chengguanzhen,34.5176,110.8942,China,admin
+Quebec City,46.8139,-71.2081,Canada,admin
+Taihe,30.871,105.388,China,admin
+Yanggok,37.6333,127.2167,"Korea, South",admin
+Zhongba,31.771,104.755,China,admin
+Sizhan,38.9846,106.3828,China,admin
+Suohe,34.7833,113.35,China,admin
+Xiangxiang,27.7186,112.5502,China,admin
+Hamilton,43.2567,-79.8692,Canada,admin
+Songyang,34.4553,113.0253,China,admin
+Cagayan de Oro,8.48,124.65,Philippines,admin
+Qian'an,39.999,118.701,China,admin
+Shuangqiao,35.067,112.602,China,admin
+Chaohucun,31.6244,117.8902,China,admin
+Zouping,36.863,117.743,China,admin
+Durgapur,23.55,87.32,India,admin
+Cencheng,22.9167,111,China,admin
+Umraniye,41.0311,29.1081,Turkey,admin
+Sorocaba,-23.5019,-47.4578,Brazil,admin
+Guli,28.9,120.0333,China,admin
+Sagamihara,35.5667,139.3667,Japan,admin
+Laixi,36.8667,120.5333,China,admin
+Okayama,34.65,133.9167,Japan,admin
+Concepcion,-36.8282,-73.0514,Chile,admin
+Mississauga,43.6,-79.65,Canada,admin
+Changsha,22.3773,112.6982,China,admin
+Lviv,49.8425,24.0322,Ukraine,admin
+Shihezi,44.3054,86.0804,China,admin
+Valenzuela,14.7,120.98,Philippines,admin
+Xichang,27.8944,102.2644,China,admin
+Guangshui,31.617,113.826,China,admin
+Zaporizhzhia,47.85,35.1175,Ukraine,admin
+Bhiwandi,19.2967,73.0631,India,admin
+Gaoyou,32.845,119.508,China,admin
+Chengxiang,31.564,121.174,China,admin
+Bhilwara,25.35,74.63,India,admin
+Oslo,59.9133,10.7389,Norway,admin
+George Town,5.4136,100.3294,Malaysia,admin
+Zunhua,40.189,117.966,China,admin
+Saharanpur,29.9639,77.5458,India,admin
+Yenimahalle,39.9719,32.8119,Turkey,admin
+Warangal,17.9689,79.5941,India,admin
+Dasmarinas,14.33,120.94,Philippines,admin
+Shiliguri,26.71,88.43,India,admin
+Parachinar,33.9,70.1,Pakistan,admin
+Tongchuan,34.897,108.945,China,admin
+Xindi,29.827,113.476,China,admin
+Edogawa,35.7,139.8833,Japan,admin
+General Santos,6.12,125.17,Philippines,admin
+Salem,11.65,78.15,India,admin
+Sinnuris,29.4072,30.8667,Egypt,admin
+Guadalupe,25.6775,-100.2597,Mexico,admin
+Selcuklu,37.8814,32.4922,Turkey,admin
+City of Paranaque,14.5008,120.9915,Philippines,admin
+Taihecun,45.771,131.003,China,admin
+Mamak,39.9422,32.9231,Turkey,admin
+Jianshe,34.2137,113.7629,China,admin
+Shishi,24.7167,118.7,China,admin
+Shizuoka,34.9756,138.3828,Japan,admin
+Mar del Plata,-38,-57.55,Argentina,admin
+Adachi,35.7833,139.8,Japan,admin
+Pontianak,-0.0206,109.3414,Indonesia,admin
+Xigaze,29.25,88.8833,China,admin
+Tasikmalaya,-7.3161,108.1975,Indonesia,admin
+Kochi,9.9312,76.2673,India,admin
+Soledad,10.9167,-74.75,Colombia,admin
+Shanhu,29.6,120.8167,China,admin
+Gothenburg,57.7075,11.9675,Sweden,admin
+Acapulco de Juarez,16.8636,-99.8825,Mexico,admin
+Gorakhpur,26.7637,83.4039,India,admin
+Wroclaw,51.11,17.0325,Poland,admin
+Pinghu,30.7,121.0167,China,admin
+Guankou,30.988,103.647,China,admin
+Lodz,51.7769,19.4547,Poland,admin
+Yatou,37.1653,122.4867,China,admin
+Denpasar,-8.6717,115.2339,Indonesia,admin
+Guntur,16.3008,80.4428,India,admin
+Tolyatti,53.5089,49.4222,Russia,admin
+Zhaodong,46.051,125.962,China,admin
+Puyang Chengguanzhen,35.7004,114.98,China,admin
+Aracaju,-10.9111,-37.0717,Brazil,admin
+Bacoor,14.4624,120.9645,Philippines,admin
+Rotterdam,51.92,4.48,Netherlands,admin
+Tlaquepaque,20.6167,-103.3167,Mexico,admin
+Villavicencio,4.15,-73.6333,Colombia,admin
+Campo Grande,-20.4686,-54.6222,Brazil,admin
+Jingcheng,32.009,120.263,China,admin
+Makhachkala,42.9825,47.505,Russia,admin
+Banjarmasin,-3.32,114.5925,Indonesia,admin
+Al Hufuf,25.3608,49.5997,Saudi Arabia,admin
+Dali,25.6811,100.3003,China,admin
+Sargodha,32.0836,72.6711,Pakistan,admin
+Karaikandi,24.8309,92.6143,India,admin
+Ch'onan,36.81,127.1475,"Korea, South",admin
+Brampton,43.6833,-79.7667,Canada,admin
+Haldwani,29.22,79.52,India,admin
+Yildirim,40.11,29.0821,Turkey,admin
+Dhulia,20.8997,74.7697,India,admin
+Zhongshu,27.7919,106.4013,China,admin
+Durango,24.025,-104.6675,Mexico,admin
+Songzi,30.174,111.757,China,admin
+Tondo,14.617,120.967,Philippines,admin
+Dayrut,27.5564,30.8106,Egypt,admin
+Tlalnepantla,19.5367,-99.1947,Mexico,admin
+Xiping,25.6005,103.8166,China,admin
+Osasco,-23.5328,-46.7919,Brazil,admin
+Hue,16.4619,107.5955,Vietnam,admin
+San Jose del Monte,14.8139,121.0453,Philippines,admin
+Denizli,37.7833,29.0964,Turkey,admin
+Honcho,35.6946,139.9826,Japan,admin
+Wuxue,29.844,115.561,China,admin
+Bhavnagar,21.76,72.15,India,admin
+Jinghong,22.009,100.797,China,admin
+Wugang,26.7266,110.6319,China,admin
+Petaling Jaya,3.0833,101.65,Malaysia,admin
+Noida,28.57,77.32,India,admin
+Bhangar,22.58,88.42,India,admin
+Chuxiong,25.033,101.5459,China,admin
+Dusseldorf,51.2256,6.7767,Germany,admin
+Palermo,38.1157,13.3613,Italy,admin
+Makati City,14.5567,121.0214,Philippines,admin
+Tukh,30.3549,31.2011,Egypt,admin
+Bazal'tove,50.6765,26.16,Ukraine,admin
+Al Qatif,26.5196,50.0115,Saudi Arabia,admin
+Bhilai,21.21,81.38,India,admin
+Mangalore,12.8717,74.8425,India,admin
+Kaihua,23.387,104.233,China,admin
+Irkutsk,52.2892,104.28,Russia,admin
+Meilan,19.999,110.403,China,admin
+Ansan,37.3167,126.8333,"Korea, South",admin
+Barnaul,53.3486,83.7764,Russia,admin
+Bazhou,39.1333,116.3833,China,admin
+Turpan,42.9512,89.1895,China,admin
+Langzhong,31.558,106.005,China,admin
+Qufu,35.5819,116.9862,China,admin
+Al Mansurah,31.05,31.3833,Egypt,admin
+Tengyue,25.0167,98.4833,China,admin
+Leipzig,51.34,12.375,Germany,admin
+Halwan,29.8493,31.3327,Egypt,admin
+Tan An,10.905,106.6994,Vietnam,admin
+Izhevsk,56.8333,53.1833,Russia,admin
+Jurong,31.946,119.164,China,admin
+Bihta,25.5619,84.87,India,admin
+Yuhuan,28.1277,121.2288,China,admin
+Khabarovsk,48.4833,135.0833,Russia,admin
+Etimesgut,39.9458,32.6694,Turkey,admin
+Changping,40.2248,116.1944,China,admin
+Chimalhuacan,19.4131,-98.9839,Mexico,admin
+Oujda-Angad,34.6867,-1.9114,Morocco,admin
+Ruiming,25.886,116.027,China,admin
+Serang,-6.12,106.1503,Indonesia,admin
+Ulyanovsk,54.3167,48.3667,Russia,admin
+Shenzhou,38.002,115.56,China,admin
+Jambi,-1.59,103.61,Indonesia,admin
+Hasanpur,28.72,78.28,India,admin
+Yukarikaraman,36.9167,30.6833,Turkey,admin
+Kuantan,3.83,103.32,Malaysia,admin
+Gold Coast,-28.0167,153.4,Australia,admin
+Kawaguchi,35.8077,139.7241,Japan,admin
+Dashiqiao,40.6167,122.5167,China,admin
+Las Pinas City,14.45,120.98,Philippines,admin
+Cuttack,20.5236,85.7881,India,admin
+San Miguel de Tucuman,-26.8167,-65.2167,Argentina,admin
+Ar Rayyan,25.25,51.4,Qatar,admin
+Salimpur,26.3,83.9167,India,admin
+Kryvyi Rih,47.91,33.39,Ukraine,admin
+Zhuozhou,39.485,115.974,China,admin
+Tianchang,32.6811,119.0137,China,admin
+Bacolod,10.6765,122.9509,Philippines,admin
+Raurkela,22.2492,84.8828,India,admin
+Tumkur,13.34,77.1,India,admin
+Balikpapan,-1.2768,116.8277,Indonesia,admin
+Sanliurfa,37.1583,38.7917,Turkey,admin
+Dortmund,51.5139,7.4653,Germany,admin
+Xinji,37.943,115.218,China,admin
+Melikgazi,38.7167,35.5,Turkey,admin
+Kagoshima,31.5969,130.5572,Japan,admin
+Wenchang,31.0358,116.9367,China,admin
+Sihui,23.3265,112.7338,China,admin
+Irapuato,20.6667,-101.35,Mexico,admin
+Dublin,53.3497,-6.2603,Ireland,admin
+Al Mahallah al Kubra,30.9667,31.1667,Egypt,admin
+Sialkot City,32.4925,74.5311,Pakistan,admin
+Vladivostok,43.115,131.8853,Russia,admin
+Luocheng,30.99,104.25,China,admin
+Pereira,4.8143,-75.6946,Colombia,admin
+Reynosa,26.0922,-98.2778,Mexico,admin
+Essen,51.4508,7.0131,Germany,admin
+Cimahi,-6.8712,107.5548,Indonesia,admin
+Wenlan,23.3961,103.3649,China,admin
+Itabashi,35.7667,139.6833,Japan,admin
+Shah Alam,3.0667,101.55,Malaysia,admin
+Suginami-ku,35.6994,139.6364,Japan,admin
+Jaboatao dos Guararapes,-8.1128,-35.015,Brazil,admin
+At Ta'if,21.2667,40.4167,Saudi Arabia,admin
+Nha Trang,12.245,109.1917,Vietnam,admin
+Tuxtla,16.7528,-93.1167,Mexico,admin
+Dehra Dun,30.345,78.029,India,admin
+Bremen,53.0758,8.8072,Germany,admin
+Fu'an,27.1,119.6333,China,admin
+Mymensingh,24.7504,90.38,Bangladesh,admin
+Hachioji,35.6664,139.316,Japan,admin
+Iloilo,10.72,122.57,Philippines,admin
+Puente Alto,-33.6167,-70.5667,Chile,admin
+Botou,38.0833,116.5833,China,admin
+Rabat,34.0209,-6.8416,Morocco,admin
+Sincan,39.9594,32.5767,Turkey,admin
+Kottayam,9.5916,76.5222,India,admin
+Kahramanmaras,37.5833,36.9333,Turkey,admin
+Shibin al Qanatir,30.3127,31.3202,Egypt,admin
+Tonala,20.6167,-103.2333,Mexico,admin
+Abu Hummus,31.0931,30.3142,Egypt,admin
+Jin'e,29.3394,105.2875,China,admin
+Macau,22.2006,113.5461,Macau,admin
+Xinxing,39.8667,124.15,China,admin
+Surrey,49.19,-122.8489,Canada,admin
+Yaroslavl,57.6167,39.85,Russia,admin
+Qionghu,28.945,112.598,China,admin
+Dresden,51.05,13.74,Germany,admin
+Xinmin,41.997,122.823,China,admin
+Antwerp,51.2178,4.4003,Belgium,admin
+Kuiju,36.8667,119.4,China,admin
+Asansol,23.68,86.99,India,admin
+Bokaro Steel City,23.67,86.15,India,admin
+Jieshou,33.257,115.3746,China,admin
+Bello,6.3333,-75.5667,Colombia,admin
+Kolhapur,16.6917,74.2333,India,admin
+Wencheng,19.617,110.7551,China,admin
+Miluo Chengguanzhen,28.761,113.16,China,admin
+Lanxi,29.208,119.458,China,admin
+Zhenzhou,32.2723,119.1848,China,admin
+Nava Raipur,21.161,81.787,India,admin
+Gaizhou,40.4,122.35,China,admin
+Leling,37.73,117.232,China,admin
+Genoa,44.4072,8.934,Italy,admin
+Ensenada,31.8578,-116.6058,Mexico,admin
+Surakarta,-7.5667,110.8167,Indonesia,admin
+Ajmer,26.4499,74.6399,India,admin
+Braunschweig,52.2667,10.5167,Germany,admin
+Nanded,19.15,77.3,India,admin
+Wuhai,39.655,106.794,China,admin
+Rustenburg,-25.6667,27.2428,South Africa,admin
+Amravati,20.9258,77.7647,India,admin
+Lisbon,38.7122,-9.134,Portugal,admin
+Yanji,42.9,129.5,China,admin
+The Hague,52.08,4.31,Netherlands,admin
+Hannover,52.3667,9.7167,Germany,admin
+Sevastopol,44.605,33.5225,Ukraine,admin
+Nellore,14.4431,79.9861,India,admin
+Poznan,52.4083,16.9336,Poland,admin
+Ibague,4.4333,-75.2333,Colombia,admin
+Wancheng,18.8,110.4,China,admin
+Tomsk,56.5,84.9667,Russia,admin
+Sungai Petani,5.6497,100.4793,Malaysia,admin
+Xinshi,31.1333,113.1167,China,admin
+Kemerovo,55.3667,86.0667,Russia,admin
+Naberezhnyye Chelny,55.6833,52.3167,Russia,admin
+Valledupar,10.4833,-73.25,Colombia,admin
+Muntinlupa City,14.38,121.05,Philippines,admin
+K'ebri Beyah,9.0833,43.0833,Ethiopia,admin
+Luofeng,37.359,120.396,China,admin
+Ghulja,43.9,81.35,China,admin
+Ixtapaluca,19.3186,-98.8822,Mexico,admin
+Fuding,27.2,120.2,China,admin
+Heroica Matamoros,25.8797,-97.5042,Mexico,admin
+Lingyuan,41.25,119.4,China,admin
+Juiz de Fora,-21.7642,-43.3503,Brazil,admin
+Guixi,28.2925,117.2454,China,admin
+City of Calamba,14.22,121.17,Philippines,admin
+Sao Jose dos Campos,-23.1789,-45.8869,Brazil,admin
+Contagem,-19.9319,-44.0539,Brazil,admin
+Agadir,30.4214,-9.5831,Morocco,admin
+Orenburg,51.7833,55.1,Russia,admin
+Nilufer,40.2833,28.95,Turkey,admin
+Aksu,41.185,80.2904,China,admin
+Salta,-24.7833,-65.4167,Argentina,admin
+Dispur,26.1397,91.7925,India,admin
+Gulbarga,17.329,76.825,India,admin
+Kimhae,35.2342,128.8811,"Korea, South",admin
+Novokuznetsk,53.7667,87.1333,Russia,admin
+Balashikha,55.8167,37.9667,Russia,admin
+Bikaner,28.0167,73.3119,India,admin
+Gaobeidian,39.327,115.874,China,admin
+Himeji,34.8167,134.6833,Japan,admin
+Nuremberg,49.4539,11.0775,Germany,admin
+Van,38.4942,43.38,Turkey,admin
+Port Said,31.2625,32.3061,Egypt,admin
+Koto-ku,35.6667,139.8167,Japan,admin
+Ciudad Apodaca,25.7817,-100.1886,Mexico,admin
+Kitchener,43.4186,-80.4728,Canada,admin
+Agartala,23.8314,91.2869,India,admin
+Soacha,4.5872,-74.2214,Colombia,admin
+Buca,38.35,27.1667,Turkey,admin
+Maipu,-33.5167,-70.7667,Chile,admin
+Lyon,45.76,4.84,France,admin
+Tultitlan de Mariano Escobedo,19.645,-99.1694,Mexico,admin
+Ryazan,54.63,39.7425,Russia,admin
+Meknes,33.895,-5.5547,Morocco,admin
+Luanzhou,39.741,118.704,China,admin
+Al Fayyum,29.3,30.8333,Egypt,admin
+Utsunomiya,36.555,139.8825,Japan,admin
+Chanda,19.95,79.297,India,admin
+Suez,29.9667,32.5333,Egypt,admin
+Heshan,22.7667,112.95,China,admin
+Loni,28.75,77.28,India,admin
+Jiaji,19.2431,110.4642,China,admin
+Qaraghandy,49.8028,73.1056,Kazakhstan,admin
+Santa Marta,11.2419,-74.2053,Colombia,admin
+Ujjain,23.17,75.79,India,admin
+Abu Tisht,26.1204,32.0954,Egypt,admin
+Macapa,0.033,-51.05,Brazil,admin
+Al Fashn,28.8231,30.899,Egypt,admin
+Toulouse,43.6045,1.444,France,admin
+Campos,-21.7523,-41.3304,Brazil,admin
+Meihekou,42.5407,125.7107,China,admin
+Kenitra,34.25,-6.5833,Morocco,admin
+Newcastle,-27.7464,29.9328,South Africa,admin
+Jhansi,25.4486,78.5696,India,admin
+Matsuyama,33.8333,132.7667,Japan,admin
+Ulhasnagar,19.22,73.15,India,admin
+Ribeirao Preto,-21.1776,-47.8101,Brazil,admin
+Pohang,36.0322,129.365,"Korea, South",admin
+Duisburg,51.4347,6.7625,Germany,admin
+Jammu,32.73,74.87,India,admin
+Mazatlan,23.2167,-106.4167,Mexico,admin
+Uberlandia,-18.9189,-48.2769,Brazil,admin
+Nenjiang,49.11,125.13,China,admin
+Tuticorin,8.8056,78.145,India,admin
+Sukkur,27.7061,68.8483,Pakistan,admin
+K'ebri Dehar,6.7333,44.2667,Ethiopia,admin
+Taozhou,30.8956,119.411,China,admin
+Anlu,31.2667,113.6667,China,admin
+Lapu-Lapu City,10.3127,123.9488,Philippines,admin
+Matsudo,35.7876,139.9032,Japan,admin
+Johor Bahru,1.482,103.7281,Malaysia,admin
+Purnea,25.778,87.476,India,admin
+Imus,14.4297,120.9367,Philippines,admin
+Niteroi,-22.8833,-43.1036,Brazil,admin
+Lipetsk,52.6167,39.6,Russia,admin
+Cheboksary,56.15,47.2333,Russia,admin
+Xiangyang,34.2995,108.4905,China,admin
+Jiangshan,28.7361,118.625,China,admin
+Duyun,26.2594,107.5186,China,admin
+Pindi Bhattian,31.8958,73.2761,Pakistan,admin
+Ichikawa,35.7219,139.9311,Japan,admin
+Kumul,42.8193,93.5151,China,admin
+Accra,5.5461,-0.2067,Ghana,admin
+Kota Bharu,6.12,102.23,Malaysia,admin
+Higashi-osaka,34.6794,135.6008,Japan,admin
+Larkana,27.5583,68.2111,Pakistan,admin
+Xingcheng,40.6167,120.7333,China,admin
+`Ajman,25.4136,55.4456,United Arab Emirates,admin
+Ciudad Lopez Mateos,19.55,-99.2833,Mexico,admin
+Kaliningrad,54.7003,20.4531,Russia,admin
+Yueqing,28.12,120.96,China,admin
+Penza,53.2,45,Russia,admin
+Belgaum,15.85,74.5,India,admin
+Yucheng,36.934,116.638,China,admin
+Nishinomiya-hama,34.7376,135.3416,Japan,admin
+Karamay,45.5799,84.8892,China,admin
+Kawachicho,34.6794,135.6008,Japan,admin
+Zhangshu,28.0546,115.5462,China,admin
+Mingguang,32.7833,117.9667,China,admin
+Malatya,38.3486,38.3194,Turkey,admin
+Vellore,12.9165,79.1325,India,admin
+Huanghua,38.372,117.33,China,admin
+Encheng,22.1833,112.3,China,admin
+Lianran,24.919,102.478,China,admin
+Kartal,40.8872,29.19,Turkey,admin
+Cuiaba,-15.5958,-56.0969,Brazil,admin
+Akhmim,26.5667,31.75,Egypt,admin
+Malegaon,20.55,74.55,India,admin
+Feira de Santana,-12.2669,-38.9669,Brazil,admin
+Hailun,47.4667,126.9667,China,admin
+Jamnagar,22.47,70.07,India,admin
+Sylhet,24.9,91.8667,Bangladesh,admin
+Ananindeua,-1.3658,-48.3719,Brazil,admin
+Chiniot,31.7194,72.9842,Pakistan,admin
+Chengjiao,35.3984,114.0649,China,admin
+Bardoli,21.12,73.12,India,admin
+Bratislava,48.1447,17.1128,Slovakia,admin
+Kurashiki,34.585,133.7722,Japan,admin
+Oita,33.2333,131.6067,Japan,admin
+Al Jubayl,27.0046,49.646,Saudi Arabia,admin
+Gaya,24.75,85.01,India,admin
+Xiulin,29.7209,112.4254,China,admin
+Shekhupura,31.7111,73.9878,Pakistan,admin
+Vila Velha,-20.3364,-40.2936,Brazil,admin
+Kirov,58.6,49.6833,Russia,admin
+San Juan,-31.5342,-68.5261,Argentina,admin
+Mykolaiv,46.975,31.995,Ukraine,admin
+Yicheng,31.721,112.257,China,admin
+Fengcheng,40.45,124.0667,China,admin
+Xiaoyi,36.0833,111.5167,China,admin
+Katlehong,-26.3333,28.15,South Africa,admin
+Jiangshandicun,28.7412,118.6225,China,admin
+Qingzhen,26.5704,106.4687,China,admin
+Buraydah,26.3664,43.9628,Saudi Arabia,admin
+Kupang,-10.1702,123.6077,Indonesia,admin
+Tula,54.2,37.6167,Russia,admin
+Ambattur,13.1143,80.1548,India,admin
+Nakhon Ratchasima,14.9806,102.1,Thailand,admin
+Tan Uyen,11.0508,106.7636,Vietnam,admin
+Astrakhan,46.35,48.035,Russia,admin
+Longjiang,27.5819,120.5489,China,admin
+Rushan,36.87,121.505,China,admin
+Shangzhi,45.207,127.965,China,admin
+Angeles City,15.1472,120.5847,Philippines,admin
+Kuqa,41.7156,82.9322,China,admin
+Kanazawa,36.5611,136.6564,Japan,admin
+Manado Light,1.4858,124.8347,Indonesia,admin
+Manado,1.4931,124.8413,Indonesia,admin
+Kaiyuan,42.546,124.038,China,admin
+Cranbourne,-38.0996,145.2834,Australia,admin
+Jalgaon,21.004,75.568,India,admin
+Chhatarpur,24.55,79.3527,India,admin
+Fukuyama,34.4858,133.3622,Japan,admin
+Lanus,-34.7,-58.4,Argentina,admin
+Pyeongtaek,36.9922,127.1128,"Korea, South",admin
+Kurnool,15.83,78.05,India,admin
+Marikina City,14.65,121.1,Philippines,admin
+Kagithane,41.0719,28.9664,Turkey,admin
+Amagasaki,34.7333,135.4,Japan,admin
+Melaka,2.2064,102.2465,Malaysia,admin
+Ciudad General Escobedo,25.7933,-100.1583,Mexico,admin
+Manizales,5.0675,-75.51,Colombia,admin
+Bornova,38.4697,27.2211,Turkey,admin
+Hsinchu,24.8167,120.9833,Taiwan,admin
+Gaoping,35.798,112.924,China,admin
+Batman,37.887,41.132,Turkey,admin
+Demiryol,37.887,41.132,Turkey,admin
+Erkoklu,37.887,41.132,Turkey,admin
+Avcilar,40.9792,28.7214,Turkey,admin
+Kota Kinabalu,5.98,116.11,Malaysia,admin
+Katsushika-ku,35.7333,139.85,Japan,admin
+Udaipur,24.58,73.68,India,admin
+Mogi das Cruzes,-23.5228,-46.1931,Brazil,admin
+Stavropol,45.05,41.9833,Russia,admin
+General Trias,14.38,120.88,Philippines,admin
+Warder,6.9667,45.35,Ethiopia,admin
+Sirajganj,24.45,89.7167,Bangladesh,admin
+Wapi,20.372,72.917,India,admin
+Bac Giang,21.2667,106.2,Vietnam,admin
+Zurich,47.3744,8.5411,Switzerland,admin
+Nam Dinh,20.42,106.1683,Vietnam,admin
+Rajshahi,24.3667,88.6,Bangladesh,admin
+Piraeus,37.943,23.6469,Greece,admin
+Zebediela,-24.31,29.27,South Africa,admin
+Shah Latif Town,24.8806,67.1625,Pakistan,admin
+Tanbei,35.088,112.951,China,admin
+Londrina,-23.31,-51.1628,Brazil,admin
+Esenler,41.0339,28.8903,Turkey,admin
+Sochi,43.5853,39.7203,Russia,admin
+Rodriguez,14.72,121.12,Philippines,admin
+Chauddagram,23.2244,91.3731,Bangladesh,admin
+San Nicolas de los Garza,25.75,-100.2833,Mexico,admin
+Taoyuan District,24.9913,121.3143,Taiwan,admin
+Baisha,29.4896,119.337,China,admin
+Mathura,27.4925,77.6736,India,admin
+Meicheng,30.631,116.581,China,admin
+Lembok,-8.565,116.351,Indonesia,admin
+Pasay City,14.5439,120.995,Philippines,admin
+Beipiao,41.801,120.771,China,admin
+Jiannan,31.3333,104.2,China,admin
+Halifax,44.6475,-63.5906,Canada,admin
+Fujisawa,35.35,139.4667,Japan,admin
+Ulan-Ude,51.8333,107.6,Russia,admin
+Laval,45.5833,-73.75,Canada,admin
+Jinchang,38.5214,102.188,China,admin
+Nehe,48.4833,124.8833,China,admin
+Kursk,51.7167,36.1833,Russia,admin
+Sangli,16.853,74.583,India,admin
+Jeju,33.513,126.523,"Korea, South",admin
+Zhuangyuan,37.3056,120.829,China,admin
+Davangere,14.4666,75.9242,India,admin
+Jian'ou,27.0333,118.3167,China,admin
+Machida,35.5542,139.4431,Japan,admin
+Sanghar,26.0442,68.9536,Pakistan,admin
+Chang'an,29.4768,113.4504,China,admin
+Al Maraghah,26.6998,31.6046,Egypt,admin
+Bandung,-6.912,107.6097,Indonesia,admin
+Shahe,36.8549,114.5033,China,admin
+Calicut,11.2588,75.7804,India,admin
+Joinvile,-26.3039,-48.8458,Brazil,admin
+Ismailia,30.5833,32.2667,Egypt,admin
+Veracruz,19.1903,-96.1533,Mexico,admin
+Kashiwa,35.8676,139.9758,Japan,admin
+Al Bajur,30.4305,31.0368,Egypt,admin
+Yan'an Beilu,44.0144,87.2674,China,admin
+Mothihari,26.65,84.9167,India,admin
+Aomori,40.8228,140.7469,Japan,admin
+Tepic,21.5083,-104.8931,Mexico,admin
+Akola,20.7,77,India,admin
+Mandaluyong City,14.58,121.03,Philippines,admin
+Aves,41.3703,-8.4101,Portugal,admin
+Sihung,37.3799,126.8029,"Korea, South",admin
+Tver,56.8625,35.9242,Russia,admin
+Xalapa,19.54,-96.9275,Mexico,admin
+Buenaventura,3.8772,-77.0267,Colombia,admin
+London,42.9836,-81.2497,Canada,admin
+Piracicaba,-22.7252,-47.6493,Brazil,admin
+Tetouan,35.5667,-5.3667,Morocco,admin
+Yogyakarta,-7.8014,110.3644,Indonesia,admin
+Beining,41.6,121.8,China,admin
+Toyota,35.0824,137.1563,Japan,admin
+Uijeongbu,37.7486,127.0389,"Korea, South",admin
+Laohekou,32.359,111.684,China,admin
+Rahimyar Khan,28.42,70.3,Pakistan,admin
+Thai Nguyen,21.6,105.85,Vietnam,admin
+Seremban,2.7105,101.94,Malaysia,admin
+Kayapinar,37.95,40.1667,Turkey,admin
+Campina Grande,-7.2306,-35.8811,Brazil,admin
+Xicheng,23.3667,103.15,China,admin
+Santos,-23.9608,-46.3339,Brazil,admin
+Kushtia,23.9,89.12,Bangladesh,admin
+Maua,-23.6678,-46.4608,Brazil,admin
+Xingren,25.435,105.1862,China,admin
+Takamatsu,34.35,134.05,Japan,admin
+Awsim,30.1222,31.1333,Egypt,admin
+Shinagawa-ku,35.6,139.7333,Japan,admin
+Paju,37.8667,126.8,"Korea, South",admin
+Beylikduzu,41.0011,28.6419,Turkey,admin
+Viet Tri,21.3,105.4333,Vietnam,admin
+Santa Rosa,14.32,121.12,Philippines,admin
+Nagqu,31.476,92.051,China,admin
+Bettiah,26.8014,84.5028,India,admin
+Jhang City,31.2694,72.3161,Pakistan,admin
+Fujin,47.25,132.0333,China,admin
+Altindag,39.9636,32.9033,Turkey,admin
+Yuanping,38.731,112.711,China,admin
+Tala,30.6798,30.9436,Egypt,admin
+Talkha,31.0592,31.3767,Egypt,admin
+Boa Vista,2.82,-60.6719,Brazil,admin
+Jayapura,-2.533,140.717,Indonesia,admin
+Toyama,36.6959,137.2137,Japan,admin
+Khon Kaen,16.4333,102.8333,Thailand,admin
+Linghai,41.1667,121.35,China,admin
+Shorapur,16.52,76.76,India,admin
+Tinnevelly,8.7136,77.7567,India,admin
+Pasto,1.2078,-77.2772,Colombia,admin
+Bellary,15.1,76.9167,India,admin
+Bhagalpur,25.25,87,India,admin
+Danjiangkou,32.5401,111.5131,China,admin
+Zhangjiakou Shi Xuanhua Qu,40.5944,115.0243,China,admin
+Maringa,-23.425,-51.9389,Brazil,admin
+Manampizha,9.2972,76.65,India,admin
+Kocasinan,38.7333,35.4833,Turkey,admin
+Mataram,-8.5833,116.1167,Indonesia,admin
+Magnitogorsk,53.3833,59.0333,Russia,admin
+Zhijiang,30.426,111.761,China,admin
+Fenyang,37.2616,111.7699,China,admin
+Binan,14.33,121.08,Philippines,admin
+Gebze,40.8,29.4333,Turkey,admin
+Shashemene,7.2,38.6,Ethiopia,admin
+Fangting,31.127,104.167,China,admin
+Shulan,44.4059,126.9655,China,admin
+Wanyuan,31.9833,107.9667,China,admin
+Jiexiu,37.027,111.917,China,admin
+Hat Yai,7.0167,100.4667,Thailand,admin
+Baglar,37.9167,40.1833,Turkey,admin
+Santa Fe,-31.6333,-60.7,Argentina,admin
+Delhi Cantonment,28.6,77.1333,India,admin
+Barura,23.3683,91.0484,Bangladesh,admin
+Kumi,36.1195,128.3444,"Korea, South",admin
+Nagasaki,32.7447,129.8736,Japan,admin
+Pencheng,29.676,115.681,China,admin
+Salt Lake City,22.61,88.4,India,admin
+Etawa,24.18,78.2,India,admin
+Sonipat,28.99,77.022,India,admin
+Jundiai,-23.1864,-46.8842,Brazil,admin
+Bogra,24.851,89.3711,Bangladesh,admin
+Brno,49.1925,16.6083,Czechia,admin
+Oskemen,49.9833,82.6167,Kazakhstan,admin
+Gifu,35.4232,136.7608,Japan,admin
+Monteria,8.75,-75.8833,Colombia,admin
+Yuregir,36.9928,35.3764,Turkey,admin
+Pingquan,41.0184,118.702,China,admin
+Toyonaka,34.7833,135.4667,Japan,admin
+Dera Ghazi Khan,30.0331,70.64,Pakistan,admin
+Hatay,36.2025,36.1606,Turkey,admin
+Luhansk,48.5678,39.3031,Ukraine,admin
+Miyazaki,31.9078,131.4203,Japan,admin
+Dangyang,30.821,111.789,China,admin
+Quilon,8.8932,76.6141,India,admin
+Mulangodi,9,76.6167,India,admin
+Munro Turuttu,9,76.6167,India,admin
+Gwangju,37.3667,127.2833,"Korea, South",admin
+Nangong,37.359,115.409,China,admin
+Hirakata,34.8167,135.65,Japan,admin
+Sandakan,5.843,118.108,Malaysia,admin
+Szczecin,53.4325,14.5481,Poland,admin
+Surgut,61.25,73.4333,Russia,admin
+Yongji,34.867,110.448,China,admin
+Karur,10.9601,78.0766,India,admin
+Diadema,-23.6858,-46.6228,Brazil,admin
+Jalna,19.841,75.8864,India,admin
+Zhugang,28.1358,121.2264,China,admin
+Hejin,35.596,110.712,China,admin
+Dunhua,43.3667,128.2333,China,admin
+Tangail,24.25,89.92,Bangladesh,admin
+Khayelitsha,-34.0403,18.6778,South Africa,admin
+Gujrat,32.5739,74.0789,Pakistan,admin
+Huili Chengguanzhen,26.6333,102.25,China,admin
+Yokosuka,35,16,Japan,admin
+Asyut,27.1869,31.1714,Egypt,admin
+Sampaloc,14.6031,121.0022,Philippines,admin
+Bologna,44.4939,11.3428,Italy,admin
+Aqtobe,50.2836,57.2297,Kazakhstan,admin
+Cilegon,-6.0027,106.0112,Indonesia,admin
+Hafr al Batin,28.4337,45.9601,Saudi Arabia,admin
+Elazig,38.6744,39.2228,Turkey,admin
+Bairia,25.7583,84.1489,India,admin
+Taytay,14.5692,121.1325,Philippines,admin
+Bhatpara,22.87,88.41,India,admin
+Sintra,38.7974,-9.3904,Portugal,admin
+Manisa,38.6144,27.4292,Turkey,admin
+Sirur,18.83,74.38,India,admin
+Tarlac City,15.4869,120.59,Philippines,admin
+Okazaki,34.9543,137.1744,Japan,admin
+Lingxi,27.5036,120.3975,China,admin
+Kakinada,16.9661,82.255,India,admin
+Savar,23.8482,90.2577,Bangladesh,admin
+Nuevo Laredo,27.4861,-99.5069,Mexico,admin
+Lecheng,25.1333,113.3333,China,admin
+Christchurch,-43.5311,172.6361,New Zealand,admin
+Hancheng,35.4667,110.4333,China,admin
+Zetang,29.238,91.771,China,admin
+Canberra,-35.2931,149.1269,Australia,admin
+Minamisuita,34.7594,135.5169,Japan,admin
+Malabon,14.66,120.96,Philippines,admin
+Neiva,2.9345,-75.2809,Colombia,admin
+Ha Tinh,18.3333,105.9,Vietnam,admin
+Celaya,20.5222,-100.8122,Mexico,admin
+Ichinomiya,35.3039,136.8031,Japan,admin
+Panihati,22.69,88.37,India,admin
+Lianzhou,24.781,112.377,China,admin
+Cainta,14.57,121.12,Philippines,admin
+Helixi,30.6267,118.9861,China,admin
+Madinat as Sadis min Uktubar,29.9361,30.9269,Egypt,admin
+Itaquaquecetuba,-23.4864,-46.3486,Brazil,admin
+Cantonment,31.5167,74.3833,Pakistan,admin
+Rohtak,28.8909,76.5796,India,admin
+Maler Kotla,30.5167,75.8833,India,admin
+Bhawana,31.5661,72.6461,Pakistan,admin
+Bryansk,53.2425,34.3667,Russia,admin
+Lipa City,13.9411,121.1622,Philippines,admin
+Butuan,8.948,125.543,Philippines,admin
+Dikirnis,31.089,31.5948,Egypt,admin
+Takasaki,36.3219,139.0033,Japan,admin
+Ambon,-3.6967,128.1783,Indonesia,admin
+Malakwal,32.5531,73.2067,Pakistan,admin
+Toyohashi,34.7692,137.3915,Japan,admin
+Panshi,42.95,126.0667,China,admin
+Bharatpur,27.6833,84.4333,Nepal,admin
+Mardan,34.2012,72.0258,Pakistan,admin
+Nagano,36.6486,138.1947,Japan,admin
+Bauru,-22.3147,-49.0606,Brazil,admin
+La Florida,-33.5333,-70.5833,Chile,admin
+Nicolas Romero,19.5833,-99.3667,Mexico,admin
+Jinshan,25.1475,101.9764,China,admin
+Bochum,51.4819,7.2158,Germany,admin
+Baguio City,16.4119,120.5933,Philippines,admin
+Cibinong,-6.485,106.842,Indonesia,admin
+Sivas,39.75,37.0167,Turkey,admin
+Kolga,22.35,82.68,India,admin
+Korba,22.3458,82.6963,India,admin
+Rio Branco,-9.9781,-67.8117,Brazil,admin
+Tecamac,19.7131,-98.9683,Mexico,admin
+Alanya,36.55,32,Turkey,admin
+Mandaue City,10.33,123.93,Philippines,admin
+Kocaeli,40.7625,29.9175,Turkey,admin
+Victoria,48.4283,-123.3647,Canada,admin
+Iligan,8.23,124.25,Philippines,admin
+Anguo,38.418,115.327,China,admin
+Keelung,25.1333,121.7333,Taiwan,admin
+Ivanovo,56.9967,40.9819,Russia,admin
+Cuenca,-2.8974,-79.0045,Ecuador,admin
+Blumenau,-26.9189,-49.0658,Brazil,admin
+Nanqiao,30.9167,121.4547,China,admin
+Florence,43.7714,11.2542,Italy,admin
+Bengkulu,-3.7956,102.2592,Indonesia,admin
+Caxias do Sul,-29.1678,-51.1789,Brazil,admin
+Malmo,55.5833,13.0333,Sweden,admin
+Shuanghe,30.3746,106.7903,China,admin
+Dengtacun,41.4333,123.3333,China,admin
+Utrecht,52.0908,5.1217,Netherlands,admin
+Palu,-0.895,119.8594,Indonesia,admin
+Sikar,27.62,75.15,India,admin
+Wuppertal,51.2667,7.1833,Germany,admin
+Palmira,3.5833,-76.25,Colombia,admin
+Sao Jose do Rio Preto,-20.82,-49.3789,Brazil,admin
+Ash Shuhada',30.5968,30.8993,Egypt,admin
+Sasaram,24.95,84.03,India,admin
+Sultanbeyli,40.9683,29.2617,Turkey,admin
+Xunyang,32.8341,109.3653,China,admin
+Taraz,42.9,71.3667,Kazakhstan,admin
+Anda,46.424,125.352,China,admin
+Karnal,29.686,76.989,India,admin
+Vinnytsia,49.2333,28.4833,Ukraine,admin
+Minatitlan,17.9833,-94.55,Mexico,admin
+Linxia Chengguanzhen,35.6047,103.2422,China,admin
+Brahmapur,19.315,84.7941,India,admin
+Caucaia,-3.7328,-38.6558,Brazil,admin
+Cabuyao,14.275,121.125,Philippines,admin
+San Fernando,15.03,120.68,Philippines,admin
+Kawagoe,35.9251,139.4858,Japan,admin
+Pokhara,28.2097,83.9853,Nepal,admin
+Nice,43.7034,7.2663,France,admin
+Villahermosa,17.9892,-92.9281,Mexico,admin
+Wakayama,34.2333,135.1667,Japan,admin
+Kita-ku,35.75,139.7333,Japan,admin
+Gimpo,37.7,126.6,"Korea, South",admin
+Corrientes,-27.4833,-58.8167,Argentina,admin
+Thari Mir Wah,27.0683,68.6023,Pakistan,admin
+Nara,34.6844,135.805,Japan,admin
+Vladimir,56.1286,40.4058,Russia,admin
+Arkhangelsk,64.5431,40.5375,Russia,admin
+Batangas,13.83,121,Philippines,admin
+Ahmadnagar,19.08,74.73,India,admin
+Varna,43.2114,27.9111,Bulgaria,admin
+Tarsus,36.9165,34.8951,Turkey,admin
+Sariyer,41.1669,29.0572,Turkey,admin
+Semey,50.4333,80.2667,Kazakhstan,admin
+Tungi,23.8915,90.4023,Bangladesh,admin
+Gode,5.9527,43.5516,Ethiopia,admin
+An Nhon,13.917,109.083,Vietnam,admin
+Olinda,-8.0089,-34.855,Brazil,admin
+Praia Grande,-24.0058,-46.4028,Brazil,admin
+Shinjuku,35.7014,139.7097,Japan,admin
+Antofagasta,-23.65,-70.4,Chile,admin
+Meram,37.8364,32.4383,Turkey,admin
+Cascavel,-24.9558,-53.4553,Brazil,admin
+Pamukkale,37.9167,29.1167,Turkey,admin
+Canoas,-29.92,-51.18,Brazil,admin
+Takatsuki,34.8461,135.6175,Japan,admin
+Yidu,30.378,111.45,China,admin
+Plovdiv,42.1434,24.751,Bulgaria,admin
+Central Coast,-33.3,151.2,Australia,admin
+Karsiyaka,38.4594,27.1153,Turkey,admin
+Shahjanpur,27.88,79.91,India,admin
+Avadi,13.1147,80.1098,India,admin
+Khanapur,15.6394,74.5083,India,admin
+Cuddapah,14.47,78.82,India,admin
+Nakano,35.7074,139.6638,Japan,admin
+Yong'an,25.942,117.365,China,admin
+Alamadi,13.1097,80.0972,India,admin
+Carapicuiba,-23.5228,-46.8358,Brazil,admin
+Otsu,35.0167,135.85,Japan,admin
+Pavlodar,52.3,76.95,Kazakhstan,admin
+Chon Buri,13.3611,100.985,Thailand,admin
+Naga City,13.6244,123.1864,Philippines,admin
+Florianopolis,-27.5933,-48.553,Brazil,admin
+Paulista,-7.9408,-34.8728,Brazil,admin
+Rajahmundry,16.98,81.78,India,admin
+Koshigaya,35.8911,139.7909,Japan,admin
+Hongjiang,27.191,109.819,China,admin
+Yesilyurt,38.2961,38.2489,Turkey,admin
+Vung Tau,10.3833,107.1167,Vietnam,admin
+Jeonju,35.8167,127.15,"Korea, South",admin
+Alwar,27.5498,76.6355,India,admin
+Huadian,42.972,126.746,China,admin
+Tokorozawa,35.7996,139.4686,Japan,admin
+Sumqayit,40.5961,49.67,Azerbaijan,admin
+Vitoria da Conquista,-14.8661,-40.8394,Brazil,admin
+Buon Ma Thuot,12.6667,108.05,Vietnam,admin
+Mishan,45.5298,131.8466,China,admin
+Makiivka,48.0556,37.9611,Ukraine,admin
+Cuernavaca,18.9186,-99.2342,Mexico,admin
+Markham,43.8767,-79.2633,Canada,admin
+Bielefeld,52.0211,8.5347,Germany,admin
+Bydgoszcz,53.1219,18.0003,Poland,admin
+Chinju,35.2,128.0833,"Korea, South",admin
+Randburg,-26.0936,28.0064,South Africa,admin
+Iwaki,37.0505,140.8877,Japan,admin
+Oshawa,43.9,-78.85,Canada,admin
+Bonn,50.7353,7.1022,Germany,admin
+Sambalpur,21.47,83.97,India,admin
+Santo Domingo de los Colorados,-0.2542,-79.1719,Ecuador,admin
+Uruapan,19.4208,-102.0628,Mexico,admin
+Lublin,51.25,22.5667,Poland,admin
+Porto Velho,-8.7619,-63.9039,Brazil,admin
+Licheng,24.5,110.4,China,admin
+Huichang,34.9073,112.7914,China,admin
+Tampere,61.4981,23.76,Finland,admin
+Muzaffarpur,26.1225,85.3906,India,admin
+Chita,52.05,113.4667,Russia,admin
+Vina del Mar,-33.0244,-71.5517,Chile,admin
+Khipro,25.823,69.377,Pakistan,admin
+Asan,36.7836,127.0042,"Korea, South",admin
+Chak Jhumra,31.5667,73.1833,Pakistan,admin
+Simferopol,44.9519,34.1022,Ukraine,admin
+Konak,38.4189,27.1285,Turkey,admin
+Soledad de Graciano Sanchez,22.1833,-100.9333,Mexico,admin
+Santarem,-2.4431,-54.7083,Brazil,admin
+Yanbu`,24.0523,38.1503,Saudi Arabia,admin
+Maebashi,36.3895,139.0634,Japan,admin
+Kaluga,54.55,36.2833,Russia,admin
+Ganca,40.6828,46.3606,Azerbaijan,admin
+Asahikawa,43.7667,142.3667,Japan,admin
+Kendari,-3.9907,122.5086,Indonesia,admin
+Wonju,37.3417,127.9208,"Korea, South",admin
+Birkat as Sab`,30.6291,31.0824,Egypt,admin
+Nizhniy Tagil,57.9167,59.9667,Russia,admin
+Finglas,53.3892,-6.2969,Ireland,admin
+Kamarhati,22.6686,88.3704,India,admin
+Nicosia,35.1725,33.365,Cyprus,admin
+Lengshuijiang,27.686,111.436,China,admin
+Ribeirao das Neves,-19.7669,-44.0869,Brazil,admin
+Ciudad Obregon,27.4939,-109.9389,Mexico,admin
+Campiernagar,27.029,83.2668,India,admin
+Phatthaya,12.9357,100.889,Thailand,admin
+Minzhu,43.7238,127.3448,China,admin
+Belgorod,50.6,36.6,Russia,admin
+Gomez Palacio,25.5611,-103.4983,Mexico,admin
+Bijapur,16.83,75.71,India,admin
+Cabanatuan City,15.4908,120.9678,Philippines,admin
+Si Racha,13.174,100.93,Thailand,admin
+Salamanca,20.5703,-101.1972,Mexico,admin
+Ratnagiri,16.9944,73.3,India,admin
+Ulanhot,46.0722,122.0933,China,admin
+Koriyama,37.4004,140.3597,Japan,admin
+Yunzhong,39.8279,113.1,China,admin
+Arnavutkoy,41.1856,28.7406,Turkey,admin
+Kucukcekmece,41,28.8,Turkey,admin
+Roodepoort,-26.1625,27.8725,South Africa,admin
+San Pedro,14.3583,121.0583,Philippines,admin
+Kochi,33.5589,133.5314,Japan,admin
+Jagdalpur,19.18,81.92,India,admin
+Rampur,28.8,79,India,admin
+Kuching,1.53,110.33,Malaysia,admin
+Cotabato,7.22,124.25,Philippines,admin
+Nantes,47.2181,-1.5528,France,admin
+Cariacica,-20.2639,-40.42,Brazil,admin
+Nazret,8.5414,39.2689,Ethiopia,admin
+Safi,32.2833,-9.2333,Morocco,admin
+Kluang,2.0383,103.3179,Malaysia,admin
+Mekele,13.4969,39.4769,Ethiopia,admin
+Pelotas,-31.7719,-52.3428,Brazil,admin
+Vaughan,43.8333,-79.5,Canada,admin
+Kaiyuan,23.7111,103.2461,China,admin
+Tangdong,25.973,113.231,China,admin
+Munster,51.9625,7.6256,Germany,admin
+Vitoria,-20.3106,-40.2972,Brazil,admin
+Shimoga,13.9333,75.5667,India,admin
+Hotan,37.1167,79.9167,China,admin
+Ning'an,44.341,129.483,China,admin
+Taourirt,34.4169,-2.885,Morocco,admin
+San Salvador de Jujuy,-24.1833,-65.3,Argentina,admin
+Kashipur,29.22,78.95,India,admin
+Thu Dau Mot,10.9667,106.65,Vietnam,admin
+Serra,-20.1289,-40.3078,Brazil,admin
+Sukabumi,-6.9181,106.9315,Indonesia,admin
+Junagadh,21.5222,70.4579,India,admin
+Guasavito,25.5744,-108.4706,Mexico,admin
+Tehuacan,18.4617,-97.3928,Mexico,admin
+Coatzacoalcos,18.1414,-94.4344,Mexico,admin
+Zalantun,48.027,122.708,China,admin
+Hafizabad,32.0714,73.6878,Pakistan,admin
+Gwangmyeongni,37.476,126.866,"Korea, South",admin
+Taubate,-23.0333,-45.55,Brazil,admin
+Zhengjiatun,43.5183,123.5027,China,admin
+Fontibon,4.6786,-74.1411,Colombia,admin
+Hapur,28.7309,77.7757,India,admin
+Mannheim,49.4878,8.4661,Germany,admin
+Barueri,-23.5111,-46.8764,Brazil,admin
+Naha,26.2122,127.6792,Japan,admin
+Bari,41.1253,16.8667,Italy,admin
+Pattikad,10.5276,76.2144,India,admin
+Xiaoli,22.6721,113.2509,China,admin
+Trichur,10.5276,76.2144,India,admin
+Yingzhong,32.237,119.815,China,admin
+Volzhskiy,48.8056,44.7417,Russia,admin
+Balikesir,39.6333,27.8833,Turkey,admin
+Espoo,60.2056,24.6556,Finland,admin
+Muar,2.0337,102.5666,Malaysia,admin
+Kasur,31.1167,74.45,Pakistan,admin
+Usme,4.4464,-74.1522,Colombia,admin
+Barddhaman,23.2333,87.8667,India,admin
+Binangonan,14.4514,121.1919,Philippines,admin
+Podolsk,55.4311,37.5456,Russia,admin
+Smolensk,54.7828,32.0453,Russia,admin
+Jiayuguan,39.7732,98.2882,China,admin
+Pasir Gudang,1.462,103.9053,Malaysia,admin
+Vologda,59.2167,39.9,Russia,admin
+Tanza,14.3944,120.8531,Philippines,admin
+Yakutsk,62.03,129.73,Russia,admin
+Catania,37.5027,15.0873,Italy,admin
+Panvel,18.9944,73.1139,India,admin
+Guaruja,-23.9936,-46.2564,Brazil,admin
+Nizamabad,18.672,78.094,India,admin
+Quy Nhon,13.7667,109.2333,Vietnam,admin
+Kurgan,55.4667,65.35,Russia,admin
+Saransk,54.1833,45.1833,Russia,admin
+Ha'il,27.5167,41.6833,Saudi Arabia,admin
+Datang,22.9406,113.9436,China,admin
+Longquan,25.9106,114.786,China,admin
+Mitchells Plain,-34.0506,18.6181,South Africa,admin
+Yokkaichi,34.965,136.6244,Japan,admin
+Chalco,19.2647,-98.8975,Mexico,admin
+Tehran,35.6889,51.3897,Iran,primary
+Madrid,40.4169,-3.7033,Spain,admin
+Barcelona,41.3833,2.1833,Spain,admin

@@ -1,0 +1,1714 @@
+city,lat,lng,country,admin,timezone,create_dashboard
+New York,40.6943,-73.9249,United States,admin,America/New_York,False
+Los Angeles,34.1141,-118.4068,United States,admin,America/Los_Angeles,False
+London,51.5072,-0.1275,United Kingdom,admin,Europe/London,False
+Chicago,41.8375,-87.6866,United States,admin,America/Chicago,False
+Miami,25.784,-80.2101,United States,admin,America/New_York,False
+Houston,29.786,-95.3885,United States,admin,America/Chicago,False
+Dallas,32.7935,-96.7667,United States,admin,America/Chicago,False
+Philadelphia,40.0077,-75.1339,United States,admin,America/New_York,False
+Atlanta,33.7628,-84.422,United States,admin,America/New_York,False
+Washington,38.9047,-77.0163,United States,admin,America/New_York,False
+Boston,42.3188,-71.0852,United States,admin,America/New_York,False
+Phoenix,33.5722,-112.0892,United States,admin,America/Phoenix,False
+Detroit,42.3834,-83.1024,United States,admin,America/New_York,False
+Seattle,47.6211,-122.3244,United States,admin,America/Los_Angeles,False
+San Francisco,37.7558,-122.4449,United States,admin,America/Los_Angeles,False
+San Diego,32.8313,-117.1222,United States,admin,America/Los_Angeles,False
+Minneapolis,44.9635,-93.2678,United States,admin,America/Chicago,False
+Tampa,27.9945,-82.4447,United States,admin,America/New_York,False
+Brooklyn,40.6501,-73.9496,United States,admin,America/New_York,False
+Denver,39.762,-104.8758,United States,admin,America/Denver,False
+Birmingham,52.48,-1.9025,United Kingdom,admin,Europe/London,False
+Queens,40.7498,-73.7976,United States,admin,America/New_York,False
+Riverside,33.9381,-117.3949,United States,admin,America/Los_Angeles,False
+Las Vegas,36.2333,-115.2654,United States,admin,America/Los_Angeles,False
+Baltimore,39.3051,-76.6144,United States,admin,America/New_York,False
+St. Louis,38.6359,-90.2451,United States,admin,America/Chicago,False
+Portland,45.5371,-122.65,United States,admin,America/Los_Angeles,False
+San Antonio,29.4632,-98.5238,United States,admin,America/Chicago,False
+Sacramento,38.5677,-121.4685,United States,admin,America/Los_Angeles,False
+Austin,30.3005,-97.7522,United States,admin,America/Chicago,False
+Orlando,28.4773,-81.337,United States,admin,America/New_York,False
+San Jose,37.3012,-121.848,United States,admin,America/Los_Angeles,False
+Indianapolis,39.7771,-86.1458,United States,admin,America/New_York,False
+Pittsburgh,40.4397,-79.9763,United States,admin,America/New_York,False
+Cincinnati,39.1413,-84.506,United States,admin,America/New_York,False
+Manhattan,40.7834,-73.9662,United States,admin,America/New_York,False
+Kansas City,39.1238,-94.5541,United States,admin,America/Chicago,False
+Cleveland,41.4764,-81.6805,United States,admin,America/New_York,False
+Columbus,39.9862,-82.9855,United States,admin,America/New_York,False
+Bronx,40.8501,-73.8662,United States,admin,America/New_York,False
+Charlotte,35.2083,-80.8303,United States,admin,America/New_York,False
+Virginia Beach,36.7335,-76.0435,United States,admin,America/New_York,False
+Jacksonville,30.3322,-81.6749,United States,admin,America/New_York,False
+Milwaukee,43.0642,-87.9675,United States,admin,America/Chicago,False
+Providence,41.823,-71.4187,United States,admin,America/New_York,False
+Nashville,36.1715,-86.7842,United States,admin,America/Chicago,False
+Salt Lake City,40.7776,-111.9311,United States,admin,America/Denver,False
+Raleigh,35.8324,-78.6429,United States,admin,America/New_York,False
+Richmond,37.5295,-77.4756,United States,admin,America/New_York,False
+Memphis,35.1087,-89.9663,United States,capital,America/Chicago,False
+Oklahoma City,35.4676,-97.5136,United States,primary,America/Chicago,False
+Hartford,41.7661,-72.6834,United States,primary,America/New_York,False
+Reading,51.4542,-0.9731,United Kingdom,,Europe/London,True
+Manchester,53.479,-2.2452,United Kingdom,,Europe/London,False
+Cambridge,52.205,0.1225,United Kingdom,,Europe/London,True
+Tokyo,35.687,139.7495,Japan,admin,Asia/Tokyo,False
+Jakarta,-6.175,106.8275,Indonesia,admin,Asia/Jakarta,False
+Delhi,28.61,77.23,India,admin,Asia/Kolkata,False
+Guangzhou,23.13,113.26,China,admin,Asia/Manila,False
+Mumbai,19.0761,72.8775,India,admin,Asia/Kolkata,False
+Manila,14.5958,120.9772,Philippines,admin,Asia/Manila,False
+Shanghai,31.2286,121.4747,China,admin,Asia/Manila,False
+Sao Paulo,-23.5504,-46.6339,Brazil,admin,America/Sao_Paulo,False
+Seoul,37.5667,126.9833,"Korea, South",admin,Asia/Tokyo,False
+Mexico City,19.4333,-99.1333,Mexico,admin,America/Mexico_City,False
+Kolkata,22.5675,88.37,India,admin,Asia/Kolkata,False
+Cairo,30.0444,31.2358,Egypt,admin,Africa/Cairo,False
+Karachi,24.86,67.01,Pakistan,admin,Asia/Karachi,False
+Dhaka,23.7289,90.3944,Bangladesh,admin,Asia/Dhaka,False
+Beijing,39.9067,116.3975,China,admin,Asia/Manila,False
+Bangkok,13.7525,100.4942,Thailand,admin,Asia/Jakarta,False
+Shenzhen,22.5415,114.0596,China,admin,Asia/Manila,False
+Moscow,55.7506,37.6175,Russia,admin,Europe/Moscow,False
+Buenos Aires,-34.6036,-58.3814,Argentina,admin,America/Sao_Paulo,False
+Bangalore,12.9789,77.5917,India,admin,Asia/Kolkata,False
+Ho Chi Minh City,10.7756,106.7019,Vietnam,admin,Asia/Jakarta,False
+Osaka,34.6939,135.5022,Japan,admin,Asia/Tokyo,False
+Chengdu,30.66,104.0633,China,admin,Asia/Manila,False
+Istanbul,41.0136,28.955,Turkey,admin,Europe/Moscow,False
+Rio de Janeiro,-22.9111,-43.2056,Brazil,admin,America/Sao_Paulo,False
+Chennai,13.0825,80.275,India,admin,Asia/Kolkata,False
+Xi'an,34.2611,108.9422,China,admin,Asia/Manila,False
+Lahore,31.5497,74.3436,Pakistan,admin,Asia/Karachi,False
+Chongqing,29.5637,106.5504,China,admin,Asia/Manila,False
+Paris,48.8567,2.3522,France,admin,Europe/Paris,False
+Linyi,35.1038,118.3564,China,admin,Asia/Manila,False
+Dongguan,23.021,113.752,China,admin,Asia/Manila,False
+Baoding,38.874,115.464,China,admin,Asia/Manila,False
+Hyderabad,17.3617,78.4747,India,admin,Asia/Kolkata,False
+Tianjin,39.1336,117.2054,China,admin,Asia/Manila,False
+Wuhan,30.5934,114.3046,China,admin,Asia/Manila,False
+Nanyang,32.9902,112.5285,China,admin,Asia/Manila,False
+Hangzhou,30.267,120.153,China,admin,Asia/Manila,False
+Nagoya,35.1833,136.9,Japan,admin,Asia/Tokyo,False
+Foshan,23.0214,113.1216,China,admin,Asia/Manila,False
+Kuala Lumpur,3.1686,101.698,Malaysia,admin,Asia/Manila,False
+Zhoukou,33.6367,114.7014,China,admin,Asia/Manila,False
+Tongshan,34.261,117.1859,China,admin,Asia/Manila,False
+Hanoi,21.0,105.85,Vietnam,admin,Asia/Jakarta,False
+Nanjing,32.0608,118.7789,China,admin,Asia/Manila,False
+Heze,35.2343,115.4796,China,admin,Asia/Manila,False
+Pune,18.5203,73.8567,India,admin,Asia/Kolkata,False
+Jining,35.4151,116.5871,China,admin,Asia/Manila,False
+Bogota,4.7111,-74.0722,Colombia,admin,America/Lima,False
+Ahmedabad,23.0225,72.5714,India,admin,Asia/Kolkata,False
+Shenyang,41.8025,123.4281,China,admin,Asia/Manila,False
+Johannesburg,-26.2044,28.0456,South Africa,admin,Africa/Johannesburg,False
+Fuyang,32.89,115.814,China,admin,Asia/Manila,False
+Hong Kong,22.3,114.2,Hong Kong,admin,Asia/Manila,True
+Ganzhou,25.831,114.933,China,admin,Asia/Manila,False
+Shangqiu,34.415,115.656,China,admin,Asia/Manila,False
+Cangzhou,38.3047,116.8387,China,admin,Asia/Manila,False
+Riyadh,24.65,46.71,Saudi Arabia,admin,Europe/Moscow,False
+Santiago,-33.4372,-70.6506,Chile,admin,America/Santiago,False
+Zhumadian,33.014,114.022,China,admin,Asia/Manila,False
+Zhanjiang,21.2701,110.3575,China,admin,Asia/Manila,False
+Yancheng,33.35,120.1569,China,admin,Asia/Manila,False
+Bijie,27.284,105.292,China,admin,Asia/Manila,False
+Xingtai,37.0717,114.5048,China,admin,Asia/Manila,False
+Hengyang,26.894,112.572,China,admin,Asia/Manila,False
+Shaoyang,27.2395,111.4679,China,admin,Asia/Manila,False
+Surabaya,-7.2458,112.7378,Indonesia,admin,Asia/Jakarta,False
+Surat,21.205,72.84,India,admin,Asia/Kolkata,False
+Quanzhou,24.8744,118.6757,China,admin,Asia/Manila,False
+Shangrao,28.4551,117.9431,China,admin,Asia/Manila,False
+Zunyi,27.722,107.031,China,admin,Asia/Manila,False
+Maoming,21.6627,110.9255,China,admin,Asia/Manila,False
+Xinyang,32.149,114.091,China,admin,Asia/Manila,False
+Singapore,1.3,103.8,Singapore,admin,Asia/Manila,False
+Prayagraj,25.4358,81.8464,India,admin,Asia/Kolkata,False
+Huanggang,30.4537,114.8724,China,admin,Asia/Manila,False
+Dalian,38.9,121.6,China,admin,Asia/Manila,False
+Ankara,39.93,32.85,Turkey,admin,Europe/Moscow,False
+Qingdao,36.0669,120.3827,China,admin,Asia/Manila,False
+Yulin,22.654,110.181,China,admin,Asia/Manila,False
+Liaocheng,36.4559,115.9852,China,admin,Asia/Manila,False
+Qujing,25.491,103.796,China,admin,Asia/Manila,False
+Nangandao,35.3036,113.9268,China,admin,Asia/Manila,False
+Addis Ababa,9.03,38.74,Ethiopia,admin,Europe/Moscow,False
+Toronto,43.7417,-79.3733,Canada,admin,America/New_York,False
+Zhengzhou,34.764,113.684,China,admin,Asia/Manila,False
+Nanchong,30.8372,106.1106,China,admin,Asia/Manila,False
+Jinan,36.6702,117.0207,China,admin,Asia/Manila,False
+Giza,29.987,31.2118,Egypt,admin,Africa/Cairo,False
+Saint Petersburg,59.9375,30.3086,Russia,admin,Europe/Moscow,False
+Jieyang,23.551,116.3727,China,admin,Asia/Manila,False
+Dezhou,37.436,116.359,China,admin,Asia/Manila,False
+Guadalajara,20.6767,-103.3475,Mexico,admin,America/Mexico_City,False
+Tai'an,36.202,117.087,China,admin,Asia/Manila,False
+Dazhou,31.2093,107.4678,China,admin,Asia/Manila,False
+Belo Horizonte,-19.9281,-43.9419,Brazil,admin,America/Sao_Paulo,False
+Suzhou,33.648,116.964,China,admin,Asia/Manila,False
+Monterrey,25.6844,-100.3181,Mexico,admin,America/Mexico_City,False
+Yongzhou,26.42,111.613,China,admin,Asia/Manila,False
+Changde,29.031,111.699,China,admin,Asia/Manila,False
+Xiangyang,32.01,112.122,China,admin,Asia/Manila,False
+Pudong,31.2347,121.5064,China,admin,Asia/Manila,False
+Zhaotong,27.338,103.717,China,admin,Asia/Manila,False
+Zhangzhou,24.513,117.647,China,admin,Asia/Manila,False
+Yueyang,29.3647,113.1309,China,admin,Asia/Manila,False
+Melbourne,-37.8142,144.9631,Australia,admin,Australia/Sydney,False
+Yichun,27.816,114.417,China,admin,Asia/Manila,False
+Guilin,25.275,110.296,China,admin,Asia/Manila,False
+Pingdingshan,33.7666,113.1926,China,admin,Asia/Manila,False
+Alexandria,31.1975,29.8925,Egypt,admin,Africa/Cairo,False
+Bozhou,33.8463,115.7786,China,admin,Asia/Manila,False
+Sydney,-33.8667,151.2,Australia,admin,Australia/Sydney,False
+Yuncheng,35.0267,111.007,China,admin,Asia/Manila,False
+Cape Town,-33.9253,18.4239,South Africa,admin,Africa/Johannesburg,False
+Changsha,28.228,112.939,China,admin,Asia/Manila,False
+Suqian,33.963,118.275,China,admin,Asia/Manila,False
+Jeddah,21.5428,39.1728,Saudi Arabia,admin,Europe/Moscow,False
+Weinan,34.5206,109.471,China,admin,Asia/Manila,False
+Berlin,52.52,13.405,Germany,admin,Europe/Paris,False
+Chenzhou,25.77,113.016,China,admin,Asia/Manila,False
+Jiangmen,22.5789,113.0815,China,admin,Asia/Manila,False
+Mianyang,31.468,104.679,China,admin,Asia/Manila,False
+Jiujiang,29.661,115.954,China,admin,Asia/Manila,False
+Huaihua,27.5698,110.0016,China,admin,Asia/Manila,False
+Huanglongsi,34.795,114.345,China,admin,Asia/Manila,False
+Taizhou,32.4567,119.9229,China,admin,Asia/Manila,False
+Belahi,26.4,86.25,India,admin,Asia/Kolkata,False
+Yibin,28.752,104.643,China,admin,Asia/Manila,False
+Ji'an,27.0912,114.9668,China,admin,Asia/Manila,False
+Yangzhou,32.3944,119.4128,China,admin,Asia/Manila,False
+Kunming,25.0464,102.7094,China,admin,Asia/Manila,False
+Changchun,43.897,125.326,China,admin,Asia/Manila,False
+Lu'an,31.736,116.52,China,admin,Asia/Manila,False
+Xinpu,34.5966,119.2214,China,admin,Asia/Manila,False
+Langfang,39.5383,116.6835,China,admin,Asia/Manila,False
+Urumqi,43.8225,87.6125,China,admin,Asia/Dhaka,False
+Suzhou,31.3,120.6194,China,admin,Asia/Manila,False
+Guigang,23.112,109.599,China,admin,Asia/Manila,False
+Shantou,23.354,116.682,China,admin,Asia/Manila,False
+Jiangguanchi,34.037,113.852,China,admin,Asia/Manila,False
+Xiaoganzhan,30.918,113.957,China,admin,Asia/Manila,False
+Luzhou,28.871,105.442,China,admin,Asia/Manila,False
+Hefei,31.8206,117.2273,China,admin,Asia/Manila,False
+Hengshui,37.739,115.669,China,admin,Asia/Manila,False
+Fortaleza,-3.7275,-38.5275,Brazil,admin,America/Sao_Paulo,False
+Anqing,30.5318,117.1153,China,admin,Asia/Manila,False
+Zhangjiakou,40.769,114.886,China,admin,Asia/Manila,False
+Zhaoqing,23.05,112.4667,China,admin,Asia/Manila,False
+Shijiazhuang,38.0425,114.51,China,admin,Asia/Manila,False
+Ningbo,29.8603,121.6245,China,admin,Asia/Manila,False
+Qiqihar,47.3549,123.9182,China,admin,Asia/Manila,False
+Liuzhou,24.3278,109.4278,China,admin,Asia/Manila,False
+Chifeng,42.255,118.8825,China,admin,Asia/Manila,False
+Xiaoxita,30.692,111.287,China,admin,Asia/Manila,False
+Linfen,36.088,111.519,China,admin,Asia/Manila,False
+Xianyang,34.3299,108.7088,China,admin,Asia/Manila,False
+Chuzhou,32.256,118.333,China,admin,Asia/Manila,False
+Kumasi,6.7,-1.625,Ghana,admin,Africa/Abidjan,False
+Zhuzhou,27.829,113.133,China,admin,Asia/Manila,False
+Taiyuan,37.8704,112.5497,China,admin,Asia/Manila,False
+Qingyuan,23.682,113.056,China,admin,Asia/Manila,False
+Meizhou,24.289,116.122,China,admin,Asia/Manila,False
+Yiyang,28.5549,112.356,China,admin,Asia/Manila,False
+Nanning,22.8167,108.3275,China,admin,Asia/Manila,False
+Harbin,45.7576,126.6409,China,admin,Asia/Manila,False
+Loudi,27.6998,111.9944,China,admin,Asia/Manila,False
+Yokohama,35.4442,139.6381,Japan,admin,Asia/Tokyo,False
+Suihua,46.654,126.969,China,admin,Asia/Manila,False
+Binzhou,37.383,117.971,China,admin,Asia/Manila,False
+Zaozhuang,34.8109,117.3238,China,admin,Asia/Manila,False
+Xiamen,24.4796,118.0889,China,admin,Asia/Manila,False
+Montreal,45.5089,-73.5617,Canada,admin,America/New_York,False
+Fuzhou,26.0743,119.2964,China,admin,Asia/Manila,False
+Wuhu,31.3526,118.4331,China,admin,Asia/Manila,False
+Medan,3.5894,98.6739,Indonesia,admin,Asia/Jakarta,False
+Yulinshi,38.2858,109.7341,China,admin,Asia/Manila,False
+Fuzhou,27.949,116.358,China,admin,Asia/Manila,False
+Wenzhou,27.9938,120.6993,China,admin,Asia/Manila,False
+Changzhou,31.811,119.974,China,admin,Asia/Manila,False
+Puyang,35.7627,115.0292,China,admin,Asia/Manila,False
+Nanchang,28.683,115.858,China,admin,Asia/Manila,False
+Baicheng,23.903,106.619,China,admin,Asia/Manila,False
+Jiaozuo,35.2157,113.2419,China,admin,Asia/Manila,False
+Nadampalaiyam,11.0125,76.9714,India,admin,Asia/Kolkata,False
+Deyang,31.127,104.398,China,admin,Asia/Manila,False
+Busan,35.18,129.075,"Korea, South",admin,Asia/Tokyo,False
+Hechi,24.693,108.085,China,admin,Asia/Manila,False
+Tangshan,39.6294,118.1739,China,admin,Asia/Manila,False
+Lucknow,26.85,80.95,India,admin,Asia/Kolkata,False
+Boankra,6.6919,-1.4051,Ghana,admin,Africa/Abidjan,False
+Dubai,25.2631,55.2972,United Arab Emirates,admin,Asia/Dubai,False
+Anshan,41.108,122.994,China,admin,Asia/Manila,False
+Guozhen,34.3609,107.1751,China,admin,Asia/Manila,False
+Baojishi,34.363,107.238,China,admin,Asia/Manila,False
+Qinzhou,21.981,108.654,China,admin,Asia/Manila,False
+Guiyang,26.647,106.63,China,admin,Asia/Manila,False
+Wuxi,31.5667,120.2833,China,admin,Asia/Manila,False
+Kannankulam,10.52,76.21,India,admin,Asia/Kolkata,False
+Kotla Qasim Khan,32.5833,73.75,Pakistan,admin,Asia/Karachi,False
+Casablanca,33.5333,-7.5833,Morocco,admin,Africa/Casablanca,False
+Hanzhong,33.0664,107.0232,China,admin,Asia/Manila,False
+Shiyan,32.629,110.7987,China,admin,Asia/Manila,False
+Guang'an,30.4564,106.6326,China,admin,Asia/Manila,False
+Faisalabad,31.4167,73.0911,Pakistan,admin,Asia/Karachi,False
+Changzhi,36.195,113.117,China,admin,Asia/Manila,False
+Tongren,27.7316,109.1895,China,admin,Asia/Manila,False
+Bengbu,32.917,117.389,China,admin,Asia/Manila,False
+Leshan,29.552,103.766,China,admin,Asia/Manila,False
+Neijiang,29.5802,105.058,China,admin,Asia/Manila,False
+Zhenjiang,32.188,119.424,China,admin,Asia/Manila,False
+Qinhuangdao,39.8882,119.5202,China,admin,Asia/Manila,False
+Bursa,40.1833,29.05,Turkey,admin,Europe/Moscow,False
+Guayaquil,-2.19,-79.8875,Ecuador,admin,America/Lima,False
+Jaipur,26.9,75.8,India,admin,Asia/Kolkata,False
+Lanzhou,36.0606,103.8268,China,admin,Asia/Manila,False
+Athens,37.9842,23.7281,Greece,admin,Europe/Athens,False
+Qincheng,34.5815,105.7248,China,admin,Asia/Manila,False
+Izmir,38.42,27.14,Turkey,admin,Europe/Moscow,False
+Quezon City,14.65,121.0475,Philippines,admin,Asia/Manila,False
+Kyiv,50.45,30.5233,Ukraine,admin,Europe/Athens,False
+Kottarassheri,10.775,76.651,India,admin,Asia/Kolkata,False
+Meishan,30.0771,103.8484,China,admin,Asia/Manila,False
+Incheon,37.4833,126.6333,"Korea, South",admin,Asia/Tokyo,False
+Ningde,26.6662,119.5477,China,admin,Asia/Manila,False
+Zhongshan,22.517,113.3925,China,admin,Asia/Manila,False
+Putian,25.4526,119.0078,China,admin,Asia/Manila,False
+Tongliao,43.654,122.243,China,admin,Asia/Manila,False
+Chaoyang,41.571,120.453,China,admin,Asia/Manila,False
+Hohhot,40.842,111.749,China,admin,Asia/Manila,False
+Shaoguan,24.811,113.597,China,admin,Asia/Manila,False
+Taichung,24.1439,120.6794,Taiwan,admin,Asia/Manila,False
+Cali,3.4206,-76.5222,Colombia,admin,America/Lima,False
+Heyuan,23.7443,114.7002,China,admin,Asia/Manila,False
+Wuzhou,23.4767,111.279,China,admin,Asia/Manila,False
+Pretoria,-25.7461,28.1881,South Africa,admin,Africa/Johannesburg,False
+Suining,30.533,105.593,China,admin,Asia/Manila,False
+Weihai,37.5133,122.1205,China,admin,Asia/Manila,False
+Rizhao,35.417,119.527,China,admin,Asia/Manila,False
+Malang,-7.98,112.62,Indonesia,admin,Asia/Jakarta,False
+Stuttgart,48.7775,9.18,Germany,admin,Europe/Paris,False
+Daqing,46.589,125.104,China,admin,Asia/Manila,False
+Rome,41.8931,12.4828,Italy,admin,Europe/Paris,False
+Kaohsiung,22.615,120.2975,Taiwan,admin,Asia/Manila,False
+Xiangtan,27.8313,112.9454,China,admin,Asia/Manila,False
+Bazhou,31.868,106.748,China,admin,Asia/Manila,False
+Handan,36.601,114.487,China,admin,Asia/Manila,False
+Brisbane,-27.4678,153.0281,Australia,admin,Australia/Brisbane,False
+Jinzhou,41.129,121.148,China,admin,Asia/Manila,False
+Xinzhou,38.416,112.734,China,admin,Asia/Manila,False
+Nanping,26.6418,118.1774,China,admin,Asia/Manila,False
+Gazipura,23.9234,90.3959,Bangladesh,admin,Asia/Dhaka,False
+Shanwei,22.7872,115.3756,China,admin,Asia/Manila,False
+Chaozhou,23.658,116.622,China,admin,Asia/Manila,False
+Baotou,40.6213,109.9532,China,admin,Asia/Manila,False
+Longyan,25.076,117.017,China,admin,Asia/Manila,False
+Weifang,36.708,119.162,China,admin,Asia/Manila,False
+Huai'an,33.551,119.113,China,admin,Asia/Manila,False
+Zibo,36.8138,118.055,China,admin,Asia/Manila,False
+Attadappa,11.8689,75.3555,India,admin,Asia/Kolkata,False
+Munich,48.1375,11.575,Germany,admin,Europe/Paris,False
+Gulou,26.0865,119.298,China,admin,Asia/Manila,False
+Chattogram,22.335,91.8325,Bangladesh,admin,Asia/Dhaka,False
+Yangjiang,21.857,111.983,China,admin,Asia/Manila,False
+Barmhan Kalan,19.1972,72.9722,India,admin,Asia/Kolkata,False
+Medellin,6.2308,-75.5906,Colombia,admin,America/Lima,False
+Dingxi,35.608,104.592,China,admin,Asia/Manila,False
+Shaoxing,30.0511,120.5833,China,admin,Asia/Manila,False
+Yantai,37.4646,121.4478,China,admin,Asia/Manila,False
+Huizhou,23.112,114.416,China,admin,Asia/Manila,False
+Xuanzhou,30.939,118.759,China,admin,Asia/Manila,False
+Mirzapur,25.146,82.569,India,admin,Asia/Kolkata,False
+Hamburg,53.55,10.0,Germany,admin,Europe/Paris,False
+Taipei,25.0375,121.5625,Taiwan,admin,Asia/Manila,False
+Ankang,32.6854,109.029,China,admin,Asia/Manila,False
+Zigong,29.339,104.779,China,admin,Asia/Manila,False
+Sanming,26.2634,117.6389,China,admin,Asia/Manila,False
+Toluca,19.2925,-99.6569,Mexico,admin,America/Mexico_City,False
+Huangshi,30.2011,115.039,China,admin,Asia/Manila,False
+Zhuhai,22.2742,113.5719,China,admin,Asia/Manila,False
+Huludao,40.711,120.837,China,admin,Asia/Manila,False
+Baoshan,25.112,99.161,China,admin,Asia/Manila,False
+Mecca,21.4225,39.8261,Saudi Arabia,admin,Europe/Moscow,False
+Vancouver,49.25,-123.1,Canada,admin,America/Los_Angeles,False
+Lianshan,40.7523,120.828,China,admin,Asia/Manila,False
+Salvador,-12.9831,-38.4928,Brazil,admin,America/Sao_Paulo,False
+Bucharest,44.4325,26.1039,Romania,admin,Europe/Athens,False
+Longba,33.3702,104.9603,China,admin,Asia/Manila,False
+Nagpur,21.1497,79.0806,India,admin,Asia/Kolkata,False
+Tieling,42.2237,123.726,China,admin,Asia/Manila,False
+Yunfu,22.9152,112.0445,China,admin,Asia/Manila,False
+Bekasi,-6.2333,107.0,Indonesia,admin,Asia/Jakarta,False
+Daegu,35.8717,128.6017,"Korea, South",admin,Asia/Tokyo,False
+Ghaziabad,28.67,77.42,India,admin,Asia/Kolkata,False
+Luoyang,34.6197,112.4539,China,admin,Asia/Manila,False
+Luohe,33.5804,114.0166,China,admin,Asia/Manila,False
+Anshun,26.2531,105.9476,China,admin,Asia/Manila,False
+Huainan,32.6314,117.0194,China,admin,Asia/Manila,False
+Depok,-6.394,106.8225,Indonesia,admin,Asia/Jakarta,False
+Konya,37.8667,32.4833,Turkey,admin,Europe/Moscow,False
+Haiphong,20.8651,106.6838,Vietnam,admin,Asia/Jakarta,False
+Yanjiang,30.129,104.627,China,admin,Asia/Manila,False
+Guangyuan,32.436,105.844,China,admin,Asia/Manila,False
+Baku,40.3667,49.8352,Azerbaijan,admin,Asia/Dubai,False
+Yingkou,40.625,122.219,China,admin,Asia/Manila,False
+Mudanjiang,44.5514,129.6329,China,admin,Asia/Manila,False
+Fukuoka,33.59,130.4017,Japan,admin,Asia/Tokyo,False
+Nantong,31.981,120.894,China,admin,Asia/Manila,False
+Lincang,23.884,100.089,China,admin,Asia/Manila,False
+Haikou,20.0186,110.3488,China,admin,Asia/Manila,False
+Yuxi,24.347,102.527,China,admin,Asia/Manila,False
+Tangerang,-6.1703,106.6403,Indonesia,admin,Asia/Jakarta,False
+Supaul,26.126,86.605,India,admin,Asia/Kolkata,False
+Almaty,43.24,76.915,Kazakhstan,admin,Asia/Karachi,False
+Vienna,48.2083,16.3725,Austria,admin,Europe/Paris,False
+Xining,36.6224,101.7804,China,admin,Asia/Manila,False
+Jincheng,35.491,112.852,China,admin,Asia/Manila,False
+Dandong,40.1167,124.3833,China,admin,Asia/Manila,False
+Yan'an,36.65,109.494,China,admin,Asia/Manila,False
+Qinbaling,35.7091,107.6436,China,admin,Asia/Manila,False
+Gaoping,30.7824,106.1281,China,admin,Asia/Manila,False
+Taizhou,28.6557,121.4208,China,admin,Asia/Manila,False
+Ma'anshan,31.669,118.507,China,admin,Asia/Manila,False
+Jiamusi,46.8,130.319,China,admin,Asia/Manila,False
+Perth,-31.9558,115.8597,Australia,admin,Asia/Manila,False
+Gaziantep,37.0628,37.3792,Turkey,admin,Europe/Moscow,False
+Lishui,28.468,119.923,China,admin,Asia/Manila,False
+Cordoba,-31.4167,-64.1833,Argentina,admin,America/Sao_Paulo,False
+Zamboanga City,6.9042,122.0761,Philippines,admin,Asia/Manila,False
+Rawalpindi,33.6,73.0333,Pakistan,admin,Asia/Karachi,False
+Chongzuo,22.377,107.365,China,admin,Asia/Manila,False
+Laibin,23.7501,109.2212,China,admin,Asia/Manila,False
+Vadodara,22.3,73.2,India,admin,Asia/Kolkata,False
+Qingyang,24.7816,118.5517,China,admin,Asia/Manila,False
+Rajkot,22.3,70.7833,India,admin,Asia/Kolkata,False
+Shangzhou,33.8734,109.9186,China,admin,Asia/Manila,False
+Vishakhapatnam,17.7042,83.2978,India,admin,Asia/Kolkata,False
+Shengli,37.434,118.6746,China,admin,Asia/Manila,False
+Sanmenxia,34.7732,111.2004,China,admin,Asia/Manila,False
+Warsaw,52.23,21.0111,Poland,admin,Europe/Paris,False
+Gujranwala,32.1567,74.19,Pakistan,admin,Asia/Karachi,False
+Hezhou,24.4042,111.5672,China,admin,Asia/Manila,False
+Tijuana,32.525,-117.0333,Mexico,admin,America/Los_Angeles,False
+Puning,23.298,116.166,China,admin,Asia/Manila,False
+Indore,22.7167,75.8472,India,admin,Asia/Kolkata,False
+Huaibei,33.956,116.798,China,admin,Asia/Manila,False
+Peshawar,34.0144,71.5675,Pakistan,admin,Asia/Karachi,False
+Sapporo,43.0619,141.3544,Japan,admin,Asia/Tokyo,False
+Tilburg,51.5572,5.0911,Netherlands,admin,Europe/Paris,False
+Davao,7.07,125.6,Philippines,admin,Asia/Manila,False
+Songjiang,31.0058,121.2333,China,admin,Asia/Manila,False
+Yinchuan,38.485,106.225,China,admin,Asia/Manila,False
+Abhepur,39.41,116.38,India,admin,Asia/Manila,False
+Thane,19.1972,72.9722,India,admin,Asia/Kolkata,False
+Multan,30.1978,71.4697,Pakistan,admin,Asia/Karachi,False
+Fushun,41.881,123.957,China,admin,Asia/Manila,False
+Tainan,22.9833,120.1833,Taiwan,admin,Asia/Manila,False
+Pingliang,35.5424,106.6649,China,admin,Asia/Manila,False
+Siping,43.1668,124.3506,China,admin,Asia/Manila,False
+Pingxiang,27.659,113.887,China,admin,Asia/Manila,False
+Bhopal,23.2599,77.4126,India,admin,Asia/Kolkata,False
+Diyarbakir,37.91,40.24,Turkey,admin,Europe/Moscow,False
+Curitiba,-25.4297,-49.2719,Brazil,admin,America/Sao_Paulo,False
+Shuyangzha,34.1299,118.7734,China,admin,Asia/Manila,False
+Adana,37.0,35.3213,Turkey,admin,Europe/Moscow,False
+Quito,-0.22,-78.5125,Ecuador,admin,America/Lima,False
+Agra,27.18,78.02,India,admin,Asia/Kolkata,False
+Peyanvilai,8.9,77.9833,India,admin,Asia/Kolkata,False
+Hyderabad City,25.3792,68.3683,Pakistan,admin,Asia/Karachi,False
+Pimpri-Chinchwad,18.6186,73.8037,India,admin,Asia/Kolkata,False
+Budapest,47.4983,19.0408,Hungary,admin,Europe/Paris,False
+Patna,25.594,85.1376,India,admin,Asia/Kolkata,False
+Beihai,21.481,109.12,China,admin,Asia/Manila,False
+Sanzhou,30.82,108.4,China,admin,Asia/Manila,False
+Ximeicun,24.9612,118.3849,China,admin,Asia/Manila,False
+Caloocan City,14.65,120.97,Philippines,admin,Asia/Manila,False
+Ecatepec,19.6097,-99.06,Mexico,admin,America/Mexico_City,False
+Yushan,31.322,120.985,China,admin,Asia/Manila,False
+Fuxin,42.022,121.67,China,admin,Asia/Manila,False
+Novosibirsk,55.05,82.95,Russia,admin,Asia/Jakarta,False
+Bilaspur,22.09,82.15,India,admin,Asia/Kolkata,False
+Semarang,-6.99,110.4225,Indonesia,admin,Asia/Jakarta,False
+Jingdezhen,29.2917,117.1986,China,admin,Asia/Manila,False
+Ludhiana,30.91,75.85,India,admin,Asia/Kolkata,False
+Liaoyang,41.279,123.176,China,admin,Asia/Manila,False
+Jiangyin,31.839,120.295,China,admin,Asia/Manila,False
+Shuozhou,39.3317,112.4329,China,admin,Asia/Manila,False
+Leon de los Aldama,21.1167,-101.6833,Mexico,admin,America/Mexico_City,False
+Puebla,19.0333,-98.1833,Mexico,admin,America/Mexico_City,False
+Bien Hoa,10.95,106.8167,Vietnam,admin,Asia/Jakarta,False
+Chengtangcun,35.0833,117.15,China,admin,Asia/Manila,False
+Hebi,35.748,114.297,China,admin,Asia/Manila,False
+Madurai,9.9252,78.1198,India,admin,Asia/Kolkata,False
+Huzhou,30.8925,120.0875,China,admin,Asia/Manila,False
+Jamshedpur,22.7925,86.1842,India,admin,Asia/Kolkata,False
+Baicheng,45.62,122.838,China,admin,Asia/Manila,False
+San Jose,9.9325,-84.08,Costa Rica,admin,America/Mexico_City,False
+Shaoyang,32.912,119.8526,China,admin,Asia/Manila,False
+Palembang,-2.9861,104.7556,Indonesia,admin,Asia/Jakarta,False
+Kawasaki,35.5167,139.7,Japan,admin,Asia/Tokyo,False
+Kobe,34.69,135.1956,Japan,admin,Asia/Tokyo,False
+Jiaxing,30.747,120.756,China,admin,Asia/Manila,False
+Zhangjiajie,29.117,110.479,China,admin,Asia/Manila,False
+Baiyin,36.5451,104.1389,China,admin,Asia/Manila,False
+Guiping,23.4,110.0833,China,admin,Asia/Manila,False
+Changshu,31.656,120.753,China,admin,Asia/Manila,False
+Jixi,45.295,130.969,China,admin,Asia/Manila,False
+Xushan,30.1667,121.2333,China,admin,Asia/Manila,False
+Gwangju,35.1653,126.8486,"Korea, South",admin,Asia/Tokyo,False
+Recife,-8.0539,-34.8808,Brazil,admin,America/Sao_Paulo,False
+Nasik,19.9975,73.7898,India,admin,Asia/Kolkata,False
+Abu Dhabi,24.4667,54.3667,United Arab Emirates,admin,Asia/Dubai,False
+Amsterdam,52.3728,4.8936,Netherlands,admin,Europe/Paris,False
+Vijayawada,16.5193,80.6305,India,admin,Asia/Kolkata,False
+Zapopan,20.7167,-103.4,Mexico,admin,America/Mexico_City,False
+Daejeon,36.35,127.385,"Korea, South",admin,Asia/Tokyo,False
+Auckland,-36.8492,174.7653,New Zealand,admin,Pacific/Auckland,False
+Yekaterinburg,56.8356,60.6128,Russia,admin,Asia/Karachi,False
+Wuwei,37.929,102.638,China,admin,Asia/Manila,False
+Jinhua,29.079,119.647,China,admin,Asia/Manila,False
+Kyoto,35.0117,135.7683,Japan,admin,Asia/Tokyo,False
+Pizhou,34.398,117.89,China,admin,Asia/Manila,False
+Yangshe,31.8767,120.556,China,admin,Asia/Manila,False
+Yucheng,30.01,103.0415,China,admin,Asia/Manila,False
+Kayseri,38.7225,35.4875,Turkey,admin,Europe/Moscow,False
+Rui'an,27.7833,120.625,China,admin,Asia/Manila,False
+Kharkiv,49.9925,36.2311,Ukraine,admin,Europe/Athens,False
+Medina,24.47,39.61,Saudi Arabia,admin,Europe/Moscow,False
+Sangereng,-6.2889,106.7181,Indonesia,admin,Asia/Jakarta,False
+Faridabad,28.4211,77.3078,India,admin,Asia/Kolkata,False
+Sofia,42.6979,23.3217,Bulgaria,admin,Europe/Athens,False
+Ulaanbaatar,47.9214,106.9055,Mongolia,admin,Asia/Manila,False
+Adelaide,-34.9275,138.6,Australia,admin,Australia/Adelaide,False
+Prague,50.0875,14.4214,Czechia,admin,Europe/Paris,False
+Wenling,28.3667,121.3667,China,admin,Asia/Manila,False
+Copenhagen,55.6805,12.5615,Denmark,admin,Europe/Paris,False
+Najafgarh,28.6125,76.9847,India,admin,Asia/Kolkata,False
+Lianjiang,21.7333,110.2833,China,admin,Asia/Manila,False
+Helsinki,60.1708,24.9375,Finland,admin,Europe/Athens,False
+Samsun,41.2903,36.3336,Turkey,admin,Europe/Moscow,False
+Milan,45.4669,9.19,Italy,admin,Europe/Paris,False
+Antalya,36.8874,30.7075,Turkey,admin,Europe/Moscow,False
+Chizhou,30.6654,117.4916,China,admin,Asia/Manila,False
+Makassar,-5.1331,119.4136,Indonesia,admin,Asia/Manila,False
+Porto Alegre,-30.0328,-51.23,Brazil,admin,America/Sao_Paulo,False
+Huangshan,29.7149,118.3376,China,admin,Asia/Manila,False
+Gaozhou,21.9244,110.8422,China,admin,Asia/Manila,False
+Barranquilla,10.9833,-74.8019,Colombia,admin,America/Lima,False
+Benxi,41.3039,123.7649,China,admin,Asia/Manila,False
+Saitama,35.8614,139.6456,Japan,admin,Asia/Tokyo,False
+Guarulhos,-23.4667,-46.5333,Brazil,admin,America/Sao_Paulo,False
+Leizhou,20.9143,110.0967,China,admin,Asia/Manila,False
+Juarez,31.745,-106.485,Mexico,admin,America/Denver,False
+Yangquan,37.8571,113.5804,China,admin,Asia/Manila,False
+Fuqing,25.7167,119.3833,China,admin,Asia/Manila,False
+Xintai,35.909,117.768,China,admin,Asia/Manila,False
+Wusong,30.945,117.811,China,admin,Asia/Manila,False
+Tongling,30.9456,117.8114,China,admin,Asia/Manila,False
+Calgary,51.05,-114.0667,Canada,admin,America/Denver,False
+Meerut,28.98,77.71,India,admin,Asia/Kolkata,False
+Kuaidamao,41.7283,125.9397,China,admin,Asia/Manila,False
+Huazhou,21.664,110.6396,China,admin,Asia/Manila,False
+Wuzhong,37.9978,106.1986,China,admin,Asia/Manila,False
+Belem,-1.4558,-48.5039,Brazil,admin,America/Sao_Paulo,False
+Rosario,-32.9575,-60.6394,Argentina,admin,America/Sao_Paulo,False
+Tangier,35.7767,-5.8039,Morocco,admin,Africa/Casablanca,False
+Canagatan,18.0,121.8,Philippines,admin,Asia/Manila,False
+Soweto,-26.2678,27.8585,South Africa,admin,Africa/Johannesburg,False
+Xiantao,30.328,113.443,China,admin,Asia/Manila,False
+Jabalpur,23.1667,79.9333,India,admin,Asia/Kolkata,False
+Huaiyin,33.5819,119.028,China,admin,Asia/Manila,False
+Yutan,28.278,112.552,China,admin,Asia/Manila,False
+Kazan,55.7964,49.1089,Russia,admin,Europe/Moscow,False
+Bagam,1.13,104.0531,Indonesia,admin,Asia/Jakarta,False
+Dayan,26.8552,100.2259,China,admin,Asia/Manila,False
+Brussels,50.8467,4.3525,Belgium,admin,Europe/Paris,False
+Laiwu,36.1833,117.6667,China,admin,Asia/Manila,False
+Huazhou,32.688,112.087,China,admin,Asia/Manila,False
+Sharjah,25.3575,55.3908,United Arab Emirates,admin,Asia/Dubai,False
+Kalyan,19.24,73.13,India,admin,Asia/Kolkata,False
+Rucheng,32.246,120.591,China,admin,Asia/Manila,False
+Yongcheng,33.9299,116.45,China,admin,Asia/Manila,False
+Sumedang,-6.84,107.9208,Indonesia,admin,Asia/Jakarta,False
+Can Tho,10.0333,105.7833,Vietnam,admin,Asia/Jakarta,False
+Suwon,37.2667,127.0167,"Korea, South",admin,Asia/Tokyo,False
+Yiwu,29.3069,120.0753,China,admin,Asia/Manila,False
+Vasai-Virar,19.47,72.8,India,admin,Asia/Kolkata,False
+Campinas,-22.9009,-47.0573,Brazil,admin,America/Sao_Paulo,False
+Dadukou,26.5824,101.7184,China,admin,Asia/Manila,False
+Lingcheng,22.708,110.354,China,admin,Asia/Manila,False
+Shuangyashan,46.6762,131.1416,China,admin,Asia/Manila,False
+Nizhniy Novgorod,56.3269,44.0075,Russia,admin,Europe/Moscow,False
+Panipat,29.3875,76.97,India,admin,Asia/Kolkata,False
+Varanasi,25.3189,83.0128,India,admin,Asia/Kolkata,False
+Hiroshima,34.3914,132.4519,Japan,admin,Asia/Tokyo,False
+Chiang Mai,18.7953,98.9986,Thailand,admin,Asia/Jakarta,False
+Kalleli,9.2807,76.8697,India,admin,Asia/Kolkata,False
+Batam Centre,1.1272,104.0556,Indonesia,admin,Asia/Jakarta,False
+Pingdu,36.7769,119.9884,China,admin,Asia/Manila,False
+Rongcheng,26.218,104.103,China,admin,Asia/Manila,False
+Xinyu,27.8186,114.9167,China,admin,Asia/Manila,False
+Doha,25.2867,51.5333,Qatar,admin,Europe/Moscow,False
+Shymkent,42.3167,69.5958,Kazakhstan,admin,Asia/Karachi,False
+Srinagar,34.09,74.79,India,admin,Asia/Kolkata,False
+Chelyabinsk,55.1547,61.3758,Russia,admin,Asia/Karachi,False
+Aurangabad,19.88,75.32,India,admin,Asia/Kolkata,False
+Cilacap,-7.7167,109.017,Indonesia,admin,Asia/Jakarta,False
+Xinhualu,34.3964,113.7402,China,admin,Asia/Manila,False
+Guankou,28.1637,113.6433,China,admin,Asia/Manila,False
+Bandar Lampung,-5.45,105.2667,Indonesia,admin,Asia/Jakarta,False
+Dhanbad,23.7998,86.4305,India,admin,Asia/Kolkata,False
+Jingling,30.664,113.167,China,admin,Asia/Manila,False
+Zhuji,29.7167,120.2333,China,admin,Asia/Manila,False
+Samara,53.2028,50.1408,Russia,admin,Asia/Dubai,False
+Yingtan,28.2721,117.0395,China,admin,Asia/Manila,False
+Edmonton,53.5344,-113.4903,Canada,admin,America/Denver,False
+Guyuan,36.01,106.257,China,admin,Asia/Manila,False
+Leiyang,26.4223,112.8598,China,admin,Asia/Manila,False
+Krasnodar,45.0333,38.9667,Russia,admin,Europe/Moscow,False
+Rostov,47.2225,39.71,Russia,admin,Europe/Moscow,False
+Amritsar,31.64,74.86,India,admin,Asia/Kolkata,False
+Aligarh,27.88,78.08,India,admin,Asia/Kolkata,False
+Zhangye,38.9248,100.4499,China,admin,Asia/Manila,False
+Ufa,54.7261,55.9475,Russia,admin,Asia/Karachi,False
+Ulsan,35.55,129.3167,"Korea, South",admin,Asia/Tokyo,False
+Rongcheng,29.8402,112.9048,China,admin,Asia/Manila,False
+Tbilisi,41.7225,44.7925,Georgia,admin,Asia/Dubai,False
+Guwahati,26.1722,91.7458,India,admin,Asia/Kolkata,False
+Fes,34.0433,-5.0033,Morocco,admin,Africa/Casablanca,False
+Yingchuan,34.142,113.489,China,admin,Asia/Manila,False
+Ninh Binh,20.25,105.8333,Vietnam,admin,Asia/Jakarta,False
+Omsk,54.9833,73.3667,Russia,admin,Asia/Dhaka,False
+Mexicali,32.6633,-115.4678,Mexico,admin,America/Los_Angeles,False
+Dingzhou,38.516,114.99,China,admin,Asia/Manila,False
+Tamale,9.4075,-0.8533,Ghana,admin,Africa/Abidjan,False
+Yuyao,30.05,121.15,China,admin,Asia/Manila,False
+Goiania,-16.6806,-49.2564,Brazil,admin,America/Sao_Paulo,False
+Krasnoyarsk,56.0089,92.8719,Russia,admin,Asia/Jakarta,False
+Cologne,50.9364,6.9528,Germany,admin,Europe/Paris,False
+Yicheng,31.36,119.815,China,admin,Asia/Manila,False
+Ezhou,30.3914,114.8949,China,admin,Asia/Manila,False
+Astana,51.1472,71.4222,Kazakhstan,admin,Asia/Karachi,False
+Zhufeng,36.0,119.4167,China,admin,Asia/Manila,False
+Nezahualcoyotl,19.4081,-99.0186,Mexico,admin,America/Mexico_City,False
+Haora,22.58,88.3294,India,admin,Asia/Kolkata,False
+Tongjin,37.2333,127.2,"Korea, South",admin,Asia/Tokyo,False
+Ranchi,23.36,85.33,India,admin,Asia/Kolkata,False
+Ciudad Nezahualcoyotl,19.4006,-99.0148,Mexico,admin,America/Mexico_City,False
+Gwalior,26.2125,78.1775,India,admin,Asia/Kolkata,False
+Ottawa,45.4247,-75.695,Canada,admin,America/New_York,False
+Haicheng,40.8824,122.6852,China,admin,Asia/Manila,False
+Jianguang,28.1958,115.7833,China,admin,Asia/Manila,False
+Goyang,37.65,126.8,"Korea, South",admin,Asia/Tokyo,False
+Sendai,38.2682,140.8694,Japan,admin,Asia/Tokyo,False
+Xibeijie,39.7334,98.4943,China,admin,Asia/Manila,False
+Chandigarh,30.75,76.78,India,admin,Asia/Kolkata,False
+Voronezh,51.6717,39.2106,Russia,admin,Europe/Moscow,False
+Zhongwei,37.5002,105.1968,China,admin,Asia/Manila,False
+Jiancheng,30.38,104.53,China,admin,Asia/Manila,False
+Mersin,36.8,34.6333,Turkey,admin,Europe/Moscow,False
+Shouguang,36.857,118.791,China,admin,Asia/Manila,False
+Liangshi,27.26,111.7442,China,admin,Asia/Manila,False
+Sao Luis,-2.53,-44.3028,Brazil,admin,America/Sao_Paulo,False
+Jodhpur,26.28,73.02,India,admin,Asia/Kolkata,False
+Sanya,18.2533,109.5036,China,admin,Asia/Manila,False
+Rangapukur,25.5206,89.2147,Bangladesh,admin,Asia/Dhaka,False
+Linhai,28.85,121.1167,China,admin,Asia/Manila,False
+Perm,58.0,56.3167,Russia,admin,Asia/Karachi,False
+Shubra al Khaymah,30.1286,31.2422,Egypt,admin,Africa/Cairo,False
+Islamabad,33.6931,73.0639,Pakistan,admin,Asia/Karachi,False
+Xinyi,22.3549,110.9468,China,admin,Asia/Manila,False
+Thu Duc,10.8266,106.7609,Vietnam,admin,Asia/Jakarta,False
+Odesa,46.492,30.7081,Ukraine,admin,Europe/Athens,False
+Raipur,21.2444,81.6306,India,admin,Asia/Kolkata,False
+Changwon,35.2708,128.6631,"Korea, South",admin,Asia/Tokyo,False
+Volgograd,48.7086,44.5147,Russia,admin,Europe/Moscow,False
+Morelia,19.7683,-101.1894,Mexico,admin,America/Mexico_City,False
+Kota,25.18,75.83,India,admin,Asia/Kolkata,False
+Quetta,30.1833,67.0,Pakistan,admin,Asia/Karachi,False
+Domaa-Ahenkro,7.2739,-2.8735,Ghana,admin,Africa/Abidjan,False
+Bareilly,28.3667,79.4306,India,admin,Asia/Kolkata,False
+Liaoyuan,42.888,125.1447,China,admin,Asia/Manila,False
+Stockholm,59.3275,18.0547,Sweden,admin,Europe/Paris,False
+Bordeaux,44.84,-0.58,France,admin,Europe/Paris,False
+Taixing,32.159,120.029,China,admin,Asia/Manila,False
+Esenyurt,41.0342,28.68,Turkey,admin,Europe/Moscow,False
+Pekanbaru,0.5092,101.4453,Indonesia,admin,Asia/Jakarta,False
+Bogor,-6.5966,106.7972,Indonesia,admin,Asia/Jakarta,False
+Chiba,35.6073,140.1064,Japan,admin,Asia/Tokyo,False
+Shuizhai,33.4658,114.8753,China,admin,Asia/Manila,False
+Qianxi,27.0087,106.0323,China,admin,Asia/Manila,False
+Dnipro,48.4675,35.04,Ukraine,admin,Europe/Athens,False
+Baishan,41.944,126.4147,China,admin,Asia/Manila,False
+Narayanganj,23.6167,90.5,Bangladesh,admin,Asia/Dhaka,False
+Gqeberha,-33.9581,25.6,South Africa,admin,Africa/Johannesburg,False
+Huilong,31.87,121.703,China,admin,Asia/Manila,False
+Marrakech,31.63,-8.0089,Morocco,admin,Africa/Casablanca,False
+Cebu City,10.32,123.75,Philippines,admin,Asia/Manila,False
+Coimbatore,11.0008,76.9633,India,admin,Asia/Kolkata,False
+Maceio,-9.6658,-35.735,Brazil,admin,America/Sao_Paulo,False
+Nada,19.5209,109.5808,China,admin,Asia/Manila,False
+Fangchenggang,21.6867,108.3547,China,admin,Asia/Manila,False
+Solapur,17.68,75.92,India,admin,Asia/Kolkata,False
+Kaiyuan,36.0193,113.86,China,admin,Asia/Manila,False
+Seberang Jaya,5.3909,100.4104,Malaysia,admin,Asia/Manila,False
+Sale,34.0333,-6.8,Morocco,admin,Africa/Casablanca,False
+Hubli,15.3502,75.1376,India,admin,Asia/Kolkata,False
+Cankaya,39.9244,32.8856,Turkey,admin,Europe/Moscow,False
+Hwasu-dong,37.1997,126.8314,"Korea, South",admin,Asia/Tokyo,False
+Yingcheng,24.21,113.401,China,admin,Asia/Manila,False
+Setagaya,35.6466,139.6532,Japan,admin,Asia/Tokyo,False
+Kecioren,40.0,32.8667,Turkey,admin,Europe/Moscow,False
+Luocheng,22.7689,111.5697,China,admin,Asia/Manila,False
+Meishan,34.167,112.844,China,admin,Asia/Manila,False
+Kitakyushu,33.8833,130.8833,Japan,admin,Asia/Tokyo,False
+Aguascalientes,21.876,-102.296,Mexico,admin,America/Mexico_City,False
+Khulna,22.8167,89.55,Bangladesh,admin,Asia/Dhaka,False
+Chihuahua,28.6369,-106.0769,Mexico,admin,America/Mexico_City,False
+Xin'an,34.286,118.355,China,admin,Asia/Manila,False
+Mysore,12.3086,76.6531,India,admin,Asia/Kolkata,False
+Kashgar,39.4681,75.9938,China,admin,Asia/Dhaka,False
+Songnam,37.4333,127.15,"Korea, South",admin,Asia/Tokyo,False
+Trichinopoly,10.7903,78.7047,India,admin,Asia/Kolkata,False
+Cartagena,10.4,-75.5,Colombia,admin,America/Lima,False
+Qingzhou,36.6853,118.4796,China,admin,Asia/Manila,False
+Naples,40.8358,14.2486,Italy,admin,Europe/Paris,False
+Santiago del Estero,-27.7833,-64.2667,Argentina,admin,America/Sao_Paulo,False
+Naucalpan de Juarez,19.4753,-99.2378,Mexico,admin,America/Mexico_City,False
+Masbate,12.27,123.58,Philippines,admin,Asia/Manila,False
+Taishan,22.252,112.794,China,admin,Asia/Manila,False
+Jiaozhou,36.2647,120.0334,China,admin,Asia/Manila,False
+Wuchuan,21.441,110.779,China,admin,Asia/Manila,False
+Wafangdian,39.6271,121.9796,China,admin,Asia/Manila,False
+La Plata,-34.9211,-57.9544,Argentina,admin,America/Sao_Paulo,False
+Ad Dammam,26.4333,50.1,Saudi Arabia,admin,Europe/Moscow,False
+Hanchuan,30.6667,113.8333,China,admin,Asia/Manila,False
+Quzhou,28.9702,118.8593,China,admin,Asia/Manila,False
+Donetsk,48.0028,37.8053,Ukraine,admin,Europe/Athens,False
+Ashmun,30.2974,30.9764,Egypt,admin,Africa/Cairo,False
+Wuchang,44.924,127.158,China,admin,Asia/Manila,False
+Sao Goncalo,-22.8269,-43.0539,Brazil,admin,America/Sao_Paulo,False
+Hengzhou,22.6799,109.2614,China,admin,Asia/Manila,False
+Feicheng,36.1861,116.7719,China,admin,Asia/Manila,False
+Bucaramanga,7.1333,-73.0,Colombia,admin,America/Lima,False
+Merida,20.9667,-89.6167,Mexico,admin,America/Mexico_City,False
+Hegang,47.3501,130.298,China,admin,Asia/Manila,False
+Osmangazi,40.1983,29.06,Turkey,admin,Europe/Moscow,False
+Moradabad,28.8319,78.7764,India,admin,Asia/Kolkata,False
+Cancun,21.1606,-86.8475,Mexico,admin,America/Lima,False
+Zaoyang,32.129,112.772,China,admin,Asia/Manila,False
+Dongtai,32.795,120.519,China,admin,Asia/Manila,False
+Antipolo,14.5842,121.1763,Philippines,admin,Asia/Manila,False
+Taguig City,14.52,121.05,Philippines,admin,Asia/Manila,False
+Tabuk,28.3972,36.5789,Saudi Arabia,admin,Europe/Moscow,False
+Xishan,27.6461,113.497,China,admin,Asia/Manila,False
+Zhoushan,29.9856,122.2074,China,admin,Asia/Manila,False
+Yichun,47.728,128.841,China,admin,Asia/Manila,False
+Klang,3.0223,101.5481,Malaysia,admin,Asia/Manila,False
+Tiruppur,11.1085,77.3411,India,admin,Asia/Kolkata,False
+Marseille,43.2964,5.37,France,admin,Europe/Paris,False
+Gurgaon,28.456,77.029,India,admin,Asia/Kolkata,False
+Yangchun,22.1704,111.7916,China,admin,Asia/Manila,False
+Hai'an,32.535,120.563,China,admin,Asia/Manila,False
+Jalandhar,31.326,75.5762,India,admin,Asia/Kolkata,False
+Daye,30.0961,114.9804,China,admin,Asia/Manila,False
+Zhongxiang,31.168,112.588,China,admin,Asia/Manila,False
+Gaomi,36.3833,119.75,China,admin,Asia/Manila,False
+Teresina,-5.0903,-42.8167,Brazil,admin,America/Sao_Paulo,False
+Lhasa,29.6534,91.1719,China,admin,Asia/Manila,False
+Ipoh,4.6,101.065,Malaysia,admin,Asia/Manila,False
+Saltillo,25.4231,-100.9919,Mexico,admin,America/Mexico_City,False
+Gongzhuling,43.5053,124.8224,China,admin,Asia/Manila,False
+Lianyuan,27.692,111.664,China,admin,Asia/Manila,False
+Tyumen,57.15,65.5333,Russia,admin,Asia/Karachi,False
+Hermosillo,29.0989,-110.9542,Mexico,admin,America/Phoenix,False
+Cheongju,36.6333,127.4833,"Korea, South",admin,Asia/Tokyo,False
+Shache,38.4261,77.25,China,admin,Asia/Dhaka,False
+Thanh Hoa,19.8075,105.7764,Vietnam,admin,Asia/Jakarta,False
+Macheng,31.173,115.008,China,admin,Asia/Manila,False
+Kathmandu,27.71,85.32,Nepal,admin,Asia/Kathmandu,False
+Turin,45.0792,7.6761,Italy,admin,Europe/Paris,False
+Anqiu,36.478,119.219,China,admin,Asia/Manila,False
+Yuci,37.6823,112.7281,China,admin,Asia/Manila,False
+Dehui,44.535,125.703,China,admin,Asia/Manila,False
+Pietermaritzburg,-29.6167,30.3833,South Africa,admin,Africa/Johannesburg,False
+Durban,-29.8833,31.05,South Africa,admin,Africa/Johannesburg,False
+Saratov,51.53,46.035,Russia,admin,Asia/Dubai,False
+Bhubaneshwar,20.27,85.84,India,admin,Asia/Kolkata,False
+Yushu,44.826,126.55,China,admin,Asia/Manila,False
+Joao Pessoa,-7.12,-34.88,Brazil,admin,America/Sao_Paulo,False
+Samarinda,-0.5,117.1378,Indonesia,admin,Asia/Manila,False
+Qingping,34.539,113.391,China,admin,Asia/Manila,False
+Rongjiawan,29.15,113.1024,China,admin,Asia/Manila,False
+Weichanglu,37.1792,119.9333,China,admin,Asia/Manila,False
+Sakai,34.5733,135.4831,Japan,admin,Asia/Tokyo,False
+Eskisehir,39.7767,30.5206,Turkey,admin,Europe/Moscow,False
+Renqiu,38.686,116.084,China,admin,Asia/Manila,False
+Wutong,30.6333,120.5333,China,admin,Asia/Manila,False
+Wu'an,36.697,114.204,China,admin,Asia/Manila,False
+Sao Bernardo do Campo,-23.6939,-46.565,Brazil,admin,America/Sao_Paulo,False
+Narela,28.85,77.1,India,admin,Asia/Kolkata,False
+Bhayandar,19.29,72.85,India,admin,Asia/Kolkata,False
+Culiacan,24.8069,-107.3939,Mexico,admin,America/Phoenix,False
+Xiashi,30.5333,120.6833,China,admin,Asia/Manila,False
+Cucuta,7.8942,-72.5039,Colombia,admin,America/Lima,False
+Danyang,32.0,119.586,China,admin,Asia/Manila,False
+Dongyang,29.2667,120.2167,China,admin,Asia/Manila,False
+Krakow,50.0614,19.9372,Poland,admin,Europe/Paris,False
+Pasig City,14.5605,121.0765,Philippines,admin,Asia/Manila,False
+Thessaloniki,40.6403,22.9356,Greece,admin,Europe/Athens,False
+Palermo,2.8917,-75.4375,Colombia,admin,America/Lima,False
+Qamdo,31.143,97.17,China,admin,Asia/Manila,False
+Karimnagar,18.4386,79.1288,India,admin,Asia/Kolkata,False
+Hejian,38.4466,116.0995,China,admin,Asia/Manila,False
+Seyhan,36.9831,35.3328,Turkey,admin,Europe/Moscow,False
+Laiyang,36.9758,120.7136,China,admin,Asia/Manila,False
+Queretaro,20.5875,-100.3928,Mexico,admin,America/Mexico_City,False
+Wuxi,26.58,111.841,China,admin,Asia/Manila,False
+Yiyang,26.4221,112.3999,China,admin,Asia/Manila,False
+Niigata,37.9161,139.0364,Japan,admin,Asia/Tokyo,False
+Vinh,18.6667,105.6667,Vietnam,admin,Asia/Jakarta,False
+Puxi,35.2125,114.735,China,admin,Asia/Manila,False
+Hamamatsu,34.7108,137.7275,Japan,admin,Asia/Tokyo,False
+Zijinglu,34.7667,112.9667,China,admin,Asia/Manila,False
+Kumila,35.25,73.5,Pakistan,admin,Asia/Karachi,False
+Xingyi,25.092,104.8955,China,admin,Asia/Manila,False
+Xingcheng,24.1347,115.73,China,admin,Asia/Manila,False
+Ailan Mubage,43.908,81.2777,China,admin,Asia/Dhaka,False
+Frankfurt,50.1106,8.6822,Germany,admin,Europe/Paris,False
+San Luis Potosi,22.1511,-100.9761,Mexico,admin,America/Mexico_City,False
+Bucheon,37.5,126.7833,"Korea, South",admin,Asia/Tokyo,False
+Fuyang,30.0553,119.95,China,admin,Asia/Manila,False
+Korla,41.7259,86.1746,China,admin,Asia/Dhaka,False
+Erzurum,39.9086,41.2769,Turkey,admin,Europe/Moscow,False
+Zagreb,45.8131,15.9772,Croatia,admin,Europe/Paris,False
+Al `Ayn,24.2075,55.7447,United Arab Emirates,admin,Asia/Dubai,False
+Patiala,30.34,76.38,India,admin,Asia/Kolkata,False
+Bahawalpur,29.3956,71.6836,Pakistan,admin,Asia/Karachi,False
+Qingnian,36.8494,115.7061,China,admin,Asia/Manila,False
+Sanhe,40.0167,117.0833,China,admin,Asia/Manila,False
+Winnipeg,49.8844,-97.1464,Canada,admin,America/Chicago,False
+Shishgarh,28.72,79.32,India,admin,Asia/Kolkata,False
+Leping,28.978,117.152,China,admin,Asia/Manila,False
+Colombo,6.9167,79.8333,Sri Lanka,admin,Asia/Kolkata,False
+Nerima,35.7356,139.6517,Japan,admin,Asia/Tokyo,False
+Natal,-5.795,-35.2089,Brazil,admin,America/Sao_Paulo,False
+Lichuan,30.291,108.9364,China,admin,Asia/Manila,False
+Pendik,40.8747,29.235,Turkey,admin,Europe/Moscow,False
+Gdansk,54.3475,18.6453,Poland,admin,Europe/Paris,False
+Licheng,31.4306,119.4788,China,admin,Asia/Manila,False
+Santo Andre,-23.6533,-46.528,Brazil,admin,America/Sao_Paulo,False
+Ota-ku,35.5614,139.7161,Japan,admin,Asia/Tokyo,False
+Thiruvananthapuram,8.5241,76.9366,India,admin,Asia/Kolkata,False
+Zhuanghe,39.681,122.967,China,admin,Asia/Manila,False
+Chengguan,35.4623,113.8054,China,admin,Asia/Manila,False
+Bagcilar,41.0344,28.8564,Turkey,admin,Europe/Moscow,False
+Kumamoto,32.8031,130.7078,Japan,admin,Asia/Tokyo,False
+Lingbao Chengguanzhen,34.5176,110.8942,China,admin,Asia/Manila,False
+Quebec City,46.8139,-71.2081,Canada,admin,America/New_York,False
+Taihe,30.871,105.388,China,admin,Asia/Manila,False
+Yanggok,37.6333,127.2167,"Korea, South",admin,Asia/Tokyo,False
+Zhongba,31.771,104.755,China,admin,Asia/Manila,False
+Sizhan,38.9846,106.3828,China,admin,Asia/Manila,False
+Suohe,34.7833,113.35,China,admin,Asia/Manila,False
+Xiangxiang,27.7186,112.5502,China,admin,Asia/Manila,False
+Hamilton,43.2567,-79.8692,Canada,admin,America/New_York,False
+Songyang,34.4553,113.0253,China,admin,Asia/Manila,False
+Cagayan de Oro,8.48,124.65,Philippines,admin,Asia/Manila,False
+Qian'an,39.999,118.701,China,admin,Asia/Manila,False
+Shuangqiao,35.067,112.602,China,admin,Asia/Manila,False
+Chaohucun,31.6244,117.8902,China,admin,Asia/Manila,False
+Zouping,36.863,117.743,China,admin,Asia/Manila,False
+Durgapur,23.55,87.32,India,admin,Asia/Kolkata,False
+Cencheng,22.9167,111.0,China,admin,Asia/Manila,False
+Umraniye,41.0311,29.1081,Turkey,admin,Europe/Moscow,False
+Sorocaba,-23.5019,-47.4578,Brazil,admin,America/Sao_Paulo,False
+Guli,28.9,120.0333,China,admin,Asia/Manila,False
+Sagamihara,35.5667,139.3667,Japan,admin,Asia/Tokyo,False
+Laixi,36.8667,120.5333,China,admin,Asia/Manila,False
+Okayama,34.65,133.9167,Japan,admin,Asia/Tokyo,False
+Concepcion,-36.8282,-73.0514,Chile,admin,America/Santiago,False
+Mississauga,43.6,-79.65,Canada,admin,America/New_York,False
+Changsha,22.3773,112.6982,China,admin,Asia/Manila,False
+Lviv,49.8425,24.0322,Ukraine,admin,Europe/Athens,False
+Shihezi,44.3054,86.0804,China,admin,Asia/Dhaka,False
+Valenzuela,14.7,120.98,Philippines,admin,Asia/Manila,False
+Xichang,27.8944,102.2644,China,admin,Asia/Manila,False
+Guangshui,31.617,113.826,China,admin,Asia/Manila,False
+Zaporizhzhia,47.85,35.1175,Ukraine,admin,Europe/Athens,False
+Bhiwandi,19.2967,73.0631,India,admin,Asia/Kolkata,False
+Gaoyou,32.845,119.508,China,admin,Asia/Manila,False
+Chengxiang,31.564,121.174,China,admin,Asia/Manila,False
+Bhilwara,25.35,74.63,India,admin,Asia/Kolkata,False
+Oslo,59.9133,10.7389,Norway,admin,Europe/Paris,False
+George Town,5.4136,100.3294,Malaysia,admin,Asia/Manila,False
+Zunhua,40.189,117.966,China,admin,Asia/Manila,False
+Saharanpur,29.9639,77.5458,India,admin,Asia/Kolkata,False
+Yenimahalle,39.9719,32.8119,Turkey,admin,Europe/Moscow,False
+Warangal,17.9689,79.5941,India,admin,Asia/Kolkata,False
+Dasmarinas,14.33,120.94,Philippines,admin,Asia/Manila,False
+Shiliguri,26.71,88.43,India,admin,Asia/Kolkata,False
+Parachinar,33.9,70.1,Pakistan,admin,Asia/Karachi,False
+Tongchuan,34.897,108.945,China,admin,Asia/Manila,False
+Xindi,29.827,113.476,China,admin,Asia/Manila,False
+Edogawa,35.7,139.8833,Japan,admin,Asia/Tokyo,False
+General Santos,6.12,125.17,Philippines,admin,Asia/Manila,False
+Salem,11.65,78.15,India,admin,Asia/Kolkata,False
+Sinnuris,29.4072,30.8667,Egypt,admin,Africa/Cairo,False
+Guadalupe,25.6775,-100.2597,Mexico,admin,America/Mexico_City,False
+Selcuklu,37.8814,32.4922,Turkey,admin,Europe/Moscow,False
+City of Paranaque,14.5008,120.9915,Philippines,admin,Asia/Manila,False
+Taihecun,45.771,131.003,China,admin,Asia/Manila,False
+Mamak,39.9422,32.9231,Turkey,admin,Europe/Moscow,False
+Jianshe,34.2137,113.7629,China,admin,Asia/Manila,False
+Shishi,24.7167,118.7,China,admin,Asia/Manila,False
+Shizuoka,34.9756,138.3828,Japan,admin,Asia/Tokyo,False
+Mar del Plata,-38.0,-57.55,Argentina,admin,America/Sao_Paulo,False
+Adachi,35.7833,139.8,Japan,admin,Asia/Tokyo,False
+Pontianak,-0.0206,109.3414,Indonesia,admin,Asia/Jakarta,False
+Xigaze,29.25,88.8833,China,admin,Asia/Manila,False
+Tasikmalaya,-7.3161,108.1975,Indonesia,admin,Asia/Jakarta,False
+Kochi,9.9312,76.2673,India,admin,Asia/Kolkata,False
+Soledad,10.9167,-74.75,Colombia,admin,America/Lima,False
+Shanhu,29.6,120.8167,China,admin,Asia/Manila,False
+Gothenburg,57.7075,11.9675,Sweden,admin,Europe/Paris,False
+Acapulco de Juarez,16.8636,-99.8825,Mexico,admin,America/Mexico_City,False
+Gorakhpur,26.7637,83.4039,India,admin,Asia/Kolkata,False
+Wroclaw,51.11,17.0325,Poland,admin,Europe/Paris,False
+Pinghu,30.7,121.0167,China,admin,Asia/Manila,False
+Guankou,30.988,103.647,China,admin,Asia/Manila,False
+Lodz,51.7769,19.4547,Poland,admin,Europe/Paris,False
+Yatou,37.1653,122.4867,China,admin,Asia/Manila,False
+Denpasar,-8.6717,115.2339,Indonesia,admin,Asia/Manila,False
+Guntur,16.3008,80.4428,India,admin,Asia/Kolkata,False
+Tolyatti,53.5089,49.4222,Russia,admin,Asia/Dubai,False
+Zhaodong,46.051,125.962,China,admin,Asia/Manila,False
+Puyang Chengguanzhen,35.7004,114.98,China,admin,Asia/Manila,False
+Aracaju,-10.9111,-37.0717,Brazil,admin,America/Sao_Paulo,False
+Bacoor,14.4624,120.9645,Philippines,admin,Asia/Manila,False
+Rotterdam,51.92,4.48,Netherlands,admin,Europe/Paris,False
+Tlaquepaque,20.6167,-103.3167,Mexico,admin,America/Mexico_City,False
+Villavicencio,4.15,-73.6333,Colombia,admin,America/Lima,False
+Campo Grande,-20.4686,-54.6222,Brazil,admin,America/Caracas,False
+Jingcheng,32.009,120.263,China,admin,Asia/Manila,False
+Makhachkala,42.9825,47.505,Russia,admin,Europe/Moscow,False
+Banjarmasin,-3.32,114.5925,Indonesia,admin,Asia/Manila,False
+Al Hufuf,25.3608,49.5997,Saudi Arabia,admin,Europe/Moscow,False
+Dali,25.6811,100.3003,China,admin,Asia/Manila,False
+Sargodha,32.0836,72.6711,Pakistan,admin,Asia/Karachi,False
+Karaikandi,24.8309,92.6143,India,admin,Asia/Kolkata,False
+Ch'onan,36.81,127.1475,"Korea, South",admin,Asia/Tokyo,False
+Brampton,43.6833,-79.7667,Canada,admin,America/New_York,False
+Haldwani,29.22,79.52,India,admin,Asia/Kolkata,False
+Yildirim,40.11,29.0821,Turkey,admin,Europe/Moscow,False
+Dhulia,20.8997,74.7697,India,admin,Asia/Kolkata,False
+Zhongshu,27.7919,106.4013,China,admin,Asia/Manila,False
+Durango,24.025,-104.6675,Mexico,admin,America/Mexico_City,False
+Songzi,30.174,111.757,China,admin,Asia/Manila,False
+Tondo,14.617,120.967,Philippines,admin,Asia/Manila,False
+Dayrut,27.5564,30.8106,Egypt,admin,Africa/Cairo,False
+Tlalnepantla,19.5367,-99.1947,Mexico,admin,America/Mexico_City,False
+Xiping,25.6005,103.8166,China,admin,Asia/Manila,False
+Osasco,-23.5328,-46.7919,Brazil,admin,America/Sao_Paulo,False
+Hue,16.4619,107.5955,Vietnam,admin,Asia/Jakarta,False
+San Jose del Monte,14.8139,121.0453,Philippines,admin,Asia/Manila,False
+Denizli,37.7833,29.0964,Turkey,admin,Europe/Moscow,False
+Honcho,35.6946,139.9826,Japan,admin,Asia/Tokyo,False
+Wuxue,29.844,115.561,China,admin,Asia/Manila,False
+Bhavnagar,21.76,72.15,India,admin,Asia/Kolkata,False
+Jinghong,22.009,100.797,China,admin,Asia/Manila,False
+Wugang,26.7266,110.6319,China,admin,Asia/Manila,False
+Petaling Jaya,3.0833,101.65,Malaysia,admin,Asia/Manila,False
+Noida,28.57,77.32,India,admin,Asia/Kolkata,False
+Bhangar,22.58,88.42,India,admin,Asia/Kolkata,False
+Chuxiong,25.033,101.5459,China,admin,Asia/Manila,False
+Dusseldorf,51.2256,6.7767,Germany,admin,Europe/Paris,False
+Palermo,38.1157,13.3613,Italy,admin,Europe/Paris,False
+Makati City,14.5567,121.0214,Philippines,admin,Asia/Manila,False
+Tukh,30.3549,31.2011,Egypt,admin,Africa/Cairo,False
+Bazal'tove,50.6765,26.16,Ukraine,admin,Europe/Athens,False
+Al Qatif,26.5196,50.0115,Saudi Arabia,admin,Europe/Moscow,False
+Bhilai,21.21,81.38,India,admin,Asia/Kolkata,False
+Mangalore,12.8717,74.8425,India,admin,Asia/Kolkata,False
+Kaihua,23.387,104.233,China,admin,Asia/Manila,False
+Irkutsk,52.2892,104.28,Russia,admin,Asia/Manila,False
+Meilan,19.999,110.403,China,admin,Asia/Manila,False
+Ansan,37.3167,126.8333,"Korea, South",admin,Asia/Tokyo,False
+Barnaul,53.3486,83.7764,Russia,admin,Asia/Jakarta,False
+Bazhou,39.1333,116.3833,China,admin,Asia/Manila,False
+Turpan,42.9512,89.1895,China,admin,Asia/Dhaka,False
+Langzhong,31.558,106.005,China,admin,Asia/Manila,False
+Qufu,35.5819,116.9862,China,admin,Asia/Manila,False
+Al Mansurah,31.05,31.3833,Egypt,admin,Africa/Cairo,False
+Tengyue,25.0167,98.4833,China,admin,Asia/Manila,False
+Leipzig,51.34,12.375,Germany,admin,Europe/Paris,False
+Halwan,29.8493,31.3327,Egypt,admin,Africa/Cairo,False
+Tan An,10.905,106.6994,Vietnam,admin,Asia/Jakarta,False
+Izhevsk,56.8333,53.1833,Russia,admin,Asia/Dubai,False
+Jurong,31.946,119.164,China,admin,Asia/Manila,False
+Bihta,25.5619,84.87,India,admin,Asia/Kolkata,False
+Yuhuan,28.1277,121.2288,China,admin,Asia/Manila,False
+Khabarovsk,48.4833,135.0833,Russia,admin,Australia/Brisbane,False
+Etimesgut,39.9458,32.6694,Turkey,admin,Europe/Moscow,False
+Changping,40.2248,116.1944,China,admin,Asia/Manila,False
+Chimalhuacan,19.4131,-98.9839,Mexico,admin,America/Mexico_City,False
+Oujda-Angad,34.6867,-1.9114,Morocco,admin,Africa/Casablanca,False
+Ruiming,25.886,116.027,China,admin,Asia/Manila,False
+Serang,-6.12,106.1503,Indonesia,admin,Asia/Jakarta,False
+Ulyanovsk,54.3167,48.3667,Russia,admin,Asia/Dubai,False
+Shenzhou,38.002,115.56,China,admin,Asia/Manila,False
+Jambi,-1.59,103.61,Indonesia,admin,Asia/Jakarta,False
+Hasanpur,28.72,78.28,India,admin,Asia/Kolkata,False
+Yukarikaraman,36.9167,30.6833,Turkey,admin,Europe/Moscow,False
+Kuantan,3.83,103.32,Malaysia,admin,Asia/Manila,False
+Gold Coast,-28.0167,153.4,Australia,admin,Australia/Brisbane,False
+Kawaguchi,35.8077,139.7241,Japan,admin,Asia/Tokyo,False
+Dashiqiao,40.6167,122.5167,China,admin,Asia/Manila,False
+Las Pinas City,14.45,120.98,Philippines,admin,Asia/Manila,False
+Cuttack,20.5236,85.7881,India,admin,Asia/Kolkata,False
+San Miguel de Tucuman,-26.8167,-65.2167,Argentina,admin,America/Sao_Paulo,False
+Ar Rayyan,25.25,51.4,Qatar,admin,Europe/Moscow,False
+Salimpur,26.3,83.9167,India,admin,Asia/Kolkata,False
+Kryvyi Rih,47.91,33.39,Ukraine,admin,Europe/Athens,False
+Zhuozhou,39.485,115.974,China,admin,Asia/Manila,False
+Tianchang,32.6811,119.0137,China,admin,Asia/Manila,False
+Bacolod,10.6765,122.9509,Philippines,admin,Asia/Manila,False
+Raurkela,22.2492,84.8828,India,admin,Asia/Kolkata,False
+Tumkur,13.34,77.1,India,admin,Asia/Kolkata,False
+Balikpapan,-1.2768,116.8277,Indonesia,admin,Asia/Manila,False
+Sanliurfa,37.1583,38.7917,Turkey,admin,Europe/Moscow,False
+Dortmund,51.5139,7.4653,Germany,admin,Europe/Paris,False
+Xinji,37.943,115.218,China,admin,Asia/Manila,False
+Melikgazi,38.7167,35.5,Turkey,admin,Europe/Moscow,False
+Kagoshima,31.5969,130.5572,Japan,admin,Asia/Tokyo,False
+Wenchang,31.0358,116.9367,China,admin,Asia/Manila,False
+Sihui,23.3265,112.7338,China,admin,Asia/Manila,False
+Irapuato,20.6667,-101.35,Mexico,admin,America/Mexico_City,False
+Dublin,53.3497,-6.2603,Ireland,admin,Europe/Dublin,False
+Al Mahallah al Kubra,30.9667,31.1667,Egypt,admin,Africa/Cairo,False
+Sialkot City,32.4925,74.5311,Pakistan,admin,Asia/Karachi,False
+Vladivostok,43.115,131.8853,Russia,admin,Australia/Brisbane,False
+Luocheng,30.99,104.25,China,admin,Asia/Manila,False
+Pereira,4.8143,-75.6946,Colombia,admin,America/Lima,False
+Reynosa,26.0922,-98.2778,Mexico,admin,America/Chicago,False
+Essen,51.4508,7.0131,Germany,admin,Europe/Paris,False
+Cimahi,-6.8712,107.5548,Indonesia,admin,Asia/Jakarta,False
+Wenlan,23.3961,103.3649,China,admin,Asia/Manila,False
+Itabashi,35.7667,139.6833,Japan,admin,Asia/Tokyo,False
+Shah Alam,3.0667,101.55,Malaysia,admin,Asia/Manila,False
+Suginami-ku,35.6994,139.6364,Japan,admin,Asia/Tokyo,False
+Jaboatao dos Guararapes,-8.1128,-35.015,Brazil,admin,America/Sao_Paulo,False
+At Ta'if,21.2667,40.4167,Saudi Arabia,admin,Europe/Moscow,False
+Nha Trang,12.245,109.1917,Vietnam,admin,Asia/Jakarta,False
+Tuxtla,16.7528,-93.1167,Mexico,admin,America/Mexico_City,False
+Dehra Dun,30.345,78.029,India,admin,Asia/Kolkata,False
+Bremen,53.0758,8.8072,Germany,admin,Europe/Paris,False
+Fu'an,27.1,119.6333,China,admin,Asia/Manila,False
+Mymensingh,24.7504,90.38,Bangladesh,admin,Asia/Dhaka,False
+Hachioji,35.6664,139.316,Japan,admin,Asia/Tokyo,False
+Iloilo,10.72,122.57,Philippines,admin,Asia/Manila,False
+Puente Alto,-33.6167,-70.5667,Chile,admin,America/Santiago,False
+Botou,38.0833,116.5833,China,admin,Asia/Manila,False
+Rabat,34.0209,-6.8416,Morocco,admin,Africa/Casablanca,False
+Sincan,39.9594,32.5767,Turkey,admin,Europe/Moscow,False
+Kottayam,9.5916,76.5222,India,admin,Asia/Kolkata,False
+Kahramanmaras,37.5833,36.9333,Turkey,admin,Europe/Moscow,False
+Shibin al Qanatir,30.3127,31.3202,Egypt,admin,Africa/Cairo,False
+Tonala,20.6167,-103.2333,Mexico,admin,America/Mexico_City,False
+Abu Hummus,31.0931,30.3142,Egypt,admin,Africa/Cairo,False
+Jin'e,29.3394,105.2875,China,admin,Asia/Manila,False
+Macau,22.2006,113.5461,Macau,admin,Asia/Manila,False
+Xinxing,39.8667,124.15,China,admin,Asia/Manila,False
+Surrey,49.19,-122.8489,Canada,admin,America/Los_Angeles,False
+Yaroslavl,57.6167,39.85,Russia,admin,Europe/Moscow,False
+Qionghu,28.945,112.598,China,admin,Asia/Manila,False
+Dresden,51.05,13.74,Germany,admin,Europe/Paris,False
+Xinmin,41.997,122.823,China,admin,Asia/Manila,False
+Antwerp,51.2178,4.4003,Belgium,admin,Europe/Paris,False
+Kuiju,36.8667,119.4,China,admin,Asia/Manila,False
+Asansol,23.68,86.99,India,admin,Asia/Kolkata,False
+Bokaro Steel City,23.67,86.15,India,admin,Asia/Kolkata,False
+Jieshou,33.257,115.3746,China,admin,Asia/Manila,False
+Bello,6.3333,-75.5667,Colombia,admin,America/Lima,False
+Kolhapur,16.6917,74.2333,India,admin,Asia/Kolkata,False
+Wencheng,19.617,110.7551,China,admin,Asia/Manila,False
+Miluo Chengguanzhen,28.761,113.16,China,admin,Asia/Manila,False
+Lanxi,29.208,119.458,China,admin,Asia/Manila,False
+Zhenzhou,32.2723,119.1848,China,admin,Asia/Manila,False
+Nava Raipur,21.161,81.787,India,admin,Asia/Kolkata,False
+Gaizhou,40.4,122.35,China,admin,Asia/Manila,False
+Leling,37.73,117.232,China,admin,Asia/Manila,False
+Genoa,44.4072,8.934,Italy,admin,Europe/Paris,False
+Ensenada,31.8578,-116.6058,Mexico,admin,America/Los_Angeles,False
+Surakarta,-7.5667,110.8167,Indonesia,admin,Asia/Jakarta,False
+Ajmer,26.4499,74.6399,India,admin,Asia/Kolkata,False
+Braunschweig,52.2667,10.5167,Germany,admin,Europe/Paris,False
+Nanded,19.15,77.3,India,admin,Asia/Kolkata,False
+Wuhai,39.655,106.794,China,admin,Asia/Manila,False
+Rustenburg,-25.6667,27.2428,South Africa,admin,Africa/Johannesburg,False
+Amravati,20.9258,77.7647,India,admin,Asia/Kolkata,False
+Lisbon,38.7122,-9.134,Portugal,admin,Europe/Lisbon,False
+Yanji,42.9,129.5,China,admin,Asia/Manila,False
+The Hague,52.08,4.31,Netherlands,admin,Europe/Paris,False
+Hannover,52.3667,9.7167,Germany,admin,Europe/Paris,False
+Sevastopol,44.605,33.5225,Ukraine,admin,Europe/Moscow,False
+Nellore,14.4431,79.9861,India,admin,Asia/Kolkata,False
+Poznan,52.4083,16.9336,Poland,admin,Europe/Paris,False
+Ibague,4.4333,-75.2333,Colombia,admin,America/Lima,False
+Wancheng,18.8,110.4,China,admin,Asia/Manila,False
+Tomsk,56.5,84.9667,Russia,admin,Asia/Jakarta,False
+Sungai Petani,5.6497,100.4793,Malaysia,admin,Asia/Manila,False
+Xinshi,31.1333,113.1167,China,admin,Asia/Manila,False
+Kemerovo,55.3667,86.0667,Russia,admin,Asia/Jakarta,False
+Naberezhnyye Chelny,55.6833,52.3167,Russia,admin,Europe/Moscow,False
+Valledupar,10.4833,-73.25,Colombia,admin,America/Lima,False
+Muntinlupa City,14.38,121.05,Philippines,admin,Asia/Manila,False
+K'ebri Beyah,9.0833,43.0833,Ethiopia,admin,Europe/Moscow,False
+Luofeng,37.359,120.396,China,admin,Asia/Manila,False
+Ghulja,43.9,81.35,China,admin,Asia/Dhaka,False
+Ixtapaluca,19.3186,-98.8822,Mexico,admin,America/Mexico_City,False
+Fuding,27.2,120.2,China,admin,Asia/Manila,False
+Heroica Matamoros,25.8797,-97.5042,Mexico,admin,America/Chicago,False
+Lingyuan,41.25,119.4,China,admin,Asia/Manila,False
+Juiz de Fora,-21.7642,-43.3503,Brazil,admin,America/Sao_Paulo,False
+Guixi,28.2925,117.2454,China,admin,Asia/Manila,False
+City of Calamba,14.22,121.17,Philippines,admin,Asia/Manila,False
+Sao Jose dos Campos,-23.1789,-45.8869,Brazil,admin,America/Sao_Paulo,False
+Contagem,-19.9319,-44.0539,Brazil,admin,America/Sao_Paulo,False
+Agadir,30.4214,-9.5831,Morocco,admin,Africa/Casablanca,False
+Orenburg,51.7833,55.1,Russia,admin,Asia/Karachi,False
+Nilufer,40.2833,28.95,Turkey,admin,Europe/Moscow,False
+Aksu,41.185,80.2904,China,admin,Asia/Dhaka,False
+Salta,-24.7833,-65.4167,Argentina,admin,America/Sao_Paulo,False
+Dispur,26.1397,91.7925,India,admin,Asia/Kolkata,False
+Gulbarga,17.329,76.825,India,admin,Asia/Kolkata,False
+Kimhae,35.2342,128.8811,"Korea, South",admin,Asia/Tokyo,False
+Novokuznetsk,53.7667,87.1333,Russia,admin,Asia/Jakarta,False
+Balashikha,55.8167,37.9667,Russia,admin,Europe/Moscow,False
+Bikaner,28.0167,73.3119,India,admin,Asia/Kolkata,False
+Gaobeidian,39.327,115.874,China,admin,Asia/Manila,False
+Himeji,34.8167,134.6833,Japan,admin,Asia/Tokyo,False
+Nuremberg,49.4539,11.0775,Germany,admin,Europe/Paris,False
+Van,38.4942,43.38,Turkey,admin,Europe/Moscow,False
+Port Said,31.2625,32.3061,Egypt,admin,Africa/Cairo,False
+Koto-ku,35.6667,139.8167,Japan,admin,Asia/Tokyo,False
+Ciudad Apodaca,25.7817,-100.1886,Mexico,admin,America/Mexico_City,False
+Kitchener,43.4186,-80.4728,Canada,admin,America/New_York,False
+Agartala,23.8314,91.2869,India,admin,Asia/Kolkata,False
+Soacha,4.5872,-74.2214,Colombia,admin,America/Lima,False
+Buca,38.35,27.1667,Turkey,admin,Europe/Moscow,False
+Maipu,-33.5167,-70.7667,Chile,admin,America/Santiago,False
+Lyon,45.76,4.84,France,admin,Europe/Paris,False
+Tultitlan de Mariano Escobedo,19.645,-99.1694,Mexico,admin,America/Mexico_City,False
+Ryazan,54.63,39.7425,Russia,admin,Europe/Moscow,False
+Meknes,33.895,-5.5547,Morocco,admin,Africa/Casablanca,False
+Luanzhou,39.741,118.704,China,admin,Asia/Manila,False
+Al Fayyum,29.3,30.8333,Egypt,admin,Africa/Cairo,False
+Utsunomiya,36.555,139.8825,Japan,admin,Asia/Tokyo,False
+Chanda,19.95,79.297,India,admin,Asia/Kolkata,False
+Suez,29.9667,32.5333,Egypt,admin,Africa/Cairo,False
+Heshan,22.7667,112.95,China,admin,Asia/Manila,False
+Loni,28.75,77.28,India,admin,Asia/Kolkata,False
+Jiaji,19.2431,110.4642,China,admin,Asia/Manila,False
+Qaraghandy,49.8028,73.1056,Kazakhstan,admin,Asia/Karachi,False
+Santa Marta,11.2419,-74.2053,Colombia,admin,America/Lima,False
+Ujjain,23.17,75.79,India,admin,Asia/Kolkata,False
+Abu Tisht,26.1204,32.0954,Egypt,admin,Africa/Cairo,False
+Macapa,0.033,-51.05,Brazil,admin,America/Sao_Paulo,False
+Al Fashn,28.8231,30.899,Egypt,admin,Africa/Cairo,False
+Toulouse,43.6045,1.444,France,admin,Europe/Paris,False
+Campos,-21.7523,-41.3304,Brazil,admin,America/Sao_Paulo,False
+Meihekou,42.5407,125.7107,China,admin,Asia/Manila,False
+Kenitra,34.25,-6.5833,Morocco,admin,Africa/Casablanca,False
+Newcastle,-27.7464,29.9328,South Africa,admin,Africa/Johannesburg,False
+Jhansi,25.4486,78.5696,India,admin,Asia/Kolkata,False
+Matsuyama,33.8333,132.7667,Japan,admin,Asia/Tokyo,False
+Ulhasnagar,19.22,73.15,India,admin,Asia/Kolkata,False
+Ribeirao Preto,-21.1776,-47.8101,Brazil,admin,America/Sao_Paulo,False
+Pohang,36.0322,129.365,"Korea, South",admin,Asia/Tokyo,False
+Duisburg,51.4347,6.7625,Germany,admin,Europe/Paris,False
+Jammu,32.73,74.87,India,admin,Asia/Kolkata,False
+Mazatlan,23.2167,-106.4167,Mexico,admin,America/Phoenix,False
+Uberlandia,-18.9189,-48.2769,Brazil,admin,America/Sao_Paulo,False
+Nenjiang,49.11,125.13,China,admin,Asia/Manila,False
+Tuticorin,8.8056,78.145,India,admin,Asia/Kolkata,False
+Sukkur,27.7061,68.8483,Pakistan,admin,Asia/Karachi,False
+K'ebri Dehar,6.7333,44.2667,Ethiopia,admin,Europe/Moscow,False
+Taozhou,30.8956,119.411,China,admin,Asia/Manila,False
+Anlu,31.2667,113.6667,China,admin,Asia/Manila,False
+Lapu-Lapu City,10.3127,123.9488,Philippines,admin,Asia/Manila,False
+Matsudo,35.7876,139.9032,Japan,admin,Asia/Tokyo,False
+Johor Bahru,1.482,103.7281,Malaysia,admin,Asia/Manila,False
+Purnea,25.778,87.476,India,admin,Asia/Kolkata,False
+Imus,14.4297,120.9367,Philippines,admin,Asia/Manila,False
+Niteroi,-22.8833,-43.1036,Brazil,admin,America/Sao_Paulo,False
+Lipetsk,52.6167,39.6,Russia,admin,Europe/Moscow,False
+Cheboksary,56.15,47.2333,Russia,admin,Europe/Moscow,False
+Xiangyang,34.2995,108.4905,China,admin,Asia/Manila,False
+Jiangshan,28.7361,118.625,China,admin,Asia/Manila,False
+Duyun,26.2594,107.5186,China,admin,Asia/Manila,False
+Pindi Bhattian,31.8958,73.2761,Pakistan,admin,Asia/Karachi,False
+Ichikawa,35.7219,139.9311,Japan,admin,Asia/Tokyo,False
+Kumul,42.8193,93.5151,China,admin,Asia/Dhaka,False
+Accra,5.5461,-0.2067,Ghana,admin,Africa/Abidjan,False
+Kota Bharu,6.12,102.23,Malaysia,admin,Asia/Manila,False
+Higashi-osaka,34.6794,135.6008,Japan,admin,Asia/Tokyo,False
+Larkana,27.5583,68.2111,Pakistan,admin,Asia/Karachi,False
+Xingcheng,40.6167,120.7333,China,admin,Asia/Manila,False
+`Ajman,25.4136,55.4456,United Arab Emirates,admin,Asia/Dubai,False
+Ciudad Lopez Mateos,19.55,-99.2833,Mexico,admin,America/Mexico_City,False
+Kaliningrad,54.7003,20.4531,Russia,admin,Africa/Johannesburg,False
+Yueqing,28.12,120.96,China,admin,Asia/Manila,False
+Penza,53.2,45.0,Russia,admin,Europe/Moscow,False
+Belgaum,15.85,74.5,India,admin,Asia/Kolkata,False
+Yucheng,36.934,116.638,China,admin,Asia/Manila,False
+Nishinomiya-hama,34.7376,135.3416,Japan,admin,Asia/Tokyo,False
+Karamay,45.5799,84.8892,China,admin,Asia/Dhaka,False
+Kawachicho,34.6794,135.6008,Japan,admin,Asia/Tokyo,False
+Zhangshu,28.0546,115.5462,China,admin,Asia/Manila,False
+Mingguang,32.7833,117.9667,China,admin,Asia/Manila,False
+Malatya,38.3486,38.3194,Turkey,admin,Europe/Moscow,False
+Vellore,12.9165,79.1325,India,admin,Asia/Kolkata,False
+Huanghua,38.372,117.33,China,admin,Asia/Manila,False
+Encheng,22.1833,112.3,China,admin,Asia/Manila,False
+Lianran,24.919,102.478,China,admin,Asia/Manila,False
+Kartal,40.8872,29.19,Turkey,admin,Europe/Moscow,False
+Cuiaba,-15.5958,-56.0969,Brazil,admin,America/Caracas,False
+Akhmim,26.5667,31.75,Egypt,admin,Africa/Cairo,False
+Malegaon,20.55,74.55,India,admin,Asia/Kolkata,False
+Feira de Santana,-12.2669,-38.9669,Brazil,admin,America/Sao_Paulo,False
+Hailun,47.4667,126.9667,China,admin,Asia/Manila,False
+Jamnagar,22.47,70.07,India,admin,Asia/Kolkata,False
+Sylhet,24.9,91.8667,Bangladesh,admin,Asia/Dhaka,False
+Ananindeua,-1.3658,-48.3719,Brazil,admin,America/Sao_Paulo,False
+Chiniot,31.7194,72.9842,Pakistan,admin,Asia/Karachi,False
+Chengjiao,35.3984,114.0649,China,admin,Asia/Manila,False
+Bardoli,21.12,73.12,India,admin,Asia/Kolkata,False
+Bratislava,48.1447,17.1128,Slovakia,admin,Europe/Paris,False
+Kurashiki,34.585,133.7722,Japan,admin,Asia/Tokyo,False
+Oita,33.2333,131.6067,Japan,admin,Asia/Tokyo,False
+Al Jubayl,27.0046,49.646,Saudi Arabia,admin,Europe/Moscow,False
+Gaya,24.75,85.01,India,admin,Asia/Kolkata,False
+Xiulin,29.7209,112.4254,China,admin,Asia/Manila,False
+Shekhupura,31.7111,73.9878,Pakistan,admin,Asia/Karachi,False
+Vila Velha,-20.3364,-40.2936,Brazil,admin,America/Sao_Paulo,False
+Kirov,58.6,49.6833,Russia,admin,Europe/Moscow,False
+San Juan,-31.5342,-68.5261,Argentina,admin,America/Sao_Paulo,False
+Mykolaiv,46.975,31.995,Ukraine,admin,Europe/Athens,False
+Yicheng,31.721,112.257,China,admin,Asia/Manila,False
+Fengcheng,40.45,124.0667,China,admin,Asia/Manila,False
+Xiaoyi,36.0833,111.5167,China,admin,Asia/Manila,False
+Katlehong,-26.3333,28.15,South Africa,admin,Africa/Johannesburg,False
+Jiangshandicun,28.7412,118.6225,China,admin,Asia/Manila,False
+Qingzhen,26.5704,106.4687,China,admin,Asia/Manila,False
+Buraydah,26.3664,43.9628,Saudi Arabia,admin,Europe/Moscow,False
+Kupang,-10.1702,123.6077,Indonesia,admin,Asia/Manila,False
+Tula,54.2,37.6167,Russia,admin,Europe/Moscow,False
+Ambattur,13.1143,80.1548,India,admin,Asia/Kolkata,False
+Nakhon Ratchasima,14.9806,102.1,Thailand,admin,Asia/Jakarta,False
+Tan Uyen,11.0508,106.7636,Vietnam,admin,Asia/Jakarta,False
+Astrakhan,46.35,48.035,Russia,admin,Asia/Dubai,False
+Longjiang,27.5819,120.5489,China,admin,Asia/Manila,False
+Rushan,36.87,121.505,China,admin,Asia/Manila,False
+Shangzhi,45.207,127.965,China,admin,Asia/Manila,False
+Angeles City,15.1472,120.5847,Philippines,admin,Asia/Manila,False
+Kuqa,41.7156,82.9322,China,admin,Asia/Dhaka,False
+Kanazawa,36.5611,136.6564,Japan,admin,Asia/Tokyo,False
+Manado Light,1.4858,124.8347,Indonesia,admin,Asia/Manila,False
+Manado,1.4931,124.8413,Indonesia,admin,Asia/Manila,False
+Kaiyuan,42.546,124.038,China,admin,Asia/Manila,False
+Cranbourne,-38.0996,145.2834,Australia,admin,Australia/Sydney,False
+Jalgaon,21.004,75.568,India,admin,Asia/Kolkata,False
+Chhatarpur,24.55,79.3527,India,admin,Asia/Kolkata,False
+Fukuyama,34.4858,133.3622,Japan,admin,Asia/Tokyo,False
+Lanus,-34.7,-58.4,Argentina,admin,America/Sao_Paulo,False
+Pyeongtaek,36.9922,127.1128,"Korea, South",admin,Asia/Tokyo,False
+Kurnool,15.83,78.05,India,admin,Asia/Kolkata,False
+Marikina City,14.65,121.1,Philippines,admin,Asia/Manila,False
+Kagithane,41.0719,28.9664,Turkey,admin,Europe/Moscow,False
+Amagasaki,34.7333,135.4,Japan,admin,Asia/Tokyo,False
+Melaka,2.2064,102.2465,Malaysia,admin,Asia/Manila,False
+Ciudad General Escobedo,25.7933,-100.1583,Mexico,admin,America/Mexico_City,False
+Manizales,5.0675,-75.51,Colombia,admin,America/Lima,False
+Bornova,38.4697,27.2211,Turkey,admin,Europe/Moscow,False
+Hsinchu,24.8167,120.9833,Taiwan,admin,Asia/Manila,False
+Gaoping,35.798,112.924,China,admin,Asia/Manila,False
+Batman,37.887,41.132,Turkey,admin,Europe/Moscow,False
+Demiryol,37.887,41.132,Turkey,admin,Europe/Moscow,False
+Erkoklu,37.887,41.132,Turkey,admin,Europe/Moscow,False
+Avcilar,40.9792,28.7214,Turkey,admin,Europe/Moscow,False
+Kota Kinabalu,5.98,116.11,Malaysia,admin,Asia/Manila,False
+Katsushika-ku,35.7333,139.85,Japan,admin,Asia/Tokyo,False
+Udaipur,24.58,73.68,India,admin,Asia/Kolkata,False
+Mogi das Cruzes,-23.5228,-46.1931,Brazil,admin,America/Sao_Paulo,False
+Stavropol,45.05,41.9833,Russia,admin,Europe/Moscow,False
+General Trias,14.38,120.88,Philippines,admin,Asia/Manila,False
+Warder,6.9667,45.35,Ethiopia,admin,Europe/Moscow,False
+Sirajganj,24.45,89.7167,Bangladesh,admin,Asia/Dhaka,False
+Wapi,20.372,72.917,India,admin,Asia/Kolkata,False
+Bac Giang,21.2667,106.2,Vietnam,admin,Asia/Jakarta,False
+Zurich,47.3744,8.5411,Switzerland,admin,Europe/Paris,False
+Nam Dinh,20.42,106.1683,Vietnam,admin,Asia/Jakarta,False
+Rajshahi,24.3667,88.6,Bangladesh,admin,Asia/Dhaka,False
+Piraeus,37.943,23.6469,Greece,admin,Europe/Athens,False
+Zebediela,-24.31,29.27,South Africa,admin,Africa/Johannesburg,False
+Shah Latif Town,24.8806,67.1625,Pakistan,admin,Asia/Karachi,False
+Tanbei,35.088,112.951,China,admin,Asia/Manila,False
+Londrina,-23.31,-51.1628,Brazil,admin,America/Sao_Paulo,False
+Esenler,41.0339,28.8903,Turkey,admin,Europe/Moscow,False
+Sochi,43.5853,39.7203,Russia,admin,Europe/Moscow,False
+Rodriguez,14.72,121.12,Philippines,admin,Asia/Manila,False
+Chauddagram,23.2244,91.3731,Bangladesh,admin,Asia/Kolkata,False
+San Nicolas de los Garza,25.75,-100.2833,Mexico,admin,America/Mexico_City,False
+Taoyuan District,24.9913,121.3143,Taiwan,admin,Asia/Manila,False
+Baisha,29.4896,119.337,China,admin,Asia/Manila,False
+Mathura,27.4925,77.6736,India,admin,Asia/Kolkata,False
+Meicheng,30.631,116.581,China,admin,Asia/Manila,False
+Lembok,-8.565,116.351,Indonesia,admin,Asia/Manila,False
+Pasay City,14.5439,120.995,Philippines,admin,Asia/Manila,False
+Beipiao,41.801,120.771,China,admin,Asia/Manila,False
+Jiannan,31.3333,104.2,China,admin,Asia/Manila,False
+Halifax,44.6475,-63.5906,Canada,admin,America/Halifax,False
+Fujisawa,35.35,139.4667,Japan,admin,Asia/Tokyo,False
+Ulan-Ude,51.8333,107.6,Russia,admin,Asia/Manila,False
+Laval,45.5833,-73.75,Canada,admin,America/New_York,False
+Jinchang,38.5214,102.188,China,admin,Asia/Manila,False
+Nehe,48.4833,124.8833,China,admin,Asia/Manila,False
+Kursk,51.7167,36.1833,Russia,admin,Europe/Moscow,False
+Sangli,16.853,74.583,India,admin,Asia/Kolkata,False
+Jeju,33.513,126.523,"Korea, South",admin,Asia/Tokyo,False
+Zhuangyuan,37.3056,120.829,China,admin,Asia/Manila,False
+Davangere,14.4666,75.9242,India,admin,Asia/Kolkata,False
+Jian'ou,27.0333,118.3167,China,admin,Asia/Manila,False
+Machida,35.5542,139.4431,Japan,admin,Asia/Tokyo,False
+Sanghar,26.0442,68.9536,Pakistan,admin,Asia/Karachi,False
+Chang'an,29.4768,113.4504,China,admin,Asia/Manila,False
+Al Maraghah,26.6998,31.6046,Egypt,admin,Africa/Cairo,False
+Bandung,-6.912,107.6097,Indonesia,admin,Asia/Jakarta,False
+Shahe,36.8549,114.5033,China,admin,Asia/Manila,False
+Calicut,11.2588,75.7804,India,admin,Asia/Kolkata,False
+Joinvile,-26.3039,-48.8458,Brazil,admin,America/Sao_Paulo,False
+Ismailia,30.5833,32.2667,Egypt,admin,Africa/Cairo,False
+Veracruz,19.1903,-96.1533,Mexico,admin,America/Mexico_City,False
+Kashiwa,35.8676,139.9758,Japan,admin,Asia/Tokyo,False
+Al Bajur,30.4305,31.0368,Egypt,admin,Africa/Cairo,False
+Yan'an Beilu,44.0144,87.2674,China,admin,Asia/Dhaka,False
+Mothihari,26.65,84.9167,India,admin,Asia/Kolkata,False
+Aomori,40.8228,140.7469,Japan,admin,Asia/Tokyo,False
+Tepic,21.5083,-104.8931,Mexico,admin,America/Phoenix,False
+Akola,20.7,77.0,India,admin,Asia/Kolkata,False
+Mandaluyong City,14.58,121.03,Philippines,admin,Asia/Manila,False
+Aves,41.3703,-8.4101,Portugal,admin,Europe/Lisbon,False
+Sihung,37.3799,126.8029,"Korea, South",admin,Asia/Tokyo,False
+Tver,56.8625,35.9242,Russia,admin,Europe/Moscow,False
+Xalapa,19.54,-96.9275,Mexico,admin,America/Mexico_City,False
+Buenaventura,3.8772,-77.0267,Colombia,admin,America/Lima,False
+London,42.9836,-81.2497,Canada,admin,America/New_York,False
+Piracicaba,-22.7252,-47.6493,Brazil,admin,America/Sao_Paulo,False
+Tetouan,35.5667,-5.3667,Morocco,admin,Africa/Casablanca,False
+Yogyakarta,-7.8014,110.3644,Indonesia,admin,Asia/Jakarta,False
+Beining,41.6,121.8,China,admin,Asia/Manila,False
+Toyota,35.0824,137.1563,Japan,admin,Asia/Tokyo,False
+Uijeongbu,37.7486,127.0389,"Korea, South",admin,Asia/Tokyo,False
+Laohekou,32.359,111.684,China,admin,Asia/Manila,False
+Rahimyar Khan,28.42,70.3,Pakistan,admin,Asia/Karachi,False
+Thai Nguyen,21.6,105.85,Vietnam,admin,Asia/Jakarta,False
+Seremban,2.7105,101.94,Malaysia,admin,Asia/Manila,False
+Kayapinar,37.95,40.1667,Turkey,admin,Europe/Moscow,False
+Campina Grande,-7.2306,-35.8811,Brazil,admin,America/Sao_Paulo,False
+Xicheng,23.3667,103.15,China,admin,Asia/Manila,False
+Santos,-23.9608,-46.3339,Brazil,admin,America/Sao_Paulo,False
+Kushtia,23.9,89.12,Bangladesh,admin,Asia/Dhaka,False
+Maua,-23.6678,-46.4608,Brazil,admin,America/Sao_Paulo,False
+Xingren,25.435,105.1862,China,admin,Asia/Manila,False
+Takamatsu,34.35,134.05,Japan,admin,Asia/Tokyo,False
+Awsim,30.1222,31.1333,Egypt,admin,Africa/Cairo,False
+Shinagawa-ku,35.6,139.7333,Japan,admin,Asia/Tokyo,False
+Paju,37.8667,126.8,"Korea, South",admin,Asia/Tokyo,False
+Beylikduzu,41.0011,28.6419,Turkey,admin,Europe/Moscow,False
+Viet Tri,21.3,105.4333,Vietnam,admin,Asia/Jakarta,False
+Santa Rosa,14.32,121.12,Philippines,admin,Asia/Manila,False
+Nagqu,31.476,92.051,China,admin,Asia/Manila,False
+Bettiah,26.8014,84.5028,India,admin,Asia/Kolkata,False
+Jhang City,31.2694,72.3161,Pakistan,admin,Asia/Karachi,False
+Fujin,47.25,132.0333,China,admin,Asia/Manila,False
+Altindag,39.9636,32.9033,Turkey,admin,Europe/Moscow,False
+Yuanping,38.731,112.711,China,admin,Asia/Manila,False
+Tala,30.6798,30.9436,Egypt,admin,Africa/Cairo,False
+Talkha,31.0592,31.3767,Egypt,admin,Africa/Cairo,False
+Boa Vista,2.82,-60.6719,Brazil,admin,America/Caracas,False
+Jayapura,-2.533,140.717,Indonesia,admin,Asia/Tokyo,False
+Toyama,36.6959,137.2137,Japan,admin,Asia/Tokyo,False
+Khon Kaen,16.4333,102.8333,Thailand,admin,Asia/Jakarta,False
+Linghai,41.1667,121.35,China,admin,Asia/Manila,False
+Shorapur,16.52,76.76,India,admin,Asia/Kolkata,False
+Tinnevelly,8.7136,77.7567,India,admin,Asia/Kolkata,False
+Pasto,1.2078,-77.2772,Colombia,admin,America/Lima,False
+Bellary,15.1,76.9167,India,admin,Asia/Kolkata,False
+Bhagalpur,25.25,87.0,India,admin,Asia/Kolkata,False
+Danjiangkou,32.5401,111.5131,China,admin,Asia/Manila,False
+Zhangjiakou Shi Xuanhua Qu,40.5944,115.0243,China,admin,Asia/Manila,False
+Maringa,-23.425,-51.9389,Brazil,admin,America/Sao_Paulo,False
+Manampizha,9.2972,76.65,India,admin,Asia/Kolkata,False
+Kocasinan,38.7333,35.4833,Turkey,admin,Europe/Moscow,False
+Mataram,-8.5833,116.1167,Indonesia,admin,Asia/Manila,False
+Magnitogorsk,53.3833,59.0333,Russia,admin,Asia/Karachi,False
+Zhijiang,30.426,111.761,China,admin,Asia/Manila,False
+Fenyang,37.2616,111.7699,China,admin,Asia/Manila,False
+Binan,14.33,121.08,Philippines,admin,Asia/Manila,False
+Gebze,40.8,29.4333,Turkey,admin,Europe/Moscow,False
+Shashemene,7.2,38.6,Ethiopia,admin,Europe/Moscow,False
+Fangting,31.127,104.167,China,admin,Asia/Manila,False
+Shulan,44.4059,126.9655,China,admin,Asia/Manila,False
+Wanyuan,31.9833,107.9667,China,admin,Asia/Manila,False
+Jiexiu,37.027,111.917,China,admin,Asia/Manila,False
+Hat Yai,7.0167,100.4667,Thailand,admin,Asia/Jakarta,False
+Baglar,37.9167,40.1833,Turkey,admin,Europe/Moscow,False
+Santa Fe,-31.6333,-60.7,Argentina,admin,America/Sao_Paulo,False
+Delhi Cantonment,28.6,77.1333,India,admin,Asia/Kolkata,False
+Barura,23.3683,91.0484,Bangladesh,admin,Asia/Dhaka,False
+Kumi,36.1195,128.3444,"Korea, South",admin,Asia/Tokyo,False
+Nagasaki,32.7447,129.8736,Japan,admin,Asia/Tokyo,False
+Pencheng,29.676,115.681,China,admin,Asia/Manila,False
+Salt Lake City,22.61,88.4,India,admin,Asia/Kolkata,False
+Etawa,24.18,78.2,India,admin,Asia/Kolkata,False
+Sonipat,28.99,77.022,India,admin,Asia/Kolkata,False
+Jundiai,-23.1864,-46.8842,Brazil,admin,America/Sao_Paulo,False
+Bogra,24.851,89.3711,Bangladesh,admin,Asia/Dhaka,False
+Brno,49.1925,16.6083,Czechia,admin,Europe/Paris,False
+Oskemen,49.9833,82.6167,Kazakhstan,admin,Asia/Karachi,False
+Gifu,35.4232,136.7608,Japan,admin,Asia/Tokyo,False
+Monteria,8.75,-75.8833,Colombia,admin,America/Lima,False
+Yuregir,36.9928,35.3764,Turkey,admin,Europe/Moscow,False
+Pingquan,41.0184,118.702,China,admin,Asia/Manila,False
+Toyonaka,34.7833,135.4667,Japan,admin,Asia/Tokyo,False
+Dera Ghazi Khan,30.0331,70.64,Pakistan,admin,Asia/Karachi,False
+Hatay,36.2025,36.1606,Turkey,admin,Europe/Moscow,False
+Luhansk,48.5678,39.3031,Ukraine,admin,Europe/Athens,False
+Miyazaki,31.9078,131.4203,Japan,admin,Asia/Tokyo,False
+Dangyang,30.821,111.789,China,admin,Asia/Manila,False
+Quilon,8.8932,76.6141,India,admin,Asia/Kolkata,False
+Mulangodi,9.0,76.6167,India,admin,Asia/Kolkata,False
+Munro Turuttu,9.0,76.6167,India,admin,Asia/Kolkata,False
+Gwangju,37.3667,127.2833,"Korea, South",admin,Asia/Tokyo,False
+Nangong,37.359,115.409,China,admin,Asia/Manila,False
+Hirakata,34.8167,135.65,Japan,admin,Asia/Tokyo,False
+Sandakan,5.843,118.108,Malaysia,admin,Asia/Manila,False
+Szczecin,53.4325,14.5481,Poland,admin,Europe/Paris,False
+Surgut,61.25,73.4333,Russia,admin,Asia/Karachi,False
+Yongji,34.867,110.448,China,admin,Asia/Manila,False
+Karur,10.9601,78.0766,India,admin,Asia/Kolkata,False
+Diadema,-23.6858,-46.6228,Brazil,admin,America/Sao_Paulo,False
+Jalna,19.841,75.8864,India,admin,Asia/Kolkata,False
+Zhugang,28.1358,121.2264,China,admin,Asia/Manila,False
+Hejin,35.596,110.712,China,admin,Asia/Manila,False
+Dunhua,43.3667,128.2333,China,admin,Asia/Manila,False
+Tangail,24.25,89.92,Bangladesh,admin,Asia/Dhaka,False
+Khayelitsha,-34.0403,18.6778,South Africa,admin,Africa/Johannesburg,False
+Gujrat,32.5739,74.0789,Pakistan,admin,Asia/Karachi,False
+Huili Chengguanzhen,26.6333,102.25,China,admin,Asia/Manila,False
+Yokosuka,35.0,16.0,Japan,admin,Etc/GMT-1,False
+Asyut,27.1869,31.1714,Egypt,admin,Africa/Cairo,False
+Sampaloc,14.6031,121.0022,Philippines,admin,Asia/Manila,False
+Bologna,44.4939,11.3428,Italy,admin,Europe/Paris,False
+Aqtobe,50.2836,57.2297,Kazakhstan,admin,Asia/Karachi,False
+Cilegon,-6.0027,106.0112,Indonesia,admin,Asia/Jakarta,False
+Hafr al Batin,28.4337,45.9601,Saudi Arabia,admin,Europe/Moscow,False
+Elazig,38.6744,39.2228,Turkey,admin,Europe/Moscow,False
+Bairia,25.7583,84.1489,India,admin,Asia/Kolkata,False
+Taytay,14.5692,121.1325,Philippines,admin,Asia/Manila,False
+Bhatpara,22.87,88.41,India,admin,Asia/Kolkata,False
+Sintra,38.7974,-9.3904,Portugal,admin,Europe/Lisbon,False
+Manisa,38.6144,27.4292,Turkey,admin,Europe/Moscow,False
+Sirur,18.83,74.38,India,admin,Asia/Kolkata,False
+Tarlac City,15.4869,120.59,Philippines,admin,Asia/Manila,False
+Okazaki,34.9543,137.1744,Japan,admin,Asia/Tokyo,False
+Lingxi,27.5036,120.3975,China,admin,Asia/Manila,False
+Kakinada,16.9661,82.255,India,admin,Asia/Kolkata,False
+Savar,23.8482,90.2577,Bangladesh,admin,Asia/Dhaka,False
+Nuevo Laredo,27.4861,-99.5069,Mexico,admin,America/Chicago,False
+Lecheng,25.1333,113.3333,China,admin,Asia/Manila,False
+Christchurch,-43.5311,172.6361,New Zealand,admin,Pacific/Auckland,False
+Hancheng,35.4667,110.4333,China,admin,Asia/Manila,False
+Zetang,29.238,91.771,China,admin,Asia/Manila,False
+Canberra,-35.2931,149.1269,Australia,admin,Australia/Sydney,False
+Minamisuita,34.7594,135.5169,Japan,admin,Asia/Tokyo,False
+Malabon,14.66,120.96,Philippines,admin,Asia/Manila,False
+Neiva,2.9345,-75.2809,Colombia,admin,America/Lima,False
+Ha Tinh,18.3333,105.9,Vietnam,admin,Asia/Jakarta,False
+Celaya,20.5222,-100.8122,Mexico,admin,America/Mexico_City,False
+Ichinomiya,35.3039,136.8031,Japan,admin,Asia/Tokyo,False
+Panihati,22.69,88.37,India,admin,Asia/Kolkata,False
+Lianzhou,24.781,112.377,China,admin,Asia/Manila,False
+Cainta,14.57,121.12,Philippines,admin,Asia/Manila,False
+Helixi,30.6267,118.9861,China,admin,Asia/Manila,False
+Madinat as Sadis min Uktubar,29.9361,30.9269,Egypt,admin,Africa/Cairo,False
+Itaquaquecetuba,-23.4864,-46.3486,Brazil,admin,America/Sao_Paulo,False
+Cantonment,31.5167,74.3833,Pakistan,admin,Asia/Karachi,False
+Rohtak,28.8909,76.5796,India,admin,Asia/Kolkata,False
+Maler Kotla,30.5167,75.8833,India,admin,Asia/Kolkata,False
+Bhawana,31.5661,72.6461,Pakistan,admin,Asia/Karachi,False
+Bryansk,53.2425,34.3667,Russia,admin,Europe/Moscow,False
+Lipa City,13.9411,121.1622,Philippines,admin,Asia/Manila,False
+Butuan,8.948,125.543,Philippines,admin,Asia/Manila,False
+Dikirnis,31.089,31.5948,Egypt,admin,Africa/Cairo,False
+Takasaki,36.3219,139.0033,Japan,admin,Asia/Tokyo,False
+Ambon,-3.6967,128.1783,Indonesia,admin,Asia/Tokyo,False
+Malakwal,32.5531,73.2067,Pakistan,admin,Asia/Karachi,False
+Toyohashi,34.7692,137.3915,Japan,admin,Asia/Tokyo,False
+Panshi,42.95,126.0667,China,admin,Asia/Manila,False
+Bharatpur,27.6833,84.4333,Nepal,admin,Asia/Kathmandu,False
+Mardan,34.2012,72.0258,Pakistan,admin,Asia/Karachi,False
+Nagano,36.6486,138.1947,Japan,admin,Asia/Tokyo,False
+Bauru,-22.3147,-49.0606,Brazil,admin,America/Sao_Paulo,False
+La Florida,-33.5333,-70.5833,Chile,admin,America/Santiago,False
+Nicolas Romero,19.5833,-99.3667,Mexico,admin,America/Mexico_City,False
+Jinshan,25.1475,101.9764,China,admin,Asia/Manila,False
+Bochum,51.4819,7.2158,Germany,admin,Europe/Paris,False
+Baguio City,16.4119,120.5933,Philippines,admin,Asia/Manila,False
+Cibinong,-6.485,106.842,Indonesia,admin,Asia/Jakarta,False
+Sivas,39.75,37.0167,Turkey,admin,Europe/Moscow,False
+Kolga,22.35,82.68,India,admin,Asia/Kolkata,False
+Korba,22.3458,82.6963,India,admin,Asia/Kolkata,False
+Rio Branco,-9.9781,-67.8117,Brazil,admin,America/Lima,False
+Tecamac,19.7131,-98.9683,Mexico,admin,America/Mexico_City,False
+Alanya,36.55,32.0,Turkey,admin,Europe/Moscow,False
+Mandaue City,10.33,123.93,Philippines,admin,Asia/Manila,False
+Kocaeli,40.7625,29.9175,Turkey,admin,Europe/Moscow,False
+Victoria,48.4283,-123.3647,Canada,admin,America/Los_Angeles,False
+Iligan,8.23,124.25,Philippines,admin,Asia/Manila,False
+Anguo,38.418,115.327,China,admin,Asia/Manila,False
+Keelung,25.1333,121.7333,Taiwan,admin,Asia/Manila,False
+Ivanovo,56.9967,40.9819,Russia,admin,Europe/Moscow,False
+Cuenca,-2.8974,-79.0045,Ecuador,admin,America/Lima,False
+Blumenau,-26.9189,-49.0658,Brazil,admin,America/Sao_Paulo,False
+Nanqiao,30.9167,121.4547,China,admin,Asia/Manila,False
+Florence,43.7714,11.2542,Italy,admin,Europe/Paris,False
+Bengkulu,-3.7956,102.2592,Indonesia,admin,Asia/Jakarta,False
+Caxias do Sul,-29.1678,-51.1789,Brazil,admin,America/Sao_Paulo,False
+Malmo,55.5833,13.0333,Sweden,admin,Europe/Paris,False
+Shuanghe,30.3746,106.7903,China,admin,Asia/Manila,False
+Dengtacun,41.4333,123.3333,China,admin,Asia/Manila,False
+Utrecht,52.0908,5.1217,Netherlands,admin,Europe/Paris,False
+Palu,-0.895,119.8594,Indonesia,admin,Asia/Manila,False
+Sikar,27.62,75.15,India,admin,Asia/Kolkata,False
+Wuppertal,51.2667,7.1833,Germany,admin,Europe/Paris,False
+Palmira,3.5833,-76.25,Colombia,admin,America/Lima,False
+Sao Jose do Rio Preto,-20.82,-49.3789,Brazil,admin,America/Sao_Paulo,False
+Ash Shuhada',30.5968,30.8993,Egypt,admin,Africa/Cairo,False
+Sasaram,24.95,84.03,India,admin,Asia/Kolkata,False
+Sultanbeyli,40.9683,29.2617,Turkey,admin,Europe/Moscow,False
+Xunyang,32.8341,109.3653,China,admin,Asia/Manila,False
+Taraz,42.9,71.3667,Kazakhstan,admin,Asia/Karachi,False
+Anda,46.424,125.352,China,admin,Asia/Manila,False
+Karnal,29.686,76.989,India,admin,Asia/Kolkata,False
+Vinnytsia,49.2333,28.4833,Ukraine,admin,Europe/Athens,False
+Minatitlan,17.9833,-94.55,Mexico,admin,America/Mexico_City,False
+Linxia Chengguanzhen,35.6047,103.2422,China,admin,Asia/Manila,False
+Brahmapur,19.315,84.7941,India,admin,Asia/Kolkata,False
+Caucaia,-3.7328,-38.6558,Brazil,admin,America/Sao_Paulo,False
+Cabuyao,14.275,121.125,Philippines,admin,Asia/Manila,False
+San Fernando,15.03,120.68,Philippines,admin,Asia/Manila,False
+Kawagoe,35.9251,139.4858,Japan,admin,Asia/Tokyo,False
+Pokhara,28.2097,83.9853,Nepal,admin,Asia/Kathmandu,False
+Nice,43.7034,7.2663,France,admin,Europe/Paris,False
+Villahermosa,17.9892,-92.9281,Mexico,admin,America/Mexico_City,False
+Wakayama,34.2333,135.1667,Japan,admin,Asia/Tokyo,False
+Kita-ku,35.75,139.7333,Japan,admin,Asia/Tokyo,False
+Gimpo,37.7,126.6,"Korea, South",admin,Asia/Tokyo,False
+Corrientes,-27.4833,-58.8167,Argentina,admin,America/Sao_Paulo,False
+Thari Mir Wah,27.0683,68.6023,Pakistan,admin,Asia/Karachi,False
+Nara,34.6844,135.805,Japan,admin,Asia/Tokyo,False
+Vladimir,56.1286,40.4058,Russia,admin,Europe/Moscow,False
+Arkhangelsk,64.5431,40.5375,Russia,admin,Europe/Moscow,False
+Batangas,13.83,121.0,Philippines,admin,Asia/Manila,False
+Ahmadnagar,19.08,74.73,India,admin,Asia/Kolkata,False
+Varna,43.2114,27.9111,Bulgaria,admin,Europe/Athens,False
+Tarsus,36.9165,34.8951,Turkey,admin,Europe/Moscow,False
+Sariyer,41.1669,29.0572,Turkey,admin,Europe/Moscow,False
+Semey,50.4333,80.2667,Kazakhstan,admin,Asia/Karachi,False
+Tungi,23.8915,90.4023,Bangladesh,admin,Asia/Dhaka,False
+Gode,5.9527,43.5516,Ethiopia,admin,Europe/Moscow,False
+An Nhon,13.917,109.083,Vietnam,admin,Asia/Jakarta,False
+Olinda,-8.0089,-34.855,Brazil,admin,America/Sao_Paulo,False
+Praia Grande,-24.0058,-46.4028,Brazil,admin,America/Sao_Paulo,False
+Shinjuku,35.7014,139.7097,Japan,admin,Asia/Tokyo,False
+Antofagasta,-23.65,-70.4,Chile,admin,America/Santiago,False
+Meram,37.8364,32.4383,Turkey,admin,Europe/Moscow,False
+Cascavel,-24.9558,-53.4553,Brazil,admin,America/Sao_Paulo,False
+Pamukkale,37.9167,29.1167,Turkey,admin,Europe/Moscow,False
+Canoas,-29.92,-51.18,Brazil,admin,America/Sao_Paulo,False
+Takatsuki,34.8461,135.6175,Japan,admin,Asia/Tokyo,False
+Yidu,30.378,111.45,China,admin,Asia/Manila,False
+Plovdiv,42.1434,24.751,Bulgaria,admin,Europe/Athens,False
+Central Coast,-33.3,151.2,Australia,admin,Australia/Sydney,False
+Karsiyaka,38.4594,27.1153,Turkey,admin,Europe/Moscow,False
+Shahjanpur,27.88,79.91,India,admin,Asia/Kolkata,False
+Avadi,13.1147,80.1098,India,admin,Asia/Kolkata,False
+Khanapur,15.6394,74.5083,India,admin,Asia/Kolkata,False
+Cuddapah,14.47,78.82,India,admin,Asia/Kolkata,False
+Nakano,35.7074,139.6638,Japan,admin,Asia/Tokyo,False
+Yong'an,25.942,117.365,China,admin,Asia/Manila,False
+Alamadi,13.1097,80.0972,India,admin,Asia/Kolkata,False
+Carapicuiba,-23.5228,-46.8358,Brazil,admin,America/Sao_Paulo,False
+Otsu,35.0167,135.85,Japan,admin,Asia/Tokyo,False
+Pavlodar,52.3,76.95,Kazakhstan,admin,Asia/Karachi,False
+Chon Buri,13.3611,100.985,Thailand,admin,Asia/Jakarta,False
+Naga City,13.6244,123.1864,Philippines,admin,Asia/Manila,False
+Florianopolis,-27.5933,-48.553,Brazil,admin,America/Sao_Paulo,False
+Paulista,-7.9408,-34.8728,Brazil,admin,America/Sao_Paulo,False
+Rajahmundry,16.98,81.78,India,admin,Asia/Kolkata,False
+Koshigaya,35.8911,139.7909,Japan,admin,Asia/Tokyo,False
+Hongjiang,27.191,109.819,China,admin,Asia/Manila,False
+Yesilyurt,38.2961,38.2489,Turkey,admin,Europe/Moscow,False
+Vung Tau,10.3833,107.1167,Vietnam,admin,Asia/Jakarta,False
+Jeonju,35.8167,127.15,"Korea, South",admin,Asia/Tokyo,False
+Alwar,27.5498,76.6355,India,admin,Asia/Kolkata,False
+Huadian,42.972,126.746,China,admin,Asia/Manila,False
+Tokorozawa,35.7996,139.4686,Japan,admin,Asia/Tokyo,False
+Sumqayit,40.5961,49.67,Azerbaijan,admin,Asia/Dubai,False
+Vitoria da Conquista,-14.8661,-40.8394,Brazil,admin,America/Sao_Paulo,False
+Buon Ma Thuot,12.6667,108.05,Vietnam,admin,Asia/Jakarta,False
+Mishan,45.5298,131.8466,China,admin,Asia/Manila,False
+Makiivka,48.0556,37.9611,Ukraine,admin,Europe/Athens,False
+Cuernavaca,18.9186,-99.2342,Mexico,admin,America/Mexico_City,False
+Markham,43.8767,-79.2633,Canada,admin,America/New_York,False
+Bielefeld,52.0211,8.5347,Germany,admin,Europe/Paris,False
+Bydgoszcz,53.1219,18.0003,Poland,admin,Europe/Paris,False
+Chinju,35.2,128.0833,"Korea, South",admin,Asia/Tokyo,False
+Randburg,-26.0936,28.0064,South Africa,admin,Africa/Johannesburg,False
+Iwaki,37.0505,140.8877,Japan,admin,Asia/Tokyo,False
+Oshawa,43.9,-78.85,Canada,admin,America/New_York,False
+Bonn,50.7353,7.1022,Germany,admin,Europe/Paris,False
+Sambalpur,21.47,83.97,India,admin,Asia/Kolkata,False
+Santo Domingo de los Colorados,-0.2542,-79.1719,Ecuador,admin,America/Lima,False
+Uruapan,19.4208,-102.0628,Mexico,admin,America/Mexico_City,False
+Lublin,51.25,22.5667,Poland,admin,Europe/Paris,False
+Porto Velho,-8.7619,-63.9039,Brazil,admin,America/Caracas,False
+Licheng,24.5,110.4,China,admin,Asia/Manila,False
+Huichang,34.9073,112.7914,China,admin,Asia/Manila,False
+Tampere,61.4981,23.76,Finland,admin,Europe/Athens,False
+Muzaffarpur,26.1225,85.3906,India,admin,Asia/Kolkata,False
+Chita,52.05,113.4667,Russia,admin,Asia/Tokyo,False
+Vina del Mar,-33.0244,-71.5517,Chile,admin,America/Santiago,False
+Khipro,25.823,69.377,Pakistan,admin,Asia/Karachi,False
+Asan,36.7836,127.0042,"Korea, South",admin,Asia/Tokyo,False
+Chak Jhumra,31.5667,73.1833,Pakistan,admin,Asia/Karachi,False
+Simferopol,44.9519,34.1022,Ukraine,admin,Europe/Moscow,False
+Konak,38.4189,27.1285,Turkey,admin,Europe/Moscow,False
+Soledad de Graciano Sanchez,22.1833,-100.9333,Mexico,admin,America/Mexico_City,False
+Santarem,-2.4431,-54.7083,Brazil,admin,America/Sao_Paulo,False
+Yanbu`,24.0523,38.1503,Saudi Arabia,admin,Europe/Moscow,False
+Maebashi,36.3895,139.0634,Japan,admin,Asia/Tokyo,False
+Kaluga,54.55,36.2833,Russia,admin,Europe/Moscow,False
+Ganca,40.6828,46.3606,Azerbaijan,admin,Asia/Dubai,False
+Asahikawa,43.7667,142.3667,Japan,admin,Asia/Tokyo,False
+Kendari,-3.9907,122.5086,Indonesia,admin,Asia/Manila,False
+Wonju,37.3417,127.9208,"Korea, South",admin,Asia/Tokyo,False
+Birkat as Sab`,30.6291,31.0824,Egypt,admin,Africa/Cairo,False
+Nizhniy Tagil,57.9167,59.9667,Russia,admin,Asia/Karachi,False
+Finglas,53.3892,-6.2969,Ireland,admin,Europe/Dublin,False
+Kamarhati,22.6686,88.3704,India,admin,Asia/Kolkata,False
+Nicosia,35.1725,33.365,Cyprus,admin,Europe/Athens,False
+Lengshuijiang,27.686,111.436,China,admin,Asia/Manila,False
+Ribeirao das Neves,-19.7669,-44.0869,Brazil,admin,America/Sao_Paulo,False
+Ciudad Obregon,27.4939,-109.9389,Mexico,admin,America/Phoenix,False
+Campiernagar,27.029,83.2668,India,admin,Asia/Kolkata,False
+Phatthaya,12.9357,100.889,Thailand,admin,Asia/Jakarta,False
+Minzhu,43.7238,127.3448,China,admin,Asia/Manila,False
+Belgorod,50.6,36.6,Russia,admin,Europe/Moscow,False
+Gomez Palacio,25.5611,-103.4983,Mexico,admin,America/Mexico_City,False
+Bijapur,16.83,75.71,India,admin,Asia/Kolkata,False
+Cabanatuan City,15.4908,120.9678,Philippines,admin,Asia/Manila,False
+Si Racha,13.174,100.93,Thailand,admin,Asia/Jakarta,False
+Salamanca,20.5703,-101.1972,Mexico,admin,America/Mexico_City,False
+Ratnagiri,16.9944,73.3,India,admin,Asia/Kolkata,False
+Ulanhot,46.0722,122.0933,China,admin,Asia/Manila,False
+Koriyama,37.4004,140.3597,Japan,admin,Asia/Tokyo,False
+Yunzhong,39.8279,113.1,China,admin,Asia/Manila,False
+Arnavutkoy,41.1856,28.7406,Turkey,admin,Europe/Moscow,False
+Kucukcekmece,41.0,28.8,Turkey,admin,Europe/Moscow,False
+Roodepoort,-26.1625,27.8725,South Africa,admin,Africa/Johannesburg,False
+San Pedro,14.3583,121.0583,Philippines,admin,Asia/Manila,False
+Kochi,33.5589,133.5314,Japan,admin,Asia/Tokyo,False
+Jagdalpur,19.18,81.92,India,admin,Asia/Kolkata,False
+Rampur,28.8,79.0,India,admin,Asia/Kolkata,False
+Kuching,1.53,110.33,Malaysia,admin,Asia/Manila,False
+Cotabato,7.22,124.25,Philippines,admin,Asia/Manila,False
+Nantes,47.2181,-1.5528,France,admin,Europe/Paris,False
+Cariacica,-20.2639,-40.42,Brazil,admin,America/Sao_Paulo,False
+Nazret,8.5414,39.2689,Ethiopia,admin,Europe/Moscow,False
+Safi,32.2833,-9.2333,Morocco,admin,Africa/Casablanca,False
+Kluang,2.0383,103.3179,Malaysia,admin,Asia/Manila,False
+Mekele,13.4969,39.4769,Ethiopia,admin,Europe/Moscow,False
+Pelotas,-31.7719,-52.3428,Brazil,admin,America/Sao_Paulo,False
+Vaughan,43.8333,-79.5,Canada,admin,America/New_York,False
+Kaiyuan,23.7111,103.2461,China,admin,Asia/Manila,False
+Tangdong,25.973,113.231,China,admin,Asia/Manila,False
+Munster,51.9625,7.6256,Germany,admin,Europe/Paris,False
+Vitoria,-20.3106,-40.2972,Brazil,admin,America/Sao_Paulo,False
+Shimoga,13.9333,75.5667,India,admin,Asia/Kolkata,False
+Hotan,37.1167,79.9167,China,admin,Asia/Dhaka,False
+Ning'an,44.341,129.483,China,admin,Asia/Manila,False
+Taourirt,34.4169,-2.885,Morocco,admin,Africa/Casablanca,False
+San Salvador de Jujuy,-24.1833,-65.3,Argentina,admin,America/Sao_Paulo,False
+Kashipur,29.22,78.95,India,admin,Asia/Kolkata,False
+Thu Dau Mot,10.9667,106.65,Vietnam,admin,Asia/Jakarta,False
+Serra,-20.1289,-40.3078,Brazil,admin,America/Sao_Paulo,False
+Sukabumi,-6.9181,106.9315,Indonesia,admin,Asia/Jakarta,False
+Junagadh,21.5222,70.4579,India,admin,Asia/Kolkata,False
+Guasavito,25.5744,-108.4706,Mexico,admin,America/Phoenix,False
+Tehuacan,18.4617,-97.3928,Mexico,admin,America/Mexico_City,False
+Coatzacoalcos,18.1414,-94.4344,Mexico,admin,America/Mexico_City,False
+Zalantun,48.027,122.708,China,admin,Asia/Manila,False
+Hafizabad,32.0714,73.6878,Pakistan,admin,Asia/Karachi,False
+Gwangmyeongni,37.476,126.866,"Korea, South",admin,Asia/Tokyo,False
+Taubate,-23.0333,-45.55,Brazil,admin,America/Sao_Paulo,False
+Zhengjiatun,43.5183,123.5027,China,admin,Asia/Manila,False
+Fontibon,4.6786,-74.1411,Colombia,admin,America/Lima,False
+Hapur,28.7309,77.7757,India,admin,Asia/Kolkata,False
+Mannheim,49.4878,8.4661,Germany,admin,Europe/Paris,False
+Barueri,-23.5111,-46.8764,Brazil,admin,America/Sao_Paulo,False
+Naha,26.2122,127.6792,Japan,admin,Asia/Tokyo,False
+Bari,41.1253,16.8667,Italy,admin,Europe/Paris,False
+Pattikad,10.5276,76.2144,India,admin,Asia/Kolkata,False
+Xiaoli,22.6721,113.2509,China,admin,Asia/Manila,False
+Trichur,10.5276,76.2144,India,admin,Asia/Kolkata,False
+Yingzhong,32.237,119.815,China,admin,Asia/Manila,False
+Volzhskiy,48.8056,44.7417,Russia,admin,Europe/Moscow,False
+Balikesir,39.6333,27.8833,Turkey,admin,Europe/Moscow,False
+Espoo,60.2056,24.6556,Finland,admin,Europe/Athens,False
+Muar,2.0337,102.5666,Malaysia,admin,Asia/Manila,False
+Kasur,31.1167,74.45,Pakistan,admin,Asia/Karachi,False
+Usme,4.4464,-74.1522,Colombia,admin,America/Lima,False
+Barddhaman,23.2333,87.8667,India,admin,Asia/Kolkata,False
+Binangonan,14.4514,121.1919,Philippines,admin,Asia/Manila,False
+Podolsk,55.4311,37.5456,Russia,admin,Europe/Moscow,False
+Smolensk,54.7828,32.0453,Russia,admin,Europe/Moscow,False
+Jiayuguan,39.7732,98.2882,China,admin,Asia/Manila,False
+Pasir Gudang,1.462,103.9053,Malaysia,admin,Asia/Manila,False
+Vologda,59.2167,39.9,Russia,admin,Europe/Moscow,False
+Tanza,14.3944,120.8531,Philippines,admin,Asia/Manila,False
+Yakutsk,62.03,129.73,Russia,admin,Asia/Tokyo,False
+Catania,37.5027,15.0873,Italy,admin,Europe/Paris,False
+Panvel,18.9944,73.1139,India,admin,Asia/Kolkata,False
+Guaruja,-23.9936,-46.2564,Brazil,admin,America/Sao_Paulo,False
+Nizamabad,18.672,78.094,India,admin,Asia/Kolkata,False
+Quy Nhon,13.7667,109.2333,Vietnam,admin,Asia/Jakarta,False
+Kurgan,55.4667,65.35,Russia,admin,Asia/Karachi,False
+Saransk,54.1833,45.1833,Russia,admin,Europe/Moscow,False
+Ha'il,27.5167,41.6833,Saudi Arabia,admin,Europe/Moscow,False
+Datang,22.9406,113.9436,China,admin,Asia/Manila,False
+Longquan,25.9106,114.786,China,admin,Asia/Manila,False
+Mitchells Plain,-34.0506,18.6181,South Africa,admin,Africa/Johannesburg,False
+Yokkaichi,34.965,136.6244,Japan,admin,Asia/Tokyo,False
+Chalco,19.2647,-98.8975,Mexico,admin,America/Mexico_City,False
+Tehran,35.6889,51.3897,Iran,primary,Asia/Tehran,False
+Madrid,40.4169,-3.7033,Spain,admin,Europe/Paris,False
+Barcelona,41.3833,2.1833,Spain,admin,Europe/Paris,False
