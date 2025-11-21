@@ -4,7 +4,7 @@ Project ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow fo
 This script uses the ECMWF AIFS cloud cover data and CAMS AOD550 data to visualize the cloud cover maps and calculate various parameters related to afterglow.
 
 Data availability (HH:MM)
-CAMS Global analyses and forecast_hourss:
+CAMS Global analyses and forecast_hour:
 
 00 UTC forecast_hours data availability guaranteed by 10:00 UTC
 
@@ -387,9 +387,9 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
     #     cloud_present = False
     #     return cloud_present
     if hcc_condition is True:
-        logging.info('hcc condition is True. We will assume a distance below threshold of 250 km.')
+        logging.info('hcc condition is True. We will assume a distance below threshold of 150 km.')
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold = 250
+        distance_below_threshold = 150
         avg_first_three = np.nanmean(cloud_cover_data[:3])
         avg_path = np.nanmean(cloud_cover_data[4:])
     elif hcc_condition is False:
@@ -559,10 +559,10 @@ def color_fill(index):
 
 
 def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, latitude, longitude,
-                     azimuth, afterglow_length_18, afterglow_length_42, possible_colors_tdy,
+                     azimuth, afterglow_length_tdy, afterglow_length_tmr, possible_colors_tdy,
                      possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr, 
                      z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550,
-                     sunset, sunset_tmr):
+                     sunset, sunset_tmr, fcst_hr_tdy: str, fcst_hr_tmr: str):
     if np.isnan(cloud_base_lvl_tdy):
         cloud_base_lvl_tdy = z_lcl_tdy
     if np.isnan(cloud_base_lvl_tmr):
@@ -619,7 +619,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
         f"Location: {city.name}\n"
         f"Sunset Time: {sunset_local.strftime('%H:%M:%S')} \n"
         f"Sunset Azimuth: {round(azimuth)}°\n"
-        f"Length: {round(afterglow_length_18)} s\n"
+        f"Length: {round(afterglow_length_tdy)} s\n"
         f"Cloud Height : {int(round(cloud_base_lvl_tdy, -2))} m\n"
         f"Aerosol OD(550nm): {total_aod550[0]:.2f} \n"
         f"Colors: {', '.join(possible_colors_tdy) }\n"
@@ -631,7 +631,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
     # Info text on the right
     info_text = (
         f"Tomorrow: {(today + datetime.timedelta(days=1)).strftime('%Y-%m-%d')}\n"
-        f"Length: {round(afterglow_length_42)} s\n"
+        f"Length: {round(afterglow_length_tmr)} s\n"
         f"Cloud Height : {int(round(cloud_base_lvl_tmr, -2))} m\n"
         f"Aerosol OD(550nm): {total_aod550[1]:.2f} \n"
         f"Colors: {', '.join(possible_colors_tmr)}\n"
@@ -643,7 +643,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
         
     # Title
     fig.text(0.01, 0.01, "Index ranges 0-100. Higher indicates more favourable cloud afterglow conditions for occurence and intense colors.\n"
-        "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecast_hourss. Valid only for stratiform cloud layer. See supplementary figures for details.",
+        "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
          ha='left', va='bottom', color='white', fontsize=8)
     
     fig.text(0.89, 0.01, f"Plots by A350XWBoy. V2025.9.7", color='white',fontsize=8)
@@ -786,8 +786,9 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, input_path, output_path, create_dashboard_flag: bool):
     tz = pytz.timezone(timezone_str)
-    run_dt = datetime.datetime.now(tz=datetime.timezone.utc)  # or pass run_datetime in if available
-    local_today = run_dt.astimezone(tz).date()
+    #current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
+    current_utc = datetime.datetime(2025, 11, 20, 10, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    local_today = current_utc.astimezone(tz).date()
 
     tomorrow = today + datetime.timedelta(days=1)
     tomorrow_str = tomorrow.strftime('%Y%m%d')
@@ -814,6 +815,27 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         # handle polar/no-sun or skip city
         sunrise_tdy = sunset_tdy = sunrise_tmr = sunset_tmr = None
 
+    #run_dt = latest_forecast_hours_run_to_download()
+    run_dt = datetime.datetime(2025, 11, 20, 0, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    picks = determine_city_forecast_hours_time_to_use(city, sunrise_tdy, sunset_tdy, run_dt)
+    print("run_dt:", run_dt)
+    print("picsks:", picks)
+
+    sunset_fh_tdy = picks.get(f'sunset_{today_str}') if today_str else None
+    sunset_fh_tmr = picks.get(f'sunset_{tomorrow_str}') if tomorrow_str else None
+
+    # check for day-after-tomorrow pick and allow shifting when today is missing
+    day_after_str = (datetime.datetime.strptime(today_str, "%Y%m%d").date() + datetime.timedelta(days=2)).strftime("%Y%m%d")
+    sunset_fh_day_after = picks.get(f"sunset_{day_after_str}") if picks else None
+
+    # if today's pick missing: use tomorrow's as today's, and shift tomorrow -> day-after if available
+    if sunset_fh_tdy is None and sunset_fh_tmr is not None:
+        logging.info(f"No pick for sunset_{today_str} for {city.name}; using tomorrow's pick ({sunset_fh_tmr}) as today's.")
+        sunset_fh_tdy = sunset_fh_tmr
+        sunset_fh_tmr = sunset_fh_day_after if sunset_fh_day_after is not None else None
+    
+    logging.info(f"Final picks for {city.name}: today +{sunset_fh_tdy}h, tomorrow +{sunset_fh_tmr}h")
+
     logging.info(city.name)
 
     max_elev = max_solar_elevation(city, datetime.date.today())
@@ -829,13 +851,23 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     lat_min, lat_max = lat - 3, lat + 3
     lon_min, lon_max = lon - 5, lon + 1
 
-    ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-18h-oper-fc.grib2', engine = 'cfgrib')
-    ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-42h-oper-fc.grib2', engine = 'cfgrib')
+    if sunset_fh_tdy is None:
+        logging.info(f"No pick for sunset_{today_str} for {city.name}; leaving None")
+    if sunset_fh_tmr is None:
+        logging.info(f"No pick for sunset_{tomorrow_str} for {city.name}; leaving None")
+    
+    # final guard: if still missing, skip city
+    if sunset_fh_tdy is None:
+        logging.warning(f"No forecast-hour file available for {city.name} (today); skipping city.")
+        return {"city": city.name, "error": "missing forecast-hour file"}
+
+    ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
+    ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
 
     # t2m at 2m
     # Please fix the cfgrib datasetbuilderror: key present and new value is different: key='heightAboveGround' value=Variable(dimensions=(), data=np.float64(10.0)) new_value=Variable(dimensions=(), data=np.float64(100.0))
-    ds_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-18h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
-    ds_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-42h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+    ds_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+    ds_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
 
     ds_tdy_lcc = extract_variable(ds_tdy, "lcc", lat_min, lat_max, lon_min, lon_max)
     ds_tdy_mcc = extract_variable(ds_tdy, "mcc", lat_min, lat_max, lon_min, lon_max)
@@ -863,12 +895,12 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
     if create_dashboard_flag:
         plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, today_str, run,
-                        f'{today_str} {run}z +18h EC AIFS cloud cover (today sunset)',
-                        '18', sunset_azimuth, save_path= output_path, cmap='gray')
+                        f'{today_str} {run}z +{sunset_fh_tdy}h EC AIFS cloud cover (today sunset)',
+                        sunset_fh_tdy, sunset_azimuth, save_path= output_path, cmap='gray')
 
-        plot_cloud_cover_map(cloud_vars_tmr, city, lon, lat, today_str, run,
-                            f'{today_str} {run}z +42h EC AIFS cloud cover (tomorrow sunset)',
-                            '42', sunset_azimuth, save_path= output_path, cmap='gray')
+        plot_cloud_cover_map(cloud_vars_tmr, city, lon, lat, tomorrow_str, run,
+                            f'{tomorrow_str} {run}z +{sunset_fh_tmr}h EC AIFS cloud cover (tomorrow sunset)',
+                            sunset_fh_tmr, sunset_azimuth, save_path= output_path, cmap='gray')
 
     RH_tdy, p_18 = specific_to_relative_humidity(ds_tdy.q, ds_tdy.t, ds_tdy.isobaricInhPa, lat, lon)
     cloud_base_lvl_tdy, z_lcl_tdy, RH_cb_tdy = calc_cloud_base(ds_tdy_2m["t2m"], ds_tdy_2m["d2m"], ds_tdy.t, RH_tdy, ds_tdy.isobaricInhPa, lat, lon)
@@ -900,9 +932,9 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     # logging.info("Cloud cover data for +18h forecast_hours:")
     # logging.info(cloud_cover_data_18_all)
 
-    distance_below_threshold_tdy, key_tdy, avg_first_three_tdy, avg_path_tdy, cloud_present_tdy, cloud_base_lvl_tdy  = get_cloud_extent(cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, '18', 
+    distance_below_threshold_tdy, key_tdy, avg_first_three_tdy, avg_path_tdy, cloud_present_tdy, cloud_base_lvl_tdy  = get_cloud_extent(cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, sunset_fh_tdy, 
                                                                                                                                         create_dashboard_flag, today_str, run)
-    distance_below_threshold_tmr, key_tmr, avg_first_three_tmr, avg_path_tmr, cloud_present_tmr, cloud_base_lvl_tmr  = get_cloud_extent(cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, '42', 
+    distance_below_threshold_tmr, key_tmr, avg_first_three_tmr, avg_path_tmr, cloud_present_tmr, cloud_base_lvl_tmr  = get_cloud_extent(cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, sunset_fh_tmr, 
                                                                                                                                         create_dashboard_flag, tomorrow_str, run)
 
     geom_cond_tdy, geom_condition_LCL_used_tdy, lf_ma_tdy = geom_condition(cloud_base_lvl_tdy, distance_below_threshold_tdy, z_lcl_tdy)
@@ -930,8 +962,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
     possible_colors_tdy = possible_colours(cloud_base_lvl_tdy, z_lcl_tdy, total_aod550[0], key_tdy)
     possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1], key_tmr)
-    logging.info(f"Possible colors for afterglow 18: {possible_colors_tdy}")
-    logging.info(f"Possible colors for afterglow 42: {possible_colors_tmr}")
+    logging.info(f"Possible colors for afterglow {sunset_fh_tdy}h: {possible_colors_tdy}")
+    logging.info(f"Possible colors for afterglow {sunset_fh_tmr}h: {possible_colors_tmr}")
 
     logging.info(cloud_base_lvl_tdy)
     logging.info(cloud_base_lvl_tmr)
@@ -939,7 +971,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     if create_dashboard_flag:
         create_dashboard(
             today, today_str, run, likelihood_index_tdy, likelihood_index_tmr, city, lat, lon, sunset_azimuth, actual_afterglow_time_tdy, actual_afterglow_time_tmr, possible_colors_tdy, possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr,
-            z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550, sunset_tdy, sunset_tmr 
+            z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550, sunset_tdy, sunset_tmr, fcst_hr_tdy=sunset_fh_tdy, fcst_hr_tmr=sunset_fh_tmr
         )
     
     return {
@@ -1100,7 +1132,7 @@ def main():
         download_file(url, f"{input_path}/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
 
     # Need global dataset for this
-    get_cams_aod(today, run, city.name, today_str, input_path) # type: ignore
+    get_cams_aod(today, run, today_str, input_path) # type: ignore
 
     # Load city data
     df = pd.read_csv('worldcities_info_wtimezone.csv', header=0, delimiter=',')
