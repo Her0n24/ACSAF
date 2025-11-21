@@ -1,14 +1,14 @@
 """
-Project ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow Forecaster
+Project ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow forecaster
 
 This script uses the ECMWF AIFS cloud cover data and CAMS AOD550 data to visualize the cloud cover maps and calculate various parameters related to afterglow.
 
 Data availability (HH:MM)
-CAMS Global analyses and forecasts:
+CAMS Global analyses and forecast_hourss:
 
-00 UTC forecast data availability guaranteed by 10:00 UTC
+00 UTC forecast_hours data availability guaranteed by 10:00 UTC
 
-12 UTC forecast data availability guaranteed by 22:00 UTC
+12 UTC forecast_hours data availability guaranteed by 22:00 UTC
 Author: A350XWBoy
 """
 import os
@@ -25,18 +25,18 @@ import pytz
 import cfgrib
 from calc_cloudbase import specific_to_relative_humidity, calc_cloud_base
 from get_aifs import download_file
-from get_cds import get_cams_aod
+from get_cds_global import get_cams_aod
 from geopy import Nominatim
 import logging 
 logging.basicConfig(
     level=logging.INFO,
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
-from calc_aod import calc_aod
+from calc_aod_global import calc_aod
 import argparse
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Afterglow Forecaster")
+    parser = argparse.ArgumentParser(description="Afterglow forecast")
     parser.add_argument('--date', type=str, default=None,
                         help="Specify the date in YYYYMMDD format (default: today)")
     return parser.parse_args()
@@ -379,11 +379,11 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
             cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
             distance_below_threshold, avg_first_three, avg_path  = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path)
         except:
-            logging.error(f"Cloud cover data is not available for forecast hour {fcst_hr}.")
+            logging.error(f"Cloud cover data is not available for forecast_hours hour {fcst_hr}.")
             cloud_present = False
     # # Check if data is associated with a value or a NaN
     # if data is None:
-    #     logging.info(f"Cloud cover NaN for forecast hour {fcst_hr}. There is no stratiform cloud cover. Afterglow not probable.")
+    #     logging.info(f"Cloud cover NaN for forecast_hours hour {fcst_hr}. There is no stratiform cloud cover. Afterglow not probable.")
     #     cloud_present = False
     #     return cloud_present
     if hcc_condition is True:
@@ -583,7 +583,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
     # Also set the figure background
     fig.patch.set_facecolor('black')
     
-    plt.suptitle("ACSAF: Aerosol and Cloud geometry based Sunset cloud Afterglow Forecaster", fontsize=16, weight='bold', color='white')
+    plt.suptitle("ACSAF: Aerosol and Cloud geometry based Sunset cloud Afterglow forecaster", fontsize=16, weight='bold', color='white')
         
     # Box settings for today and tomorrow
     # Larger, square boxes with index numbers only in bold
@@ -643,7 +643,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
         
     # Title
     fig.text(0.01, 0.01, "Index ranges 0-100. Higher indicates more favourable cloud afterglow conditions for occurence and intense colors.\n"
-        "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
+        "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecast_hourss. Valid only for stratiform cloud layer. See supplementary figures for details.",
          ha='left', va='bottom', color='white', fontsize=8)
     
     fig.text(0.89, 0.01, f"Plots by A350XWBoy. V2025.9.7", color='white',fontsize=8)
@@ -785,8 +785,13 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     return likelihood_index
 
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, input_path, output_path, create_dashboard_flag: bool):
+    tz = pytz.timezone(timezone_str)
+    run_dt = datetime.datetime.now(tz=datetime.timezone.utc)  # or pass run_datetime in if available
+    local_today = run_dt.astimezone(tz).date()
+
     tomorrow = today + datetime.timedelta(days=1)
     tomorrow_str = tomorrow.strftime('%Y%m%d')
+    
     # Create city object
     try:
         city = LocationInfo(city_name, country, timezone_str, lat, lon)
@@ -796,14 +801,18 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         city = LocationInfo(city_name, country, timezone_str, lat, lon)
         return {"city": city_name, "error": "Invalid timezone, skipped city and defaulted to UTC"}
 
-    # Calculate sun times
-    s_tdy = sun(city.observer, date=today)
-    sunset_tdy = s_tdy['sunset']
-    sunrise_tdy = s_tdy['sunrise']
+    try:
+        s_tdy = sun(city.observer, date=local_today, tzinfo=tz)
+        sunset_tdy = s_tdy['sunset']
+        sunrise_tdy = s_tdy['sunrise']
 
-    s_tmr = sun(city.observer, date=today + datetime.timedelta(days=1))
-    sunrise_tmr = s_tmr['sunrise']
-    sunset_tmr = s_tmr['sunset']
+        s_tmr = sun(city.observer, date=local_today + datetime.timedelta(days=1), tzinfo=tz)
+        sunrise_tmr = s_tmr['sunrise']
+        sunset_tmr = s_tmr['sunset']
+    except Exception as e:
+        logging.warning(f"Sun calculation failed for {city.name}: {e}")
+        # handle polar/no-sun or skip city
+        sunrise_tdy = sunset_tdy = sunrise_tmr = sunset_tmr = None
 
     logging.info(city.name)
 
@@ -888,7 +897,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     # }
 
     # # Print the results for verification
-    # logging.info("Cloud cover data for +18h forecast:")
+    # logging.info("Cloud cover data for +18h forecast_hours:")
     # logging.info(cloud_cover_data_18_all)
 
     distance_below_threshold_tdy, key_tdy, avg_first_three_tdy, avg_path_tdy, cloud_present_tdy, cloud_base_lvl_tdy  = get_cloud_extent(cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, '18', 
@@ -912,7 +921,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
     # Incorporate AOD
 
-    dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, city.name, input_path) #Array of shape (2,) first is 18h , second is 42h
+    dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path) #Array of shape (2,) first is 18h , second is 42h
 
     likelihood_index_tdy = weighted_likelihood_index(geom_cond_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_tdy, z_lcl_tdy, theta_tdy, avg_first_three_tdy, avg_path_tdy)
     likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
@@ -954,6 +963,120 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         "sunset_time_tdy": sunset_tdy,
     }
 
+def latest_forecast_hours_run_to_download() -> datetime.datetime:
+    """
+    Determine the latest forecast_hours run to download based on current UTC time.
+    ECMWF AIFS runs are at 00z and 12z, with a 10-hour delay for data availability.
+    
+    Logic:
+    - If current UTC time >= 10:00: Download today's 00z run
+    - If current UTC time < 10:00: Download yesterday's 12z run
+    - If current UTC time >= 22:00 : Download today's 12z run
+    Returns:
+        forecast_hours initialization time (datetime in UTC)
+    """
+
+    now_utc = datetime.datetime.now(tz=datetime.timezone.utc)
+    threshold_00z = now_utc.replace(hour=10, minute=0, second=0, microsecond=0)
+    threshold_12z = now_utc.replace(hour=22, minute=0, second=0, microsecond=0)
+    today_end_of_day = now_utc.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    if now_utc >= threshold_12z and now_utc <= today_end_of_day:
+        # Return datetime for downloading today's 12z forecast_hours
+        return now_utc.replace(hour=12, minute=0, second=0, microsecond=0)
+    elif now_utc >= threshold_00z and now_utc < threshold_12z:
+        # Return datetime for downloading today's 00z forecast_hours
+        return now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        # Return datetime for downloading yesterday's 12z forecast_hours
+        return now_utc.replace(hour=12, minute=0, second=0, microsecond=0) - datetime.timedelta(days=1)
+
+def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_sunset_time, run_datetime, time_threshold_h = 15) -> dict:
+    """
+    AIFS forecast_hours are in increments of 6 hours. To determine which forecast_hours time to use for a given city with their sunset time, 
+    we need to find the nearest forecast_hours time that is less than or equal to the city sunset time.
+    
+    Args:
+        city: City object with name and timezone
+        city_sunset_time: Sunset time in UTC (datetime in UTC)
+        run_datetime: forecast_hours run initialization time (datetime in UTC)
+
+    Returns:
+        Sunrise_forecast_hours_times: Latest run forecast_hours time to use (datetime in UTC) for the city sunrise.
+        Sunset_forecast_hours_times: Latest run forecast_hours time to use (datetime in UTC) for the city sunset.
+    """
+    # Convert city sunset time to UTC
+    sunset_time_tdy = city_sunset_time.astimezone(datetime.timezone.utc)
+    sunrise_time_tdy = city_sunrise_time.astimezone(datetime.timezone.utc)
+    sunset_time_tmr = (city_sunset_time + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc)
+    sunrise_time_tmr = (city_sunrise_time + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc)
+    threshold_time = run_datetime + datetime.timedelta(hours= time_threshold_h) # default is +15h, which is 15Z for 00Z run and +1 03Z for 12Z run. Do not change, will mess up the logic.
+
+    # Write out the forecast_hours times from run initialization time in 6-hour increments
+    offsets = list(range(0,61,6)) # 0 to 60 hours in 6-hour increments
+    forecast_hours_times = [run_datetime + datetime.timedelta(hours=i) for i in offsets]  # 0 to 60 hours
+    last_ft = forecast_hours_times[-1]
+
+    def closest_forecast_hours_time(event_time):
+        return min(forecast_hours_times, key=lambda ft: abs(ft - event_time))
+    
+    def pick_for_event(event_time, name):
+        if event_time is None:
+            logging.warning(f"{name} is None for {city.name}; returning None")
+            return None
+
+        # event before run initialization -> no forecast_hours
+        if event_time < run_datetime:
+            logging.warning(f"Run not initialised before {name} for {city.name}: event={event_time.isoformat()} run_init={run_datetime.isoformat()}")
+            return None
+        
+        # event before availability threshold -> run not available in time
+        if event_time < threshold_time:
+            logging.warning(f"Run not available before {name} for {city.name}: event={event_time.isoformat()} threshold={threshold_time.isoformat()}")
+            return None
+
+        # ensure event is within forecast_hours window
+        if event_time > last_ft + datetime.timedelta(hours=3): # allow 3 hours buffer
+            logging.warning(f"{name} for {city.name} outside forecast_hours window [{run_datetime.isoformat()} - {last_ft.isoformat()}]: event={event_time.isoformat()}; returning None")
+            return None
+
+        ft = closest_forecast_hours_time(event_time)
+        if ft is None:
+            logging.warning(f"No forecast_hours step <= {name} for {city.name}; returning None")
+            return None
+        
+        hours_after = int((ft - run_datetime).total_seconds() // 3600)
+        # clamp and format
+        hours_after = max(0, min(hours_after, offsets[-1]))
+        return str(hours_after)
+    
+    forecast_hours = {"city": city.name}
+
+    if sunrise_time_tdy is not None:
+        date_tdy = sunrise_time_tdy.date().strftime("%Y%m%d")
+        date_tmr = (sunrise_time_tdy + datetime.timedelta(days=1)).date().strftime("%Y%m%d")
+        date_day_next = (sunrise_time_tdy + datetime.timedelta(days=2)).date().strftime("%Y%m%d")
+        forecast_hours[f"sunrise_{date_tdy}"] = pick_for_event(sunrise_time_tdy, f"sunrise_{date_tdy}")
+        forecast_hours[f"sunrise_{date_tmr}"] = pick_for_event(sunrise_time_tmr, f"sunrise_{date_tmr}")
+        if run_datetime < sunrise_time_tdy <= threshold_time:
+            forecast_hours[f"sunrise_{date_day_next}"] = pick_for_event(sunrise_time_tmr + datetime.timedelta(days=1), f"sunrise_{date_day_next}")
+        
+    else:
+        logging.error(f"Sunrise times missing for {city.name}")
+    
+    if sunset_time_tdy is not None:
+        date_tdy = sunset_time_tdy.date().strftime("%Y%m%d")
+        date_tmr = (sunset_time_tdy + datetime.timedelta(days=1)).date().strftime("%Y%m%d")
+        date_day_next = (sunset_time_tdy + datetime.timedelta(days=2)).date().strftime("%Y%m%d")
+        forecast_hours[f"sunset_{date_tdy}"] = pick_for_event(sunset_time_tdy, f"sunset_{date_tdy}")
+        forecast_hours[f"sunset_{date_tmr}"] = pick_for_event(sunset_time_tmr, f"sunset_{date_tmr}")
+        if run_datetime < sunset_time_tdy <= threshold_time:
+            forecast_hours[f"sunset_{date_day_next}"] = pick_for_event(sunset_time_tmr + datetime.timedelta(days=1), f"sunset_{date_day_next}")
+    else:
+        logging.error(f"Sunset times missing for {city.name}")
+
+    return forecast_hours
+
 def main():
     args = parse_args()
 
@@ -962,16 +1085,19 @@ def main():
     else:
         today = datetime.date.today()
 
-    run = "00"
+    run = str(latest_forecast_hours_run_to_download().hour)
     run = run.zfill(2)
+    print(run)
     today_str = today.strftime("%Y%m%d")
 
-    # Get these outside the loop to download global dataset
-    url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-18h-oper-fc.grib2"   
-    download_file(url, f"{input_path}/{today_str}{run}0000-18h-oper-fc.grib2")
+    # fcst_hrs_to_download = set(forecast_hours.values()) # In order to do this, we need to access the process
+    # city function first. So Instead, we download all time steps between 0 and 60 hours.
 
-    url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-42h-oper-fc.grib2"   
-    download_file(url, f"{input_path}/{today_str}{run}0000-42h-oper-fc.grib2")
+    # Get these outside the loop to download global dataset
+
+    for fcst_hour in range(0, 61, 6):
+        url = f"https://data.ecmwf.int/forecast/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
+        download_file(url, f"{input_path}/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
 
     # Need global dataset for this
     get_cams_aod(today, run, city.name, today_str, input_path) # type: ignore

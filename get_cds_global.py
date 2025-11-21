@@ -20,20 +20,16 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
-run = "00"
-run = run.zfill(2)
-today = datetime.date.today() #- datetime.timedelta(days=1)
-today_str = today.strftime("%Y%m%d")
 
-def get_cams_aod(today, run, city, today_str, input_path):
-    if os.path.exists(f'{input_path}/cams_AOD550_{today_str}{run}0000_{city}.grib'):
+def get_cams_aod(today, run, today_str, input_path):
+    if os.path.exists(f'{input_path}/cams_AOD550_{today_str}{run}0000.grib'):
         logging.info("CAMS grib already exists. Skipping download.")
         return
     else:
         dataset = "cams-global-atmospheric-composition-forecasts"
         request = {
-            "date": ["2025-11-13/2025-11-13"],
-            "time": ["00:00"],
+            "date": [f"{today}/{today}"],
+            "time": [f"{run}:00"],
             "leadtime_hour": [
                 "0",
                 "6",
@@ -62,3 +58,6 @@ def get_cams_aod(today, run, city, today_str, input_path):
         }
         client = cdsapi.Client()
         client.retrieve(dataset, request,f'{input_path}/cams_AOD550_{today_str}{run}0000.grib')
+
+if __name__ == "__main__":
+    pass
