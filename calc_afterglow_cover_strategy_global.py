@@ -347,7 +347,7 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
             if avg_first_three < avg_path:
                 avg_first_three_met = True
                 logging.info(f"Average first three cloud cover {avg_first_three}% is less than average path cloud cover {avg_path}%.")
-                if avg_path < 85.00:
+                if avg_path < 90.00:
                     cloud_lvl_used = key 
                     data = data_dict[key]
                     hcc_condition = True # hcc condition is added to compensate for high clouds, it might be translucent enough for sunrays to pass through
@@ -387,9 +387,9 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
     #     cloud_present = False
     #     return cloud_present
     if hcc_condition is True:
-        logging.info('hcc condition is True. We will assume a distance below threshold of 150 km.')
+        logging.info('hcc condition is True. We will assume a distance below threshold of 100 km.')
         cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold = 150
+        distance_below_threshold = 100
         avg_first_three = np.nanmean(cloud_cover_data[:3])
         avg_path = np.nanmean(cloud_cover_data[4:])
     elif hcc_condition is False:
@@ -400,7 +400,7 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
     if avg_first_three < 10.0:
         cloud_present = False
 
-    return distance_below_threshold, key, avg_first_three, avg_path, cloud_present, cloud_base_lvl
+    return distance_below_threshold, key, avg_first_three, avg_path, cloud_present, cloud_base_lvl, hcc_condition
 
 def geom_condition(cloud_base_height, cloud_extent, LCL):
     """
@@ -432,7 +432,7 @@ def geom_condition(cloud_base_height, cloud_extent, LCL):
         geom_condition = True
     else:
         geom_condition = False
-    logging.info("cloud geometry condition:", geom_condition)
+    logging.info(f"cloud geometry condition: {geom_condition}")
     return geom_condition, geom_condition_LCL_used, lf_ma
 
 
@@ -739,6 +739,11 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         
         cloud_cover_score = 0.4 * x - 0.6 * y
     
+    # Handle NaN in cloud_cover_score - set to 0 if NaN
+    if np.isnan(cloud_cover_score):
+        logging.warning("cloud_cover_score is NaN, setting to 0")
+        cloud_cover_score = 0
+    
     logging.info(f"Cloud cover score: {cloud_cover_score}")
 
     # import pdb; pdb.set_trace()  # Debugging point to inspect variables
@@ -780,8 +785,12 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
     likelihood_index = np.clip(likelihood_index, 0, 1)  # Ensure it's between 0 and 1
     
-    # Scale to 0-100 and round to whole number
-    likelihood_index = round(likelihood_index * 100)
+    # Scale to 0-100 and round to whole number - handle NaN case
+    if np.isnan(likelihood_index):
+        logging.warning("likelihood_index is NaN after calculation, setting to 0")
+        likelihood_index = 0
+    else:
+        likelihood_index = int(round(likelihood_index * 100))
     return likelihood_index
 
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, input_path, output_path, create_dashboard_flag: bool):
@@ -819,30 +828,50 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     run_dt = datetime.datetime(2025, 11, 20, 0, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
     picks = determine_city_forecast_hours_time_to_use(city, sunrise_tdy, sunset_tdy, run_dt)
     print("run_dt:", run_dt)
-    print("picsks:", picks)
+    print("picks:", picks)
 
-    sunset_fh_tdy = picks.get(f'sunset_{today_str}') if today_str else None
-    sunset_fh_tmr = picks.get(f'sunset_{tomorrow_str}') if tomorrow_str else None
+    # Extract date strings from actual sunrise/sunset times in UTC to match picks dictionary keys
+    sunrise_tdy_date_str = sunrise_tdy.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunrise_tdy else None
+    sunrise_tmr_date_str = sunrise_tmr.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunrise_tmr else None
+    sunset_tdy_date_str = sunset_tdy.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunset_tdy else None
+    sunset_tmr_date_str = sunset_tmr.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunset_tmr else None
+
+    # Extract forecast hours for both sunrise and sunset using the correct date strings
+    sunrise_fh_tdy = picks.get(f'sunrise_{sunrise_tdy_date_str}') if sunrise_tdy_date_str else None
+    sunrise_fh_tmr = picks.get(f'sunrise_{sunrise_tmr_date_str}') if sunrise_tmr_date_str else None
+    sunset_fh_tdy = picks.get(f'sunset_{sunset_tdy_date_str}') if sunset_tdy_date_str else None
+    sunset_fh_tmr = picks.get(f'sunset_{sunset_tmr_date_str}') if sunset_tmr_date_str else None
 
     # check for day-after-tomorrow pick and allow shifting when today is missing
-    day_after_str = (datetime.datetime.strptime(today_str, "%Y%m%d").date() + datetime.timedelta(days=2)).strftime("%Y%m%d")
-    sunset_fh_day_after = picks.get(f"sunset_{day_after_str}") if picks else None
+    day_after_sunrise = (sunrise_tmr + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunrise_tmr else None
+    day_after_sunset = (sunset_tmr + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunset_tmr else None
+    sunrise_fh_day_after = picks.get(f"sunrise_{day_after_sunrise}") if day_after_sunrise else None
+    sunset_fh_day_after = picks.get(f"sunset_{day_after_sunset}") if day_after_sunset else None
 
-    # if today's pick missing: use tomorrow's as today's, and shift tomorrow -> day-after if available
+    # Handle missing sunrise picks
+    if sunrise_fh_tdy is None and sunrise_fh_tmr is not None:
+        logging.info(f"No pick for sunrise_{sunrise_tdy_date_str} for {city.name}; using tomorrow's pick ({sunrise_fh_tmr}) as today's.")
+        sunrise_fh_tdy = sunrise_fh_tmr
+        sunrise_fh_tmr = sunrise_fh_day_after if sunrise_fh_day_after is not None else None
+
+    # Handle missing sunset picks
     if sunset_fh_tdy is None and sunset_fh_tmr is not None:
-        logging.info(f"No pick for sunset_{today_str} for {city.name}; using tomorrow's pick ({sunset_fh_tmr}) as today's.")
+        logging.info(f"No pick for sunset_{sunset_tdy_date_str} for {city.name}; using tomorrow's pick ({sunset_fh_tmr}) as today's.")
         sunset_fh_tdy = sunset_fh_tmr
         sunset_fh_tmr = sunset_fh_day_after if sunset_fh_day_after is not None else None
     
-    logging.info(f"Final picks for {city.name}: today +{sunset_fh_tdy}h, tomorrow +{sunset_fh_tmr}h")
-
-    logging.info(city.name)
+    logging.info(f"Final picks for {city.name}: sunrise today +{sunrise_fh_tdy}h, sunrise tomorrow +{sunrise_fh_tmr}h, sunset today +{sunset_fh_tdy}h, sunset tomorrow +{sunset_fh_tmr}h")
 
     max_elev = max_solar_elevation(city, datetime.date.today())
     logging.info(f"Maximum solar elevation in {city.name}: {max_elev:.2f}°")
 
+    # Get azimuths for both sunrise and sunset
+    sunrise_azimuth = get__sunrise_azimuth(city, today)
+    sunrise_azimuth_tmr = get__sunrise_azimuth(city, today + datetime.timedelta(days=1))
     sunset_azimuth = get__sunset_azimuth(city, today)
     sunset_azimuth_tmr = get__sunset_azimuth(city, today + datetime.timedelta(days=1))
+    
+    logging.info(f"Sunrise azimuth angle in {city.name}: {sunrise_azimuth:.2f}°")
     logging.info(f"Sunset azimuth angle in {city.name}: {sunset_azimuth:.2f}°")
     logging.info(f"sunrise time in {city.name}: {sunrise_tdy}")
     logging.info(f"sunset time in {city.name}: {sunset_tdy}")
@@ -851,148 +880,278 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     lat_min, lat_max = lat - 3, lat + 3
     lon_min, lon_max = lon - 5, lon + 1
 
-    if sunset_fh_tdy is None:
-        logging.info(f"No pick for sunset_{today_str} for {city.name}; leaving None")
-    if sunset_fh_tmr is None:
-        logging.info(f"No pick for sunset_{tomorrow_str} for {city.name}; leaving None")
+    # Guard for missing forecast hours
+    if sunrise_fh_tdy is None and sunset_fh_tdy is None:
+        logging.warning(f"No forecast-hour files available for {city.name} (today); skipping city.")
+        return {"city": city.name, "error": "missing forecast-hour files"}
+
+    # Process sunset (existing logic)
+    sunset_results = {}
+    if sunset_fh_tdy is not None and sunset_fh_tmr is not None:
+        logging.info(f"Processing sunset for {city.name}")
+        ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
+        ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
+
+        ds_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+        ds_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+
+        ds_tdy_lcc = extract_variable(ds_tdy, "lcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tdy_mcc = extract_variable(ds_tdy, "mcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tdy_hcc = extract_variable(ds_tdy, "hcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tdy_tcc = extract_variable(ds_tdy, "tcc", lat_min, lat_max, lon_min, lon_max)
+
+        ds_tmr_tcc = extract_variable(ds_tmr, "tcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tmr_lcc = extract_variable(ds_tmr, "lcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tmr_mcc = extract_variable(ds_tmr, "mcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tmr_hcc = extract_variable(ds_tmr, "hcc", lat_min, lat_max, lon_min, lon_max)
+
+        cloud_vars_tdy = {
+            "tcc": ds_tdy_tcc,
+            "lcc": ds_tdy_lcc,
+            "mcc": ds_tdy_mcc,
+            "hcc": ds_tdy_hcc
+        }
+
+        cloud_vars_tmr = {
+            "tcc": ds_tmr_tcc,
+            "lcc": ds_tmr_lcc,
+            "mcc": ds_tmr_mcc,
+            "hcc": ds_tmr_hcc
+        }
+
+        if create_dashboard_flag:
+            plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, today_str, run,
+                            f'{today_str} {run}z +{sunset_fh_tdy}h EC AIFS cloud cover (today sunset)',
+                            sunset_fh_tdy, sunset_azimuth, save_path= output_path, cmap='gray')
+
+            plot_cloud_cover_map(cloud_vars_tmr, city, lon, lat, tomorrow_str, run,
+                                f'{tomorrow_str} {run}z +{sunset_fh_tmr}h EC AIFS cloud cover (tomorrow sunset)',
+                                sunset_fh_tmr, sunset_azimuth, save_path= output_path, cmap='gray')
+
+        RH_tdy, p_18 = specific_to_relative_humidity(ds_tdy.q, ds_tdy.t, ds_tdy.isobaricInhPa, lat, lon)
+        cloud_base_lvl_tdy, z_lcl_tdy, RH_cb_tdy = calc_cloud_base(ds_tdy_2m["t2m"], ds_tdy_2m["d2m"], ds_tdy.t, RH_tdy, ds_tdy.isobaricInhPa, lat, lon)
+
+        RH_tmr, p_42 = specific_to_relative_humidity(ds_tmr.q, ds_tmr.t, ds_tmr.isobaricInhPa, lat, lon)
+        cloud_base_lvl_tmr, z_lcl_tmr, RH_cb_tmr = calc_cloud_base(ds_tmr_2m["t2m"], ds_tmr_2m["d2m"], ds_tmr.t, RH_tmr, ds_tmr.isobaricInhPa, lat, lon)
+
+        logging.info(f'sunset tdy cloud_base:{cloud_base_lvl_tdy}, z_lcl:{z_lcl_tdy}, RH_cb:{RH_cb_tdy}')
+        logging.info(f'sunset tmr cloud_base: {cloud_base_lvl_tmr}, z_lcl:{z_lcl_tmr}, RH_cb:{RH_cb_tmr}')
+
+        distance_below_threshold_tdy, key_tdy, avg_first_three_tdy, avg_path_tdy, cloud_present_tdy, cloud_base_lvl_tdy, hcc_condition_tdy  = get_cloud_extent(cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, sunset_fh_tdy, 
+                                                                                                                                            create_dashboard_flag, today_str, run)
+        distance_below_threshold_tmr, key_tmr, avg_first_three_tmr, avg_path_tmr, cloud_present_tmr, cloud_base_lvl_tmr, hcc_condition_tmr  = get_cloud_extent(cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, sunset_fh_tmr, 
+                                                                                                                                            create_dashboard_flag, tomorrow_str, run)
+
+        geom_cond_tdy, geom_condition_LCL_used_tdy, lf_ma_tdy = geom_condition(cloud_base_lvl_tdy, distance_below_threshold_tdy, z_lcl_tdy)
+        geom_cond_tmr, geom_condition_LCL_used_tmr, lf_ma_tmr = geom_condition(cloud_base_lvl_tmr, distance_below_threshold_tmr, z_lcl_tmr)
+
+        theta_tdy = get_elevation_afterglow(cloud_base_lvl_tdy, distance_below_threshold_tdy, lf_ma_tdy, z_lcl_tdy)
+        theta_tmr = get_elevation_afterglow(cloud_base_lvl_tmr, distance_below_threshold_tmr, lf_ma_tmr, z_lcl_tmr)
+
+        actual_afterglow_time_tdy = get_afterglow_time(lat, today, distance_below_threshold_tdy, lf_ma_tdy, cloud_base_lvl_tdy, z_lcl_tdy)
+        actual_afterglow_time_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_tmr, lf_ma_tmr, cloud_base_lvl_tmr, z_lcl_tmr)
+
+        # One method is to use Equivalent cloud heigh  = cloud base level - equivalent surface height as highlighted in the paper
+        # But uncertainty is high and the exact mechanism is not clear
+        # Here we use a simplier and quicker method, but yet to be verified
+        # The AOD value directly controls the value of the afterglow liklihood index in the weighted equation
+
+        # Incorporate AOD
+
+        dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path) #Array of shape (2,) first is 18h , second is 42h
+
+        likelihood_index_tdy = weighted_likelihood_index(geom_cond_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_tdy, z_lcl_tdy, theta_tdy, avg_first_three_tdy, avg_path_tdy)
+        likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
+        logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
+        logging.info(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
+
+        possible_colors_tdy = possible_colours(cloud_base_lvl_tdy, z_lcl_tdy, total_aod550[0], key_tdy)
+        possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1], key_tmr)
+
+        if create_dashboard_flag:
+            create_dashboard(
+                today, today_str, run, likelihood_index_tdy, likelihood_index_tmr, city, lat, lon, sunset_azimuth, actual_afterglow_time_tdy, actual_afterglow_time_tmr, possible_colors_tdy, possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr,
+                z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550, sunset_tdy, sunset_tmr, fcst_hr_tdy=sunset_fh_tdy, fcst_hr_tmr=sunset_fh_tmr
+            )
+        
+        sunset_results = {
+            "sunset_likelihood_index_tdy": likelihood_index_tdy,
+            "sunset_likelihood_index_tmr": likelihood_index_tmr,
+            "sunset_possible_colors_tdy": possible_colors_tdy,
+            "sunset_possible_colors_tmr": possible_colors_tmr,
+            "sunset_afterglow_time_tdy": actual_afterglow_time_tdy,
+            "sunset_afterglow_time_tmr": actual_afterglow_time_tmr,
+            "sunset_cloud_base_lvl_tdy": cloud_base_lvl_tdy,
+            "sunset_cloud_base_lvl_tmr": cloud_base_lvl_tmr,
+            "sunset_geom_condition_LCL_used_tdy": geom_condition_LCL_used_tdy,
+            "sunset_geom_condition_LCL_used_tmr": geom_condition_LCL_used_tmr,
+            "sunset_cloud_present_tdy": cloud_present_tdy,
+            "sunset_cloud_present_tmr": cloud_present_tmr,
+            "sunset_total_aod550_tdy": total_aod550[0],
+            "sunset_total_aod550_tmr": total_aod550[1],
+            "sunset_dust_aod550_tdy": dust_aod550[0],
+            "sunset_dust_aod550_tmr": dust_aod550[1],
+            "sunset_time_tdy": sunset_tdy,
+            "sunset_hcc_condition_tdy": hcc_condition_tdy,
+            "sunset_hcc_condition_tmr": hcc_condition_tmr,
+        }
+    else:
+        logging.warning(f"Skipping sunset processing for {city.name}: sunset_fh_tdy={sunset_fh_tdy}, sunset_fh_tmr={sunset_fh_tmr}")
+        sunset_results = {
+            "sunset_likelihood_index_tdy": np.nan,
+            "sunset_likelihood_index_tmr": np.nan,
+            "sunset_possible_colors_tdy": ('none',),
+            "sunset_possible_colors_tmr": ('none',),
+            "sunset_afterglow_time_tdy": np.nan,
+            "sunset_afterglow_time_tmr": np.nan,
+            "sunset_cloud_base_lvl_tdy": np.nan,
+            "sunset_cloud_base_lvl_tmr": np.nan,
+            "sunset_geom_condition_LCL_used_tdy": False,
+            "sunset_geom_condition_LCL_used_tmr": False,
+            "sunset_cloud_present_tdy": False,
+            "sunset_cloud_present_tmr": False,
+            "sunset_total_aod550_tdy": np.nan,
+            "sunset_total_aod550_tmr": np.nan,
+            "sunset_dust_aod550_tdy": np.nan,
+            "sunset_dust_aod550_tmr": np.nan,
+            "sunset_time_tdy": sunset_tdy,
+            "sunset_hcc_condition_tdy": False,
+            "sunset_hcc_condition_tmr": False,
+        }
+
+    # Process sunrise (new logic - similar to sunset)
+    sunrise_results = {}
+    if sunrise_fh_tdy is not None and sunrise_fh_tmr is not None:
+        logging.info(f"Processing sunrise for {city.name}")
+        ds_sunrise_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
+        ds_sunrise_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
+
+        ds_sunrise_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+        ds_sunrise_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+
+        # Extract cloud variables for sunrise
+        ds_sunrise_tdy_lcc = extract_variable(ds_sunrise_tdy, "lcc", lat_min, lat_max, lon_min, lon_max)
+        ds_sunrise_tdy_mcc = extract_variable(ds_sunrise_tdy, "mcc", lat_min, lat_max, lon_min, lon_max)
+        ds_sunrise_tdy_hcc = extract_variable(ds_sunrise_tdy, "hcc", lat_min, lat_max, lon_min, lon_max)
+        ds_sunrise_tdy_tcc = extract_variable(ds_sunrise_tdy, "tcc", lat_min, lat_max, lon_min, lon_max)
+
+        ds_sunrise_tmr_tcc = extract_variable(ds_sunrise_tmr, "tcc", lat_min, lat_max, lon_min, lon_max)
+        ds_sunrise_tmr_lcc = extract_variable(ds_sunrise_tmr, "lcc", lat_min, lat_max, lon_min, lon_max)
+        ds_sunrise_tmr_mcc = extract_variable(ds_sunrise_tmr, "mcc", lat_min, lat_max, lon_min, lon_max)
+        ds_sunrise_tmr_hcc = extract_variable(ds_sunrise_tmr, "hcc", lat_min, lat_max, lon_min, lon_max)
+
+        cloud_vars_sunrise_tdy = {
+            "tcc": ds_sunrise_tdy_tcc,
+            "lcc": ds_sunrise_tdy_lcc,
+            "mcc": ds_sunrise_tdy_mcc,
+            "hcc": ds_sunrise_tdy_hcc
+        }
+
+        cloud_vars_sunrise_tmr = {
+            "tcc": ds_sunrise_tmr_tcc,
+            "lcc": ds_sunrise_tmr_lcc,
+            "mcc": ds_sunrise_tmr_mcc,
+            "hcc": ds_sunrise_tmr_hcc
+        }
+
+        if create_dashboard_flag:
+            plot_cloud_cover_map(cloud_vars_sunrise_tdy, city, lon, lat, today_str, run,
+                            f'{today_str} {run}z +{sunrise_fh_tdy}h EC AIFS cloud cover (today sunrise)',
+                            sunrise_fh_tdy, sunrise_azimuth, save_path= output_path, cmap='gray')
+
+            plot_cloud_cover_map(cloud_vars_sunrise_tmr, city, lon, lat, tomorrow_str, run,
+                                f'{tomorrow_str} {run}z +{sunrise_fh_tmr}h EC AIFS cloud cover (tomorrow sunrise)',
+                                sunrise_fh_tmr, sunrise_azimuth_tmr, save_path= output_path, cmap='gray')
+
+        # Calculate RH and cloud base for sunrise
+        RH_sunrise_tdy, _ = specific_to_relative_humidity(ds_sunrise_tdy.q, ds_sunrise_tdy.t, ds_sunrise_tdy.isobaricInhPa, lat, lon)
+        cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, RH_cb_sunrise_tdy = calc_cloud_base(ds_sunrise_tdy_2m["t2m"], ds_sunrise_tdy_2m["d2m"], ds_sunrise_tdy.t, RH_sunrise_tdy, ds_sunrise_tdy.isobaricInhPa, lat, lon)
+
+        RH_sunrise_tmr, _ = specific_to_relative_humidity(ds_sunrise_tmr.q, ds_sunrise_tmr.t, ds_sunrise_tmr.isobaricInhPa, lat, lon)
+        cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, RH_cb_sunrise_tmr = calc_cloud_base(ds_sunrise_tmr_2m["t2m"], ds_sunrise_tmr_2m["d2m"], ds_sunrise_tmr.t, RH_sunrise_tmr, ds_sunrise_tmr.isobaricInhPa, lat, lon)
+
+        logging.info(f'sunrise tdy cloud_base:{cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
+        logging.info(f'sunrise tmr cloud_base: {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
+
+        # Calculate cloud extent and afterglow parameters for sunrise
+        distance_below_threshold_sunrise_tdy, key_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy, cloud_present_sunrise_tdy, cloud_base_lvl_sunrise_tdy, hcc_condition_sunrise_tdy = get_cloud_extent(
+            cloud_vars_sunrise_tdy, city, lon, lat, sunrise_azimuth, cloud_base_lvl_sunrise_tdy, sunrise_fh_tdy, 
+            create_dashboard_flag, today_str, run)
+        
+        distance_below_threshold_sunrise_tmr, key_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr, cloud_present_sunrise_tmr, cloud_base_lvl_sunrise_tmr, hcc_condition_sunrise_tmr = get_cloud_extent(
+            cloud_vars_sunrise_tmr, city, lon, lat, sunrise_azimuth_tmr, cloud_base_lvl_sunrise_tmr, sunrise_fh_tmr, 
+            create_dashboard_flag, tomorrow_str, run)
+
+        geom_cond_sunrise_tdy, geom_condition_LCL_used_sunrise_tdy, lf_ma_sunrise_tdy = geom_condition(cloud_base_lvl_sunrise_tdy, distance_below_threshold_sunrise_tdy, z_lcl_sunrise_tdy)
+        geom_cond_sunrise_tmr, geom_condition_LCL_used_sunrise_tmr, lf_ma_sunrise_tmr = geom_condition(cloud_base_lvl_sunrise_tmr, distance_below_threshold_sunrise_tmr, z_lcl_sunrise_tmr)
+
+        theta_sunrise_tdy = get_elevation_afterglow(cloud_base_lvl_sunrise_tdy, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, z_lcl_sunrise_tdy)
+        theta_sunrise_tmr = get_elevation_afterglow(cloud_base_lvl_sunrise_tmr, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, z_lcl_sunrise_tmr)
+
+        actual_afterglow_time_sunrise_tdy = get_afterglow_time(lat, today, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy)
+        actual_afterglow_time_sunrise_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr)
+
+        dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path)
+
+        likelihood_index_sunrise_tdy = weighted_likelihood_index(geom_cond_sunrise_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, theta_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy)
+        likelihood_index_sunrise_tmr = weighted_likelihood_index(geom_cond_sunrise_tmr, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, theta_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr)
+        
+        logging.info(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
+        logging.info(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
+
+        possible_colors_sunrise_tdy = possible_colours(cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, total_aod550[0], key_sunrise_tdy)
+        possible_colors_sunrise_tmr = possible_colours(cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, total_aod550[1], key_sunrise_tmr)
+
+        sunrise_results = {
+            "sunrise_likelihood_index_tdy": likelihood_index_sunrise_tdy,
+            "sunrise_likelihood_index_tmr": likelihood_index_sunrise_tmr,
+            "sunrise_possible_colors_tdy": possible_colors_sunrise_tdy,
+            "sunrise_possible_colors_tmr": possible_colors_sunrise_tmr,
+            "sunrise_afterglow_time_tdy": actual_afterglow_time_sunrise_tdy,
+            "sunrise_afterglow_time_tmr": actual_afterglow_time_sunrise_tmr,
+            "sunrise_cloud_base_lvl_tdy": cloud_base_lvl_sunrise_tdy,
+            "sunrise_cloud_base_lvl_tmr": cloud_base_lvl_sunrise_tmr,
+            "sunrise_geom_condition_LCL_used_tdy": geom_condition_LCL_used_sunrise_tdy,
+            "sunrise_geom_condition_LCL_used_tmr": geom_condition_LCL_used_sunrise_tmr,
+            "sunrise_cloud_present_tdy": cloud_present_sunrise_tdy,
+            "sunrise_cloud_present_tmr": cloud_present_sunrise_tmr,
+            "sunrise_total_aod550_tdy": total_aod550[0],
+            "sunrise_total_aod550_tmr": total_aod550[1],
+            "sunrise_dust_aod550_tdy": dust_aod550[0],
+            "sunrise_dust_aod550_tmr": dust_aod550[1],
+            "sunrise_time_tdy": sunrise_tdy,
+            "sunrise_hcc_condition_tdy": hcc_condition_sunrise_tdy,
+            "sunrise_hcc_condition_tmr": hcc_condition_sunrise_tmr,
+        }
+    else:
+        logging.warning(f"Skipping sunrise processing for {city.name}: sunrise_fh_tdy={sunrise_fh_tdy}, sunrise_fh_tmr={sunrise_fh_tmr}")
+        sunrise_results = {
+            "sunrise_likelihood_index_tdy": np.nan,
+            "sunrise_likelihood_index_tmr": np.nan,
+            "sunrise_possible_colors_tdy": ('none',),
+            "sunrise_possible_colors_tmr": ('none',),
+            "sunrise_afterglow_time_tdy": np.nan,
+            "sunrise_afterglow_time_tmr": np.nan,
+            "sunrise_cloud_base_lvl_tdy": np.nan,
+            "sunrise_cloud_base_lvl_tmr": np.nan,
+            "sunrise_geom_condition_LCL_used_tdy": False,
+            "sunrise_geom_condition_LCL_used_tmr": False,
+            "sunrise_cloud_present_tdy": False,
+            "sunrise_cloud_present_tmr": False,
+            "sunrise_total_aod550_tdy": np.nan,
+            "sunrise_total_aod550_tmr": np.nan,
+            "sunrise_dust_aod550_tdy": np.nan,
+            "sunrise_dust_aod550_tmr": np.nan,
+            "sunrise_time_tdy": sunrise_tdy,
+            "sunrise_hcc_condition_tdy": False,
+            "sunrise_hcc_condition_tmr": False,
+        }
     
-    # final guard: if still missing, skip city
-    if sunset_fh_tdy is None:
-        logging.warning(f"No forecast-hour file available for {city.name} (today); skipping city.")
-        return {"city": city.name, "error": "missing forecast-hour file"}
-
-    ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
-    ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
-
-    # t2m at 2m
-    # Please fix the cfgrib datasetbuilderror: key present and new value is different: key='heightAboveGround' value=Variable(dimensions=(), data=np.float64(10.0)) new_value=Variable(dimensions=(), data=np.float64(100.0))
-    ds_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
-    ds_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
-
-    ds_tdy_lcc = extract_variable(ds_tdy, "lcc", lat_min, lat_max, lon_min, lon_max)
-    ds_tdy_mcc = extract_variable(ds_tdy, "mcc", lat_min, lat_max, lon_min, lon_max)
-    ds_tdy_hcc = extract_variable(ds_tdy, "hcc", lat_min, lat_max, lon_min, lon_max)
-    ds_tdy_tcc = extract_variable(ds_tdy, "tcc", lat_min, lat_max, lon_min, lon_max)
-
-    ds_tmr_tcc = extract_variable(ds_tmr, "tcc", lat_min, lat_max, lon_min, lon_max)
-    ds_tmr_lcc = extract_variable(ds_tmr, "lcc", lat_min, lat_max, lon_min, lon_max)
-    ds_tmr_mcc = extract_variable(ds_tmr, "mcc", lat_min, lat_max, lon_min, lon_max)
-    ds_tmr_hcc = extract_variable(ds_tmr, "hcc", lat_min, lat_max, lon_min, lon_max)
-
-    cloud_vars_tdy = {
-        "tcc": ds_tdy_tcc,
-        "lcc": ds_tdy_lcc,
-        "mcc": ds_tdy_mcc,
-        "hcc": ds_tdy_hcc
-    }
-
-    cloud_vars_tmr = {
-        "tcc": ds_tmr_tcc,
-        "lcc": ds_tmr_lcc,
-        "mcc": ds_tmr_mcc,
-        "hcc": ds_tmr_hcc
-    }
-
-    if create_dashboard_flag:
-        plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, today_str, run,
-                        f'{today_str} {run}z +{sunset_fh_tdy}h EC AIFS cloud cover (today sunset)',
-                        sunset_fh_tdy, sunset_azimuth, save_path= output_path, cmap='gray')
-
-        plot_cloud_cover_map(cloud_vars_tmr, city, lon, lat, tomorrow_str, run,
-                            f'{tomorrow_str} {run}z +{sunset_fh_tmr}h EC AIFS cloud cover (tomorrow sunset)',
-                            sunset_fh_tmr, sunset_azimuth, save_path= output_path, cmap='gray')
-
-    RH_tdy, p_18 = specific_to_relative_humidity(ds_tdy.q, ds_tdy.t, ds_tdy.isobaricInhPa, lat, lon)
-    cloud_base_lvl_tdy, z_lcl_tdy, RH_cb_tdy = calc_cloud_base(ds_tdy_2m["t2m"], ds_tdy_2m["d2m"], ds_tdy.t, RH_tdy, ds_tdy.isobaricInhPa, lat, lon)
-
-    RH_tmr, p_42 = specific_to_relative_humidity(ds_tmr.q, ds_tmr.t, ds_tmr.isobaricInhPa, lat, lon)
-    cloud_base_lvl_tmr, z_lcl_tmr, RH_cb_tmr = calc_cloud_base(ds_tmr_2m["t2m"], ds_tmr_2m["d2m"], ds_tmr.t, RH_tmr, ds_tmr.isobaricInhPa, lat, lon)
-
-    logging.info(f'tdy cloud_base:{cloud_base_lvl_tdy}, z_lcl:{z_lcl_tdy}, RH_cb:{RH_cb_tdy}')
-    logging.info(f'tmr cloud_base: {cloud_base_lvl_tmr}, z_lcl:{z_lcl_tmr}, RH_cb:{RH_cb_tmr}')
-
-    # cloud_cover_data = extract_cloud_cover_along_azimuth(ds_tdy_tcc, lon, lat, sunset_azimuth, 500, num_points=20)
-    # cloud_cover_data_42 = extract_cloud_cover_along_azimuth(ds_tmr_tcc, lon, lat, sunset_azimuth_42, 500, num_points=20)
-
-    # logging.info(cloud_cover_data)
-    # logging.info(cloud_cover_data_42)
-
-    # cloud_cover_data_tdy_all = {
-    #     key: extract_cloud_cover_along_azimuth(data, lon, lat, sunset_azimuth, 500, num_points=20)
-    #     for key, data in cloud_vars_tdy.items()
-    # }
-
-    # # Apply the function to all datasets in cloud_vars_tmr
-    # cloud_cover_data_tmr_all = {
-    #     key: extract_cloud_cover_along_azimuth(data, lon, lat, sunset_azimuth_tmr, 500, num_points=20)
-    #     for key, data in cloud_vars_tmr.items()
-    # }
-
-    # # Print the results for verification
-    # logging.info("Cloud cover data for +18h forecast_hours:")
-    # logging.info(cloud_cover_data_18_all)
-
-    distance_below_threshold_tdy, key_tdy, avg_first_three_tdy, avg_path_tdy, cloud_present_tdy, cloud_base_lvl_tdy  = get_cloud_extent(cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, sunset_fh_tdy, 
-                                                                                                                                        create_dashboard_flag, today_str, run)
-    distance_below_threshold_tmr, key_tmr, avg_first_three_tmr, avg_path_tmr, cloud_present_tmr, cloud_base_lvl_tmr  = get_cloud_extent(cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, sunset_fh_tmr, 
-                                                                                                                                        create_dashboard_flag, tomorrow_str, run)
-
-    geom_cond_tdy, geom_condition_LCL_used_tdy, lf_ma_tdy = geom_condition(cloud_base_lvl_tdy, distance_below_threshold_tdy, z_lcl_tdy)
-    geom_cond_tmr, geom_condition_LCL_used_tmr, lf_ma_tmr = geom_condition(cloud_base_lvl_tmr, distance_below_threshold_tmr, z_lcl_tmr)
-
-    theta_tdy = get_elevation_afterglow(cloud_base_lvl_tdy, distance_below_threshold_tdy, lf_ma_tdy, z_lcl_tdy)
-    theta_tmr = get_elevation_afterglow(cloud_base_lvl_tmr, distance_below_threshold_tmr, lf_ma_tmr, z_lcl_tmr)
-
-    actual_afterglow_time_tdy = get_afterglow_time(lat, today, distance_below_threshold_tdy, lf_ma_tdy, cloud_base_lvl_tdy, z_lcl_tdy)
-    actual_afterglow_time_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_tmr, lf_ma_tmr, cloud_base_lvl_tmr, z_lcl_tmr)
-
-    # One method is to use Equivalent cloud heigh  = cloud base level - equivalent surface height as highlighted in the paper
-    # But uncertainty is high and the exact mechanism is not clear
-    # Here we use a simplier and quicker method, but yet to be verified
-    # The AOD value directly controls the value of the afterglow liklihood index in the weighted equation
-
-    # Incorporate AOD
-
-    dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path) #Array of shape (2,) first is 18h , second is 42h
-
-    likelihood_index_tdy = weighted_likelihood_index(geom_cond_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_tdy, z_lcl_tdy, theta_tdy, avg_first_three_tdy, avg_path_tdy)
-    likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
-    logging.info(f"{city.name} likelihood_index_tdy: {likelihood_index_tdy}")
-    logging.info(f"{city.name} likelihood_index_tmr: {likelihood_index_tmr}")
-
-    possible_colors_tdy = possible_colours(cloud_base_lvl_tdy, z_lcl_tdy, total_aod550[0], key_tdy)
-    possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1], key_tmr)
-    logging.info(f"Possible colors for afterglow {sunset_fh_tdy}h: {possible_colors_tdy}")
-    logging.info(f"Possible colors for afterglow {sunset_fh_tmr}h: {possible_colors_tmr}")
-
-    logging.info(cloud_base_lvl_tdy)
-    logging.info(cloud_base_lvl_tmr)
-
-    if create_dashboard_flag:
-        create_dashboard(
-            today, today_str, run, likelihood_index_tdy, likelihood_index_tmr, city, lat, lon, sunset_azimuth, actual_afterglow_time_tdy, actual_afterglow_time_tmr, possible_colors_tdy, possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr,
-            z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550, sunset_tdy, sunset_tmr, fcst_hr_tdy=sunset_fh_tdy, fcst_hr_tmr=sunset_fh_tmr
-        )
-    
+    # Combine results
     return {
         "city": city.name,
-        "likelihood_index_tdy": likelihood_index_tdy,
-        "likelihood_index_tmr": likelihood_index_tmr,
-        "possible_colors_tdy": possible_colors_tdy,
-        "possible_colors_tmr": possible_colors_tmr,
-        "actual_afterglow_time_tdy": actual_afterglow_time_tdy,
-        "actual_afterglow_time_tmr": actual_afterglow_time_tmr,
-        "cloud_base_lvl_tdy": cloud_base_lvl_tdy,
-        "cloud_base_lvl_tmr": cloud_base_lvl_tmr,
-        "geom_condition_LCL_used_tdy": geom_condition_LCL_used_tdy,
-        "geom_condition_LCL_used_tmr": geom_condition_LCL_used_tmr,
-        "cloud_present_tdy": cloud_present_tdy,
-        "cloud_present_tmr": cloud_present_tmr,
-        "total_aod550_tdy": total_aod550[0],
-        "total_aod550_tmr": total_aod550[1],
-        "dust_aod550_tdy": dust_aod550[0],
-        "dust_aod550_tmr": dust_aod550[1],
-        "sunset_time_tdy": sunset_tdy,
+        **sunset_results,
+        **sunrise_results
     }
 
 def latest_forecast_hours_run_to_download() -> datetime.datetime:
@@ -1031,6 +1190,7 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
     Args:
         city: City object with name and timezone
         city_sunset_time: Sunset time in UTC (datetime in UTC)
+       
         run_datetime: forecast_hours run initialization time (datetime in UTC)
 
     Returns:
@@ -1155,7 +1315,20 @@ def main():
             continue # skips to next city, don't crash the script
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(f'{output_path}/all_cities_summary_{today_str}.csv', index=False)
+    
+    # Round all numeric columns to 3 decimal places
+    numeric_cols = results_df.select_dtypes(include=[np.number]).columns
+    results_df[numeric_cols] = results_df[numeric_cols].round(3)
+    
+    # Convert likelihood index columns to integers (they should be 0-100, not floats)
+    index_cols = [col for col in results_df.columns if 'likelihood_index' in col]
+    for col in index_cols:
+        results_df[col] = results_df[col].fillna(-1).astype(int).replace(-1, np.nan)
+    
+    # Export to JSON with controlled precision
+    output_json_path = f'{output_path}/all_cities_summary_{today_str}.json'
+    results_df.to_json(output_json_path, orient='records', indent=2, date_format='iso', double_precision=3)
+    logging.info(f"Results saved to {output_json_path}")
     
     return results_df
 

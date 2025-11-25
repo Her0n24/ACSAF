@@ -1,8 +1,9 @@
-
 cities = [
 {"name": "London",   "country": "UK", "tz": "Europe/London",    "lat": 51.5074, "lon": -0.1278, "create_dashboard": True},
 {"name": "New_York","country": "US", "tz": "America/New_York",  "lat": 40.7128, "lon": -74.0060, "create_dashboard": True},
 {"name": "Tokyo",    "country": "JP", "tz": "Asia/Tokyo",       "lat": 35.6895, "lon": 139.6917, "create_dashboard": True},
+{"name": "Sydney",   "country": "AU", "tz": "Australia/Sydney", "lat": -33.8688,"lon": 151.2093, "create_dashboard": True},
+{"name": "Los_Angeles","country": "US","tz": "America/Los_Angeles","lat": 34.0522,"lon": -118.2437,"create_dashboard": False},
 ]
 
 # def run_tests():
@@ -48,13 +49,15 @@ from get_aifs import download_file
 import requests
 import logging
 import os
+import pandas as pd
+import numpy as np
 
 
 def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2025,11,20,10,0,0)  # Simulate today as 2025-11-20 at 10:00 UTC
+    today = datetime.datetime(2025,11,24,10,0,0)  # Simulate today as 2025-11-24 at 10:00 UTC
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)
@@ -77,8 +80,8 @@ def main():
             logging.exception(f"Unexpected error downloading hour {fcst_hour}")
             failed_count += 1
 
-    # Need global dataset for this
-    get_cams_aod(today, run, today_str, input_path) # type: ignore
+    # Need global dataset for this - convert datetime to date
+    get_cams_aod(today.date(), run, today_str, input_path) # type: ignore
 
     results = []
     for c in cities:
@@ -101,12 +104,23 @@ def main():
         except Exception as e:
             print("ERROR:", c["name"], e)
 
-    # optional: save results to CSV
-    try:
-        import pandas as pd
-        pd.DataFrame(results).to_csv(f"subset_results_{today_str}.csv", index=False)
-    except Exception:
-        pass
+    results_df = pd.DataFrame(results)
+    
+    # Round all numeric columns to 3 decimal places
+    numeric_cols = results_df.select_dtypes(include=[np.number]).columns
+    results_df[numeric_cols] = results_df[numeric_cols].round(3)
+    
+    # Convert likelihood index columns to integers (they should be 0-100, not floats)
+    index_cols = [col for col in results_df.columns if 'likelihood_index' in col]
+    for col in index_cols:
+        results_df[col] = results_df[col].fillna(-1).astype(int).replace(-1, np.nan)
+    
+    # Export to JSON with controlled precision
+    output_json_path = f'{output_path}/all_cities_summary_{today_str}.json'
+    results_df.to_json(output_json_path, orient='records', indent=2, date_format='iso', double_precision=3)
+    logging.info(f"Results saved to {output_json_path}")
+    
+    return results_df
 
 if __name__ == "__main__":
     main()
