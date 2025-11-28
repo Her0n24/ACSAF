@@ -57,7 +57,7 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2025,11,24,10,0,0)  # Simulate today as 2025-11-24 at 10:00 UTC
+    today = datetime.datetime(2025,11,27,10,0,0)  # Simulate today as 2025-11-27 at 10:00 UTC
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)

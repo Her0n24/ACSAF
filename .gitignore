@@ -3,6 +3,7 @@
 *.png
 *.grib2
 *.grib
+*.idx
 
 # Logs and databases #
 ######################
@@ -29,3 +30,4 @@ Thumbs.db
 ##################
 *.yml
 *.yaml
+*.env

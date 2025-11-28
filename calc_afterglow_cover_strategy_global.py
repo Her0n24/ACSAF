@@ -28,12 +28,15 @@ from get_aifs import download_file
 from get_cds_global import get_cams_aod
 from geopy import Nominatim
 import logging 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="cfgrib.xarray_plugin")
 logging.basicConfig(
     level=logging.INFO,
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
 from calc_aod_global import calc_aod
 import argparse
+from functools import lru_cache
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Afterglow forecast")
@@ -46,6 +49,69 @@ input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afte
 
 logging.info(f"Input path: {input_path}")
 logging.info(f"Output path: {output_path}")
+
+def _indexpath(grib_path: str) -> str:
+    # Reuse ecCodes index to speed repeated opens
+    return f"{grib_path}.idx"
+
+@lru_cache(maxsize=None)
+def open_plev(grib_path: str) -> xr.Dataset:
+    return xr.open_dataset(
+        grib_path,
+        engine='cfgrib',
+        backend_kwargs={
+            'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'},
+            'indexpath': _indexpath(grib_path),
+        },
+        decode_timedelta=True,
+    )
+
+@lru_cache(maxsize=None)
+def open_cloud_da(grib_path: str, short_name: str) -> xr.DataArray:
+    ds = xr.open_dataset(
+        grib_path,
+        engine='cfgrib',
+        backend_kwargs={
+            'filter_by_keys': {'shortName': short_name},
+            'indexpath': _indexpath(grib_path),
+        },
+        decode_timedelta=True,
+    )
+    return ds[short_name]
+
+@lru_cache(maxsize=None)
+def open_2m_cached(grib_path: str) -> xr.Dataset:
+    # load_2m_fields already uses decode_timedelta=True
+    return load_2m_fields(grib_path)
+
+def _slice_roi(da: xr.DataArray, lon: float, lat: float, azimuth_deg: float,
+               distance_km: float = 500, pad_km: float = 80) -> xr.DataArray:
+    # Compute bounding box that contains the city and the end of the azimuth line
+    deg_len = 1.0 / 111.0
+    L = distance_km * deg_len
+    pad = pad_km * deg_len
+    az = np.deg2rad(azimuth_deg)
+    end_lon = lon + L * np.sin(az)
+    end_lat = lat + L * np.cos(az)
+    lon_min, lon_max = min(lon, end_lon) - pad, max(lon, end_lon) + pad
+    lat_min, lat_max = min(lat, end_lat) - pad, max(lat, end_lat) + pad
+
+    # Handle ascending/descending latitude
+    try:
+        lat0 = float(da.latitude[0])
+        latN = float(da.latitude[-1])
+        lat_slice = slice(lat_max, lat_min) if lat0 > latN else slice(lat_min, lat_max)
+        return da.sel(latitude=lat_slice, longitude=slice(lon_min, lon_max))
+    except Exception:
+        return da  # fallback if coordinates differ
+    
+def reduce_clouds_to_roi(data_dict: dict, lon: float, lat: float, azimuth_deg: float,
+                         distance_km: float = 500, pad_km: float = 80) -> dict:
+    return {
+        k: _slice_roi(v, lon, lat, azimuth_deg, distance_km, pad_km)
+        for k, v in data_dict.items()
+        if v is not None
+    }
 
 def max_solar_elevation(city, date):
     tz = pytz.timezone(city.timezone)
@@ -133,7 +199,8 @@ def extract_variable(ds, var_name, lat_min, lat_max, lon_min, lon_max, verbose=F
     return var
 
 
-def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix, fcst_hr, sunset_azimuth, save_path= output_path, cmap='gray'):
+def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix, fcst_hr,
+                          sun_azimuth, save_path= output_path, cmap='gray', distance_km=500):
     """
     Plot 2x2 cloud cover maps: TCC, LCC, MCC, HCC.
 
@@ -145,6 +212,7 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix
     - save_path: output file path
     - cmap: colormap to use (default: 'gray')
     """
+    line_length_deg = distance_km / 111.0
     fig, axs = plt.subplots(2, 2, figsize=(10, 8))
     var_order = [("tcc", "Total Cloud Cover"),
                  ("lcc", "Low Cloud Cover"),
@@ -152,16 +220,44 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix
                  ("hcc", "High Cloud Cover")]
 
     mappables = []
+    az_rad = np.deg2rad(sun_azimuth)
+    end_lon = lon + line_length_deg * np.sin(az_rad)
+    end_lat = lat + line_length_deg * np.cos(az_rad)
+    pad = line_length_deg * 0.15
+    lon_min = min(lon, end_lon) - pad
+    lon_max = max(lon, end_lon) + pad
+    lat_min = min(lat, end_lat) - pad
+    lat_max = max(lat, end_lat) + pad
+    # for ax, (key, label) in zip(axs.flat, var_order):
+    #     if key in data_dict:
+    #         mappable = data_dict[key].plot(ax=ax, cmap=cmap, add_colorbar=False, vmin=0, vmax=100)
+    #         mappables.append(mappable)
+    #         ax.set_title(f"{label}")
+    #         ax.scatter(lon, lat, color='red', marker='x', label=city.name)
+    #         plot_azimuth_line(ax, lon, lat, sun_azimuth, length=5.0)
+    #     else:
+    #         ax.set_visible(False)
+
     for ax, (key, label) in zip(axs.flat, var_order):
-        if key in data_dict:
-            mappable = data_dict[key].plot(ax=ax, cmap=cmap, add_colorbar=False, vmin=0, vmax=100)
-            mappables.append(mappable)
-            ax.set_title(f"{label}")
-            ax.scatter(lon, lat, color='red', marker='x', label=city.name)
-            plot_azimuth_line(ax, lon, lat, sunset_azimuth, length=5.0)
-        else:
+        da = data_dict.get(key)
+        if da is None:
             ax.set_visible(False)
-            
+            continue
+        # Subset (accounts for descending latitude)
+        try:
+            lat_slice = slice(lat_max, lat_min) if da.latitude[0] > da.latitude[-1] else slice(lat_min, lat_max)
+            da_sub = da.sel(latitude=lat_slice, longitude=slice(lon_min, lon_max))
+        except Exception:
+            da_sub = da
+        mappable = da_sub.plot(ax=ax, cmap=cmap, add_colorbar=False, vmin=0, vmax=100)
+        mappables.append(mappable)
+        ax.set_title(label)
+        ax.scatter(lon, lat, color='red', marker='x', zorder=5)
+        # Draw full-length azimuth line
+        plot_azimuth_line(ax, lon, lat, sun_azimuth, length=line_length_deg)
+        ax.set_xlim(lon_min, lon_max)
+        ax.set_ylim(lat_min, lat_max)
+        
     for ax in axs[0]:  # second row
         pos = ax.get_position()
         ax.set_position([pos.x0, pos.y0 - 0.03, pos.width, pos.height])
@@ -178,7 +274,7 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix
     
     # Shared explanation under the title
     fig.text(0.5, 0.92, f"Red × marks {city.name}", ha='center', fontsize=10, color='red')
-    fig.text(0.5, 0.90, f"Orange marks sunset azimuth {round(sunset_azimuth,1)}°", ha='center', fontsize=10, color='darkorange')
+    fig.text(0.5, 0.90, f"Orange marks sun azimuth {round(sun_azimuth,1)}°", ha='center', fontsize=10, color='darkorange')
 
     plt.savefig(f'{save_path}' + f"/{today_str}{run}0000-{fcst_hr}h-AIFS_cloud_cover_{city.name}.png")
     plt.close()
@@ -793,10 +889,70 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         likelihood_index = int(round(likelihood_index * 100))
     return likelihood_index
 
+
+def load_2m_fields(grib_path: str) -> xr.Dataset:
+    """
+    Load 2 m temperature and dewpoint from a GRIB file, handling both
+    shortName variants (t2m or 2t, d2m or 2d). Returns dataset with
+    variables named t2m and d2m.
+
+    Function By ChartGPT
+    """
+    variants = [
+        {'shortName': 't2m', 'typeOfLevel': 'heightAboveGround', 'level': 2},
+        {'shortName': '2t',  'typeOfLevel': 'heightAboveGround', 'level': 2},
+    ]
+    t_ds = None
+    for f in variants:
+        try:
+            t_ds = xr.open_dataset(
+                grib_path,
+                engine='cfgrib',
+                backend_kwargs={'filter_by_keys': f},
+                decode_timedelta=True
+            )
+            if t_ds.data_vars:
+                break
+        except Exception:
+            pass
+    if t_ds is None or not t_ds.data_vars:
+        raise KeyError(f"No 2 m temperature (t2m/2t) found in {grib_path}")
+    # rename temp var to t2m
+    for v in list(t_ds.data_vars):
+        if v != 't2m':
+            t_ds = t_ds.rename({v: 't2m'})
+
+    variants = [
+        {'shortName': 'd2m', 'typeOfLevel': 'heightAboveGround', 'level': 2},
+        {'shortName': '2d',  'typeOfLevel': 'heightAboveGround', 'level': 2},
+    ]
+    d_ds = None
+    for f in variants:
+        try:
+            d_ds = xr.open_dataset(
+                grib_path,
+                engine='cfgrib',
+                backend_kwargs={'filter_by_keys': f},
+                decode_timedelta=True
+            )
+            if d_ds.data_vars:
+                break
+        except Exception:
+            pass
+    if d_ds is None or not d_ds.data_vars:
+        raise KeyError(f"No 2 m dewpoint (d2m/2d) found in {grib_path}")
+    for v in list(d_ds.data_vars):
+        if v != 'd2m':
+            d_ds = d_ds.rename({v: 'd2m'})
+
+    with xr.set_options(use_new_combine_kwarg_defaults=True):
+        merged = xr.merge([t_ds, d_ds], compat='override')
+    return merged
+
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, input_path, output_path, create_dashboard_flag: bool):
     tz = pytz.timezone(timezone_str)
-    #current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
-    current_utc = datetime.datetime(2025, 11, 20, 10, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
+    #current_utc = datetime.datetime(2025, 11, 20, 10, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
     local_today = current_utc.astimezone(tz).date()
 
     tomorrow = today + datetime.timedelta(days=1)
@@ -824,8 +980,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         # handle polar/no-sun or skip city
         sunrise_tdy = sunset_tdy = sunrise_tmr = sunset_tmr = None
 
-    #run_dt = latest_forecast_hours_run_to_download()
-    run_dt = datetime.datetime(2025, 11, 20, 0, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    run_dt = latest_forecast_hours_run_to_download()
+    #run_dt = datetime.datetime(2025, 11, 20, 0, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
     picks = determine_city_forecast_hours_time_to_use(city, sunrise_tdy, sunset_tdy, run_dt)
     print("run_dt:", run_dt)
     print("picks:", picks)
@@ -877,8 +1033,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     logging.info(f"sunset time in {city.name}: {sunset_tdy}")
 
     # Define a square box enclosing the region of interest
-    lat_min, lat_max = lat - 3, lat + 3
-    lon_min, lon_max = lon - 5, lon + 1
+    lat_min, lat_max = lat - 5, lat + 5
+    lon_min, lon_max = lon - 5, lon + 5
 
     # Guard for missing forecast hours
     if sunrise_fh_tdy is None and sunset_fh_tdy is None:
@@ -889,21 +1045,27 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     sunset_results = {}
     if sunset_fh_tdy is not None and sunset_fh_tmr is not None:
         logging.info(f"Processing sunset for {city.name}")
-        ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
-        ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
+        # ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
+        # ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
 
-        ds_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
-        ds_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+        grib_tdy = f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2'
+        grib_tmr = f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2'
 
-        ds_tdy_lcc = extract_variable(ds_tdy, "lcc", lat_min, lat_max, lon_min, lon_max)
-        ds_tdy_mcc = extract_variable(ds_tdy, "mcc", lat_min, lat_max, lon_min, lon_max)
-        ds_tdy_hcc = extract_variable(ds_tdy, "hcc", lat_min, lat_max, lon_min, lon_max)
-        ds_tdy_tcc = extract_variable(ds_tdy, "tcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tdy_plev = open_plev(grib_tdy)
+        ds_tmr_plev = open_plev(grib_tmr)
 
-        ds_tmr_tcc = extract_variable(ds_tmr, "tcc", lat_min, lat_max, lon_min, lon_max)
-        ds_tmr_lcc = extract_variable(ds_tmr, "lcc", lat_min, lat_max, lon_min, lon_max)
-        ds_tmr_mcc = extract_variable(ds_tmr, "mcc", lat_min, lat_max, lon_min, lon_max)
-        ds_tmr_hcc = extract_variable(ds_tmr, "hcc", lat_min, lat_max, lon_min, lon_max)
+        ds_tdy_2m = open_2m_cached(grib_tdy)
+        ds_tmr_2m = open_2m_cached(grib_tmr)
+
+        ds_tdy_tcc = open_cloud_da(grib_tdy, 'tcc')
+        ds_tdy_lcc = open_cloud_da(grib_tdy, 'lcc')
+        ds_tdy_mcc = open_cloud_da(grib_tdy, 'mcc')
+        ds_tdy_hcc = open_cloud_da(grib_tdy, 'hcc')
+
+        ds_tmr_tcc = open_cloud_da(grib_tmr, 'tcc')
+        ds_tmr_lcc = open_cloud_da(grib_tmr, 'lcc')
+        ds_tmr_mcc = open_cloud_da(grib_tmr, 'mcc')
+        ds_tmr_hcc = open_cloud_da(grib_tmr, 'hcc')
 
         cloud_vars_tdy = {
             "tcc": ds_tdy_tcc,
@@ -918,6 +1080,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "mcc": ds_tmr_mcc,
             "hcc": ds_tmr_hcc
         }
+        cloud_vars_tdy = reduce_clouds_to_roi(cloud_vars_tdy, lon, lat, sunset_azimuth, distance_km=500, pad_km=80)
+        cloud_vars_tmr = reduce_clouds_to_roi(cloud_vars_tmr, lon, lat, sunset_azimuth_tmr, distance_km=500, pad_km=80)
 
         if create_dashboard_flag:
             plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, today_str, run,
@@ -928,12 +1092,11 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
                                 f'{tomorrow_str} {run}z +{sunset_fh_tmr}h EC AIFS cloud cover (tomorrow sunset)',
                                 sunset_fh_tmr, sunset_azimuth, save_path= output_path, cmap='gray')
 
-        RH_tdy, p_18 = specific_to_relative_humidity(ds_tdy.q, ds_tdy.t, ds_tdy.isobaricInhPa, lat, lon)
-        cloud_base_lvl_tdy, z_lcl_tdy, RH_cb_tdy = calc_cloud_base(ds_tdy_2m["t2m"], ds_tdy_2m["d2m"], ds_tdy.t, RH_tdy, ds_tdy.isobaricInhPa, lat, lon)
+        RH_tdy, p_18 = specific_to_relative_humidity(ds_tdy_plev.q, ds_tdy_plev.t, ds_tdy_plev.isobaricInhPa, lat, lon)
+        cloud_base_lvl_tdy, z_lcl_tdy, RH_cb_tdy = calc_cloud_base(ds_tdy_2m["t2m"], ds_tdy_2m["d2m"], ds_tdy_plev.t, RH_tdy, ds_tdy_plev.isobaricInhPa, lat, lon)
 
-        RH_tmr, p_42 = specific_to_relative_humidity(ds_tmr.q, ds_tmr.t, ds_tmr.isobaricInhPa, lat, lon)
-        cloud_base_lvl_tmr, z_lcl_tmr, RH_cb_tmr = calc_cloud_base(ds_tmr_2m["t2m"], ds_tmr_2m["d2m"], ds_tmr.t, RH_tmr, ds_tmr.isobaricInhPa, lat, lon)
-
+        RH_tmr, p_42 = specific_to_relative_humidity(ds_tmr_plev.q, ds_tmr_plev.t, ds_tmr_plev.isobaricInhPa, lat, lon)
+        cloud_base_lvl_tmr, z_lcl_tmr, RH_cb_tmr = calc_cloud_base(ds_tmr_2m["t2m"], ds_tmr_2m["d2m"], ds_tmr_plev.t, RH_tmr, ds_tmr_plev.isobaricInhPa, lat, lon)
         logging.info(f'sunset tdy cloud_base:{cloud_base_lvl_tdy}, z_lcl:{z_lcl_tdy}, RH_cb:{RH_cb_tdy}')
         logging.info(f'sunset tmr cloud_base: {cloud_base_lvl_tmr}, z_lcl:{z_lcl_tmr}, RH_cb:{RH_cb_tmr}')
 
@@ -1023,36 +1186,72 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     sunrise_results = {}
     if sunrise_fh_tdy is not None and sunrise_fh_tmr is not None:
         logging.info(f"Processing sunrise for {city.name}")
-        ds_sunrise_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
-        ds_sunrise_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
 
-        ds_sunrise_tdy_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
-        ds_sunrise_tmr_2m = cfgrib.open_dataset(f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2', filter_by_keys={'typeOfLevel': 'heightAboveGround', 'level': 2})
+        grib_sunrise_tdy = f'{input_path}/{today_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2'
+        grib_sunrise_tmr = f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2'
+        
+        # Pressure levels (t, q)
+        # ds_sunrise_tdy_plev = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
+        #                                       backend_kwargs={'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'}
+        #                                                       }, decode_timedelta= True)
+        # ds_sunrise_tmr_plev = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
+        #                                       backend_kwargs={'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'}
+        #                                                       }, decode_timedelta= True)
+        ds_sunrise_tdy_plev = open_plev(grib_sunrise_tdy)
+        ds_sunrise_tmr_plev = open_plev(grib_sunrise_tmr)
 
-        # Extract cloud variables for sunrise
-        ds_sunrise_tdy_lcc = extract_variable(ds_sunrise_tdy, "lcc", lat_min, lat_max, lon_min, lon_max)
-        ds_sunrise_tdy_mcc = extract_variable(ds_sunrise_tdy, "mcc", lat_min, lat_max, lon_min, lon_max)
-        ds_sunrise_tdy_hcc = extract_variable(ds_sunrise_tdy, "hcc", lat_min, lat_max, lon_min, lon_max)
-        ds_sunrise_tdy_tcc = extract_variable(ds_sunrise_tdy, "tcc", lat_min, lat_max, lon_min, lon_max)
+        # 2 m fields: open t2m and d2m separately and merge
+        # ds_sunrise_tdy_2m = load_2m_fields(grib_sunrise_tdy)
+        # ds_sunrise_tmr_2m = load_2m_fields(grib_sunrise_tmr)
+        ds_sunrise_tdy_2m = open_2m_cached(grib_sunrise_tdy)
+        ds_sunrise_tmr_2m = open_2m_cached(grib_sunrise_tmr)
 
-        ds_sunrise_tmr_tcc = extract_variable(ds_sunrise_tmr, "tcc", lat_min, lat_max, lon_min, lon_max)
-        ds_sunrise_tmr_lcc = extract_variable(ds_sunrise_tmr, "lcc", lat_min, lat_max, lon_min, lon_max)
-        ds_sunrise_tmr_mcc = extract_variable(ds_sunrise_tmr, "mcc", lat_min, lat_max, lon_min, lon_max)
-        ds_sunrise_tmr_hcc = extract_variable(ds_sunrise_tmr, "hcc", lat_min, lat_max, lon_min, lon_max)
+
+        # Cloud cover fields opened separately
+        # sunrise_tdy_tcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'tcc'}}, decode_timedelta=True)['tcc']
+        # sunrise_tdy_lcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'lcc'}}, decode_timedelta=True)['lcc']
+        # sunrise_tdy_mcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'mcc'}}, decode_timedelta=True)['mcc']
+        # sunrise_tdy_hcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'hcc'}}, decode_timedelta=True)['hcc']
+
+        # sunrise_tmr_tcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'tcc'}}, decode_timedelta=True)['tcc']
+        # sunrise_tmr_lcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'lcc'}}, decode_timedelta=True)['lcc']
+        # sunrise_tmr_mcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'mcc'}}, decode_timedelta=True)['mcc']
+        # sunrise_tmr_hcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
+        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'hcc'}}, decode_timedelta=True)['hcc']
+        sunrise_tdy_tcc = open_cloud_da(grib_sunrise_tdy, 'tcc')
+        sunrise_tdy_lcc = open_cloud_da(grib_sunrise_tdy, 'lcc')
+        sunrise_tdy_mcc = open_cloud_da(grib_sunrise_tdy, 'mcc')
+        sunrise_tdy_hcc = open_cloud_da(grib_sunrise_tdy, 'hcc')
+
+        sunrise_tmr_tcc = open_cloud_da(grib_sunrise_tmr, 'tcc')
+        sunrise_tmr_lcc = open_cloud_da(grib_sunrise_tmr, 'lcc')
+        sunrise_tmr_mcc = open_cloud_da(grib_sunrise_tmr, 'mcc')
+        sunrise_tmr_hcc = open_cloud_da(grib_sunrise_tmr, 'hcc')
 
         cloud_vars_sunrise_tdy = {
-            "tcc": ds_sunrise_tdy_tcc,
-            "lcc": ds_sunrise_tdy_lcc,
-            "mcc": ds_sunrise_tdy_mcc,
-            "hcc": ds_sunrise_tdy_hcc
+            "tcc": sunrise_tdy_tcc,
+            "lcc": sunrise_tdy_lcc,
+            "mcc": sunrise_tdy_mcc,
+            "hcc": sunrise_tdy_hcc
         }
 
         cloud_vars_sunrise_tmr = {
-            "tcc": ds_sunrise_tmr_tcc,
-            "lcc": ds_sunrise_tmr_lcc,
-            "mcc": ds_sunrise_tmr_mcc,
-            "hcc": ds_sunrise_tmr_hcc
+            "tcc": sunrise_tmr_tcc,
+            "lcc": sunrise_tmr_lcc,
+            "mcc": sunrise_tmr_mcc,
+            "hcc": sunrise_tmr_hcc
         }
+
+        # Slice to ROI around sunrise azimuth
+        cloud_vars_sunrise_tdy = reduce_clouds_to_roi(cloud_vars_sunrise_tdy, lon, lat, sunrise_azimuth, distance_km=500, pad_km=80)
+        cloud_vars_sunrise_tmr = reduce_clouds_to_roi(cloud_vars_sunrise_tmr, lon, lat, sunrise_azimuth_tmr, distance_km=500, pad_km=80)
 
         if create_dashboard_flag:
             plot_cloud_cover_map(cloud_vars_sunrise_tdy, city, lon, lat, today_str, run,
@@ -1064,11 +1263,11 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
                                 sunrise_fh_tmr, sunrise_azimuth_tmr, save_path= output_path, cmap='gray')
 
         # Calculate RH and cloud base for sunrise
-        RH_sunrise_tdy, _ = specific_to_relative_humidity(ds_sunrise_tdy.q, ds_sunrise_tdy.t, ds_sunrise_tdy.isobaricInhPa, lat, lon)
-        cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, RH_cb_sunrise_tdy = calc_cloud_base(ds_sunrise_tdy_2m["t2m"], ds_sunrise_tdy_2m["d2m"], ds_sunrise_tdy.t, RH_sunrise_tdy, ds_sunrise_tdy.isobaricInhPa, lat, lon)
+        RH_sunrise_tdy, _ = specific_to_relative_humidity(ds_sunrise_tdy_plev.q, ds_sunrise_tdy_plev.t, ds_sunrise_tdy_plev.isobaricInhPa, lat, lon)
+        cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, RH_cb_sunrise_tdy = calc_cloud_base(ds_sunrise_tdy_2m["t2m"], ds_sunrise_tdy_2m["d2m"], ds_sunrise_tdy_plev.t, RH_sunrise_tdy, ds_sunrise_tdy_plev.isobaricInhPa, lat, lon)
 
-        RH_sunrise_tmr, _ = specific_to_relative_humidity(ds_sunrise_tmr.q, ds_sunrise_tmr.t, ds_sunrise_tmr.isobaricInhPa, lat, lon)
-        cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, RH_cb_sunrise_tmr = calc_cloud_base(ds_sunrise_tmr_2m["t2m"], ds_sunrise_tmr_2m["d2m"], ds_sunrise_tmr.t, RH_sunrise_tmr, ds_sunrise_tmr.isobaricInhPa, lat, lon)
+        RH_sunrise_tmr, _ = specific_to_relative_humidity(ds_sunrise_tmr_plev.q, ds_sunrise_tmr_plev.t, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
+        cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, RH_cb_sunrise_tmr = calc_cloud_base(ds_sunrise_tmr_2m["t2m"], ds_sunrise_tmr_2m["d2m"], ds_sunrise_tmr_plev.t, RH_sunrise_tmr, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
 
         logging.info(f'sunrise tdy cloud_base:{cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
         logging.info(f'sunrise tmr cloud_base: {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
@@ -1288,7 +1487,7 @@ def main():
     # Get these outside the loop to download global dataset
 
     for fcst_hour in range(0, 61, 6):
-        url = f"https://data.ecmwf.int/forecast/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
+        url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
         download_file(url, f"{input_path}/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
 
     # Need global dataset for this
@@ -1326,7 +1525,7 @@ def main():
         results_df[col] = results_df[col].fillna(-1).astype(int).replace(-1, np.nan)
     
     # Export to JSON with controlled precision
-    output_json_path = f'{output_path}/all_cities_summary_{today_str}.json'
+    output_json_path = f'{output_path}/all_cities_summary_{today_str}_{run}Z.json'
     results_df.to_json(output_json_path, orient='records', indent=2, date_format='iso', double_precision=3)
     logging.info(f"Results saved to {output_json_path}")
     

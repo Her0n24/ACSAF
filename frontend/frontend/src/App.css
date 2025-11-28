@@ -1,0 +1,187 @@
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.home header,
+.forecast-page header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.home h1,
+.forecast-page h1 {
+  margin: 0;
+}
+
+.home p,
+.forecast-page p {
+  margin: 0;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search label {
+  font-weight: 600;
+}
+
+.search-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-input input {
+  flex: 1;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+}
+
+.search-input button {
+  border-radius: 0.75rem;
+  border: none;
+  padding: 0.65rem 1.5rem;
+  background: #ff9a62;
+  color: #1b1b1f;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  list-style: none;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2;
+}
+
+.suggestions li button {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.city-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.city-list a {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.back-link {
+  text-decoration: none;
+  color: #ffb38a;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.overview ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.overview li {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.overview span {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.detail-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.detail-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.35rem;
+}
+
+.detail-list li span:first-of-type {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.detail-list li span:last-of-type {
+  text-align: right;
+  word-break: break-word;
+}
+
+.outlook-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.outlook-table th,
+.outlook-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.outlook-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
