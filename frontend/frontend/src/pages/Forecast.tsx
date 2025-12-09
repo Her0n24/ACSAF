@@ -3,9 +3,23 @@ import { Link, useParams } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { fetchForecast } from "../api/client";
 
-type ForecastDoc = Record<string, unknown> & { city?: string };
 type DayKey = "tdy" | "tmr";
 type Mode = "sunset" | "sunrise";
+type LayerKey = "lcc" | "mcc" | "hcc" | "tcc";
+type CloudProfilePayload = {
+  distance_km?: unknown;
+  lcc?: unknown;
+  mcc?: unknown;
+  hcc?: unknown;
+  tcc?: unknown;
+};
+type ProfileKey = `${Mode}_cloud_profiles_${DayKey}`;
+type ForecastDoc = Record<string, unknown> & {
+  city?: string;
+  country?: string;
+} & {
+  [key in ProfileKey]?: CloudProfilePayload;
+};
 type OutlookRow = {
   metric: string;
   tdy?: string;
@@ -24,6 +38,7 @@ export default function Forecast() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("sunset");
+  const [profileDay, setProfileDay] = useState<DayKey>("tdy");
 
   useEffect(() => {
     if (!city) {
@@ -56,6 +71,7 @@ export default function Forecast() {
   const possibleColors = getPossibleColors(doc, mode, "tdy");
   const gradient = buildGradient(possibleColors);
   const modelRun = doc["run_time"] ? formatValue(doc["run_time"]) : null;
+  const activeProfile = useMemo(() => getCloudProfile(doc, mode, profileDay), [doc, mode, profileDay]);
 
   if (loading) {
     return <FullScreenMessage message="Loading forecast…" />;
@@ -82,7 +98,7 @@ export default function Forecast() {
             ← Back to search
           </Link>
           <p className="text-xs uppercase tracking-[0.5em] text-white/60">City Forecast</p>
-          <h1 className="text-4xl font-semibold text-white">{data.city}</h1>
+          <h1 className="text-4xl font-semibold text-white">{data.city}, {data.country}</h1>
         </div>
 
         <section className="rounded-[32px] border border-white/15 bg-white/10 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
@@ -110,8 +126,9 @@ export default function Forecast() {
                 )}
 
                 {modelRun && (
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60 sm:text-right">
-                    Model run <span className="ml-2 text-white/90">{modelRun}</span>
+                  <p className="text-xs uppercase tracking-[0.15em] text-white/60 sm:text-right">
+                    Model run
+                    <span className="ml-2 text-white/90">{modelRun}Z</span>
                   </p>
                 )}
               </div>
@@ -143,6 +160,36 @@ export default function Forecast() {
             emptyMessage={`No ${mode} metrics available.`}
           />
         </section>
+
+        <section className="rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+          <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/60">{mode === "sunset" ? "Sunset" : "Sunrise"} cloud profile</p>
+              <h2 className="text-2xl font-semibold text-white">Cloud Cover Along Azimuth</h2>
+            </div>
+            <DayToggle value={profileDay} onChange={setProfileDay} />
+          </header>
+
+          {activeProfile ? (
+            <>
+              <CloudProfileChart profile={activeProfile} mode={mode} day={profileDay} />
+              <p className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
+                For the definitions of Low cloud cover (LCC), Medium cloud cover (MCC), High cloud cover (HCC), and Total cloud cover (TCC), refer to the ECMWF parameter Database.
+                The algorithm generally uses the dashed 60% line as a threshold to determine cloud cover. 
+                <p>&nbsp;</p>
+                HCC condition is...
+                <p>&nbsp;</p>
+                Geom condition LCL used is....
+                <p>&nbsp;</p>
+                Total AOD550 is ...
+              </p>
+            </>
+          ) : (
+            <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/70">
+              No {mode} cloud profile available for {DAY_LABEL[profileDay].toLowerCase()}.
+            </p>
+          )}
+        </section>
       </div>
     </main>
   );
@@ -172,6 +219,193 @@ function FullScreenMessage({
   );
 }
 
+type CloudProfile = {
+  distance: number[];
+  series: Partial<Record<LayerKey, number[]>>;
+};
+
+function getCloudProfile(doc: ForecastDoc, mode: Mode, day: DayKey): CloudProfile | null {
+  const key = `${mode}_cloud_profiles_${day}` as ProfileKey;
+  const raw = doc[key];
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const distance = toNumberArray((raw as CloudProfilePayload).distance_km);
+  if (!distance.length) {
+    return null;
+  }
+
+  const series: Partial<Record<LayerKey, number[]>> = {};
+  ( ["lcc", "mcc", "hcc", "tcc"] as LayerKey[] ).forEach((layer) => {
+    const values = toNumberArray((raw as CloudProfilePayload)[layer]);
+    if (values.length) {
+      series[layer] = values.slice(0, distance.length);
+    }
+  });
+
+  const hasAny = Object.values(series).some((arr) => arr && arr.length);
+  return hasAny ? { distance, series } : null;
+}
+
+function toNumberArray(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => {
+      if (typeof entry === "number") {
+        return entry;
+      }
+      if (typeof entry === "string" && entry.trim() !== "" && !Number.isNaN(Number(entry))) {
+        return Number(entry);
+      }
+      return null;
+    })
+    .filter((entry): entry is number => entry !== null);
+}
+
+function DayToggle({ value, onChange }: { value: DayKey; onChange: (day: DayKey) => void }) {
+  return (
+    <div className="inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-xs text-white/80">
+      {( ["tdy", "tmr"] as DayKey[] ).map((day) => {
+        const selected = day === value;
+        return (
+          <button
+            key={day}
+            type="button"
+            onClick={() => onChange(day)}
+            className={`rounded-full px-4 py-1 font-semibold transition ${
+              selected ? "bg-white/30 text-slate-900" : "text-white/70 hover:text-white"
+            }`}
+          >
+            {DAY_LABEL[day]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CloudProfileChart({ profile, mode, day }: { profile: CloudProfile; mode: Mode; day: DayKey }) {
+  const width = 650;
+  const height = 280;
+  const padding = 40;
+  const innerShift = 16;
+  const MAX_DISTANCE = 500;
+  const leftBound = padding + innerShift;
+  const rightBound = width - padding;
+  const usableWidth = rightBound - leftBound;
+  const usableHeight = height - padding * 2;
+  const maxDistance = Math.max(MAX_DISTANCE, ...profile.distance);
+  const xScale = (distance: number) =>
+    leftBound + (maxDistance === 0 ? 0 : (Math.min(distance, MAX_DISTANCE) / maxDistance) * usableWidth);
+  const yScale = (value: number) => height - padding - (Math.min(Math.max(value, 0), 100) / 100) * usableHeight;
+  const layers: LayerKey[] = ["lcc", "mcc", "hcc", "tcc"];
+  const layerColors: Record<LayerKey, string> = {
+    lcc: "#f6a34d",
+    mcc: "#f470a6",
+    hcc: "#bf63f9",
+    tcc: "#c8c8c8ff",
+  };
+
+  const renderLine = (layer: LayerKey) => {
+    const series = profile.series[layer];
+    if (!series || series.length === 0) {
+      return null;
+    }
+    const points = series
+      .map((value, index) => {
+        const distance = profile.distance[Math.min(index, profile.distance.length - 1)];
+        return `${xScale(distance)},${yScale(value)}`;
+      })
+      .join(" ");
+    return (
+      <polyline
+        key={layer}
+        fill="none"
+        stroke={layerColors[layer]}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={layer === "tcc" ? 0.6 : 0.9}
+        points={points}
+      />
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Cloud cover profile for ${mode} ${DAY_LABEL[day]}`} className="w-full">
+          <defs>
+            <linearGradient id="gridFade" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+            </linearGradient>
+          </defs>
+          <rect x={leftBound} y={padding} width={usableWidth} height={usableHeight} fill="url(#gridFade)" opacity={0.15} />
+          {[0, 25, 50, 75, 100].map((value) => (
+            <g key={value}>
+              <line
+                x1={leftBound}
+                x2={rightBound}
+                y1={yScale(value)}
+                y2={yScale(value)}
+                stroke="rgba(255,255,255,0.08)"
+                strokeDasharray="4 6"
+              />
+              <text x={leftBound - 20} y={yScale(value) + 4} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="end">
+                {value}%
+              </text>
+            </g>
+          ))}
+          <text
+            x={rightBound}
+            y={height - padding + 20}
+            textAnchor="end"
+            fill="rgba(255,255,255,0.7)"
+            fontSize="11"
+          >
+            500 km
+          </text>
+          <line
+            x1={leftBound}
+            x2={rightBound}
+            y1={yScale(60)}
+            y2={yScale(60)}
+            stroke="rgba(255,83,112,0.6)"
+            strokeDasharray="6 6"
+          />
+          {layers.map(renderLine)}
+          <line x1={leftBound} y1={height - padding} x2={rightBound} y2={height - padding} stroke="rgba(255,255,255,0.4)" />
+          <line x1={leftBound} y1={padding} x2={leftBound} y2={height - padding} stroke="rgba(255,255,255,0.4)" />
+          <text
+            x={(leftBound + rightBound) / 2}
+            y={height - 6}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.7)"
+            fontSize="12"
+          >
+            Distance along azimuth (km)
+          </text>
+        </svg>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        {layers.map((layer) => (
+          <span
+            key={layer}
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-wide text-white/80"
+          >
+            <span className="h-2 w-8 rounded-full" style={{ backgroundColor: layerColors[layer], opacity: layer === "tcc" ? 0.6 : 1 }} />
+            {layer.toUpperCase()}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function buildOverview(doc: ForecastDoc): Array<{ label: string; value: string }> {
   if (!doc) {
     return [];
@@ -191,6 +425,14 @@ function buildOverview(doc: ForecastDoc): Array<{ label: string; value: string }
 }
 
 function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): OutlookRow[] {
+  const excluded = new Set([
+    "cloud_profiles",
+    "geom_condition_lcl_used",
+    "lf_ma",
+    "likelihood_index",
+    "possible_colors",
+    "time",
+  ]);
   const rows = new Map<string, OutlookRow>();
 
   Object.entries(doc).forEach(([key, value]) => {
@@ -200,7 +442,12 @@ function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): Outlo
 
     const trimmed = key.replace(`${prefix}_`, "");
     const dayMatch = trimmed.match(/_(tdy|tmr)$/);
-    const metricKey = dayMatch ? trimmed.replace(/_(tdy|tmr)$/, "") : trimmed;
+    const metricKey = dayMatch ? trimmed.replace(/_(tdy|tmr)$/ , "") : trimmed;
+
+    if (excluded.has(metricKey)) {
+      return;
+    }
+
     const day = (dayMatch?.[1] as DayKey | undefined) ?? "tdy";
 
     const current = rows.get(metricKey) ?? { metric: toTitle(metricKey) };
@@ -225,7 +472,14 @@ function formatValue(value: unknown): string {
     if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
       const date = new Date(value);
       if (!Number.isNaN(date.getTime())) {
-        return date.toLocaleString();
+        return date.toLocaleString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
       }
     }
     return value;
@@ -361,7 +615,7 @@ function LikelihoodCard({ label, value, subtle }: { label: string; value: number
       <p className="text-sm uppercase tracking-[0.3em] text-white/70">{label}</p>
       <div className="mt-3 flex items-baseline gap-3">
         <span className="text-6xl font-semibold text-white">{value ?? "—"}</span>
-        <span className="text-sm text-white/60">Vibrancy Index</span>
+        <span className="text-sm text-white/60">Vibrancy Score</span>
       </div>
     </div>
   );

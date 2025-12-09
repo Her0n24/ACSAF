@@ -1,5 +1,6 @@
+import argparse
 import pymongo
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 import os, sys 
 # Add parent folder (/Users/hng/Documents/dev/Afterglow) to sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -12,6 +13,33 @@ load_dotenv(find_dotenv())
 from pymongo.errors import OperationFailure
 password = os.environ.get("MONGODB_PWD")
 user = os.environ.get("MONGODB_USER")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Upload forecast JSON into MongoDB (defaults to latest run unless overridden)."
+    )
+    parser.add_argument(
+        "--date",
+        help="UTC date for the forecast run in YYYYMMDD format (e.g., 20251128).",
+    )
+    parser.add_argument(
+        "--run",
+        dest="run",
+        help="Run hour in HH format (00 or 12).",
+    )
+
+    args = parser.parse_args()
+    if bool(args.date) ^ bool(args.run):
+        parser.error("--date and --run must be provided together or omitted together.")
+    if args.run and args.run not in {"00", "12"}:
+        parser.error("--run must be '00' or '12'.")
+    if args.date:
+        try:
+            datetime.datetime.strptime(args.date, "%Y%m%d")
+        except ValueError as exc:
+            parser.error(f"--date must be YYYYMMDD. Received {args.date!r}: {exc}.")
+    return args
 
 def latest_forecast_hours_run_to_download() -> datetime.datetime:
     """
@@ -42,10 +70,16 @@ def latest_forecast_hours_run_to_download() -> datetime.datetime:
         return now_utc.replace(hour=12, minute=0, second=0, microsecond=0) - datetime.timedelta(days=1)
 
 
-#today = datetime.utcnow().strftime("%Y-%m-%d")
-today = datetime.datetime(2025, 11, 27, 11, 0)
-run = latest_forecast_hours_run_to_download().strftime("%H")
-print(run)
+cli_args = parse_args()
+if cli_args.date and cli_args.run:
+    run_datetime = datetime.datetime.strptime(
+        f"{cli_args.date}{cli_args.run}", "%Y%m%d%H"
+    ).replace(tzinfo=datetime.timezone.utc)
+else:
+    run_datetime = latest_forecast_hours_run_to_download()
+run = run_datetime.strftime("%H")
+run_date = run_datetime.strftime("%Y%m%d")
+print(f"Using run {run}Z on {run_date}")
 
 connection_string = f"mongodb+srv://{user}:{password}@cluster0.fpibh6i.mongodb.net/?appName=Cluster0"
 client = MongoClient(connection_string)
@@ -63,27 +97,57 @@ except OperationFailure as e:
     raise
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-forecast_path = os.path.join(parent_dir, f"output/all_cities_summary_{today.strftime('%Y%m%d')}_{run}Z.json")
+forecast_path = os.path.join(parent_dir, f"output/all_cities_summary_{run_date}_{run}Z.json")
 if not os.path.exists(forecast_path):
     raise FileNotFoundError(f"Not found: {forecast_path}")
 
 with open(forecast_path, "r") as f:
     data = json.load(f)
 
+def attach_metadata(doc: dict) -> dict:
+    doc["run"] = run
+    doc["run_time"] = run_datetime.isoformat()
+    return doc
+
+
+def build_filter(doc: dict) -> dict:
+    city = doc.get("city")
+    if not city:
+        raise ValueError("Each document must include a 'city' field for upsert filtering.")
+    return {"city": city, "run_time": doc["run_time"]}
+
+
 # Attach metadata to each city doc
 if isinstance(data, list):
-    for d in data:
-        d["run"] = run
-        d["run_time"] = today.isoformat()
-    if data:
-        res = afterglow_collection.insert_many(data, ordered=False)
-        print(f"Inserted {len(res.inserted_ids)} documents.")
+    bulk_ops: list[UpdateOne] = []
+    for doc in data:
+        doc_with_meta = attach_metadata(doc)
+        bulk_ops.append(
+            UpdateOne(
+                build_filter(doc_with_meta),
+                {"$set": doc_with_meta},
+                upsert=True,
+            )
+        )
+
+    if bulk_ops:
+        result = afterglow_collection.bulk_write(bulk_ops, ordered=False)
+        print(
+            f"Upserts: {result.upserted_count}, "
+            f"Modified: {result.modified_count}"
+        )
     else:
         print("No documents to insert.")
 else:
-    data["run"] = run
-    data["run_time"] = today.isoformat()
-    res = afterglow_collection.insert_one(data)
-    print(f"Inserted document id: {res.inserted_id}")
+    doc_with_meta = attach_metadata(data)
+    res = afterglow_collection.update_one(
+        build_filter(doc_with_meta),
+        {"$set": doc_with_meta},
+        upsert=True,
+    )
+    if res.upserted_id:
+        print(f"Upserted new document id: {res.upserted_id}")
+    else:
+        print("Updated existing document.")
 
 print("Collections:", afterglow_db.list_collection_names())

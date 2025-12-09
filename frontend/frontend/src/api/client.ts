@@ -5,9 +5,26 @@ const api = axios.create({
   timeout: 8000,
 });
 
-export const fetchCities = async () => {
-  const response = await api.get<{ cities?: string[]; available_cities?: string[] }>("/cities");
-  return response.data.cities ?? response.data.available_cities ?? [];
+export type CityRecord = {
+  city: string;
+  country?: string;
+};
+
+type LegacyCityResponse = { cities?: Array<string | CityRecord>; available_cities?: string[] };
+
+export const fetchCities = async (): Promise<CityRecord[]> => {
+  const response = await api.get<LegacyCityResponse>("/cities");
+  const rawList = response.data.cities ?? response.data.available_cities ?? [];
+
+  return rawList.map((entry) => {
+    if (typeof entry === "string") {
+      return { city: entry };
+    }
+    return {
+      city: entry.city,
+      country: entry.country ?? undefined,
+    };
+  });
 };
 
 export const fetchForecast = async (city: string) => {

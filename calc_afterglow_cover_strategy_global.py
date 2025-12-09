@@ -84,6 +84,14 @@ def open_2m_cached(grib_path: str) -> xr.Dataset:
     # load_2m_fields already uses decode_timedelta=True
     return load_2m_fields(grib_path)
 
+
+def build_profile_payload(distance_axis, profiles):
+    payload = {"distance_km": list(distance_axis or [])}
+    profiles = profiles or {}
+    for layer in ["lcc", "mcc", "hcc", "tcc"]:
+        payload[layer] = list(profiles.get(layer, []))
+    return payload
+
 def _slice_roi(da: xr.DataArray, lon: float, lat: float, azimuth_deg: float,
                distance_km: float = 500, pad_km: float = 80) -> xr.DataArray:
     # Compute bounding box that contains the city and the end of the azimuth line
@@ -331,6 +339,24 @@ def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km,
     
     return cloud_cover_data
 
+
+def _serialize_series(values):
+    if values is None:
+        return []
+    result = []
+    for value in np.asarray(values, dtype=float):
+        if np.isnan(value):
+            result.append(None)
+        else:
+            result.append(float(value))
+    return result
+
+
+def _serialize_distance(values):
+    if values is None:
+        return []
+    return [float(v) for v in np.asarray(values, dtype=float)]
+
 def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, save_fig: bool, save_path= output_path):
     """
     Extract cloud cover data along the azimuth path. Plot the cloud cover along the azimuth line.
@@ -391,112 +417,122 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
 
 def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, plot_graph_flag, today_str, run, distance_km = 500, num_points=25, threshold=60.0):
     priority_order = [("lcc",2000), ("mcc",4000), ("hcc",6000)]
+    profile_layers = ["lcc", "mcc", "hcc", "tcc"]
     cloud_lvl_used = None
     cloud_present = True
     local_cloud_cover_dict = {}
 
-    # Initialize these variables to avoid unbound
     avg_first_three_met = False
     hcc_condition = False
-    data = None
     distance_below_threshold = np.nan
-    key = None
     avg_first_three = np.nan
     avg_path = np.nan
-    
-    for key, base_height in priority_order:
-        if key == 'lcc' or key == 'mcc':
-            #Extract cloud_cover data along the azimuth
-            cloud_cover_data = extract_cloud_cover_along_azimuth(
-                data_dict[key], lon, lat, azimuth, distance_km, num_points
-            )
-            # Calculate the average of the first 3 indices
-            avg_first_three = np.nanmean(cloud_cover_data[:3])
-            local_cloud_cover_dict[key] = cloud_cover_data[0]
 
+    raw_profiles = {}
+    distance_axis_values = None
+
+    for layer in profile_layers:
+        da = data_dict.get(layer)
+        if da is None:
+            continue
+        cloud_cover_data = extract_cloud_cover_along_azimuth(da, lon, lat, azimuth, distance_km, num_points)
+        raw_profiles[layer] = cloud_cover_data
+        if cloud_cover_data.size:
+            local_cloud_cover_dict[layer] = cloud_cover_data[0]
+        if distance_axis_values is None and cloud_cover_data.size:
+            distance_axis_values = np.linspace(0, distance_km, len(cloud_cover_data))
+
+    for key, base_height in priority_order:
+        cloud_cover_data = raw_profiles.get(key)
+        if cloud_cover_data is None:
+            continue
+
+        avg_first_three = np.nanmean(cloud_cover_data[:3])
+
+        if key in ("lcc", "mcc"):
             if avg_first_three > threshold:
-                cloud_lvl_used = key 
-                data = data_dict[key]  # Return the first key that meets the criteria
+                cloud_lvl_used = key
                 avg_first_three_met = True
                 hcc_condition = False
             else:
                 avg_first_three_met = False
                 hcc_condition = False
-        if key == 'hcc':
-            #Extract cloud_cover data along the azimuth
-            cloud_cover_data = extract_cloud_cover_along_azimuth(
-                data_dict[key], lon, lat, azimuth, distance_km, num_points
-            )
-            # Calculate the average of the first 3 indices
-            avg_first_three = np.nanmean(cloud_cover_data[:3])
-            local_cloud_cover_dict[key] = cloud_cover_data[0]
-
+        elif key == "hcc":
             avg_path = np.nanmean(cloud_cover_data[4:])
             if avg_first_three > threshold:
-                cloud_lvl_used = key 
-                data = data_dict[key]
+                cloud_lvl_used = key
                 avg_first_three_met = True
                 hcc_condition = False
             else:
                 hcc_condition = False
                 avg_first_three_met = False
+
             if avg_first_three < avg_path:
                 avg_first_three_met = True
                 logging.info(f"Average first three cloud cover {avg_first_three}% is less than average path cloud cover {avg_path}%.")
-                if avg_path < 90.00:
-                    cloud_lvl_used = key 
-                    data = data_dict[key]
-                    hcc_condition = True # hcc condition is added to compensate for high clouds, it might be translucent enough for sunrays to pass through
-                    # an extensive layer of high clouds. Hence, we lowered the reqruiement for avg_path to be below 85% for afterglows to be possible. 
+                if avg_path < 90.0:
+                    cloud_lvl_used = key
+                    hcc_condition = True
                     avg_first_three_met = False
                     logging.info("HCC condition met")
                 else:
                     hcc_condition = False
                     avg_first_three_met = False
                     logging.info("HCC condition not met")
-    
-    # Check if cloud base level is NAN. We assign the cloud base level to the first layer with cloud cover >= 15% if it is NaN.
-    # We pick the first (lowest) layer so we put a break 
+
     if np.isnan(cloud_base_lvl):
         for key, base_height in priority_order:
             if local_cloud_cover_dict.get(key, 0) >= 15:
                 cloud_base_lvl = base_height
                 break
 
-    # Check if data is empty
     if avg_first_three_met is False:
-        cloud_lvl_used = 'tcc' 
-        data = data_dict['tcc']
+        cloud_lvl_used = 'tcc'
         logging.info(f"RH requirement not met. Cloud base level {cloud_base_lvl} is assumed based on the first layer with cloud cover >= 15%")
         logging.info("Trying to use tcc for cloud cover data")
-        data = data_dict['tcc']
-        cloud_lvl_used = 'tcc'
-        try:
-            cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-            distance_below_threshold, avg_first_three, avg_path  = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path)
-        except:
+        cloud_cover_data = raw_profiles.get('tcc')
+        if cloud_cover_data is None:
             logging.error(f"Cloud cover data is not available for forecast_hours hour {fcst_hr}.")
             cloud_present = False
-    # # Check if data is associated with a value or a NaN
-    # if data is None:
-    #     logging.info(f"Cloud cover NaN for forecast_hours hour {fcst_hr}. There is no stratiform cloud cover. Afterglow not probable.")
-    #     cloud_present = False
-    #     return cloud_present
-    if hcc_condition is True:
+        else:
+            distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(
+                cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path
+            )
+    elif hcc_condition is True:
         logging.info('hcc condition is True. We will assume a distance below threshold of 100 km.')
-        cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
+        cloud_cover_data = raw_profiles.get(cloud_lvl_used)
+        if cloud_cover_data is not None:
+            avg_first_three = np.nanmean(cloud_cover_data[:3])
+            avg_path = np.nanmean(cloud_cover_data[4:])
         distance_below_threshold = 100
-        avg_first_three = np.nanmean(cloud_cover_data[:3])
-        avg_path = np.nanmean(cloud_cover_data[4:])
-    elif hcc_condition is False:
-        cloud_cover_data = extract_cloud_cover_along_azimuth(data, lon, lat, azimuth, distance_km, num_points)
-        distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path)
-    distance_below_threshold = distance_below_threshold * 1000 # convert to meters
+    else:
+        cloud_cover_data = raw_profiles.get(cloud_lvl_used)
+        if cloud_cover_data is None:
+            cloud_present = False
+        else:
+            distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(
+                cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path
+            )
+
+    distance_below_threshold = distance_below_threshold * 1000
 
     if avg_first_three < 10.0:
         cloud_present = False
 
-    return distance_below_threshold, key, avg_first_three, avg_path, cloud_present, cloud_base_lvl, hcc_condition
+    serialized_profiles = {layer: _serialize_series(raw_profiles.get(layer)) for layer in profile_layers}
+    distance_axis_serialized = _serialize_distance(distance_axis_values)
+
+    return (
+        distance_below_threshold,
+        cloud_lvl_used or 'tcc',
+        avg_first_three,
+        avg_path,
+        cloud_present,
+        cloud_base_lvl,
+        hcc_condition,
+        serialized_profiles,
+        distance_axis_serialized,
+    )
 
 def geom_condition(cloud_base_height, cloud_extent, LCL):
     """
@@ -1043,6 +1079,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
     # Process sunset (existing logic)
     sunset_results = {}
+    sunset_profile_payload_tdy = build_profile_payload([], {})
+    sunset_profile_payload_tmr = build_profile_payload([], {})
     if sunset_fh_tdy is not None and sunset_fh_tmr is not None:
         logging.info(f"Processing sunset for {city.name}")
         # ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
@@ -1100,10 +1138,37 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         logging.info(f'sunset tdy cloud_base:{cloud_base_lvl_tdy}, z_lcl:{z_lcl_tdy}, RH_cb:{RH_cb_tdy}')
         logging.info(f'sunset tmr cloud_base: {cloud_base_lvl_tmr}, z_lcl:{z_lcl_tmr}, RH_cb:{RH_cb_tmr}')
 
-        distance_below_threshold_tdy, key_tdy, avg_first_three_tdy, avg_path_tdy, cloud_present_tdy, cloud_base_lvl_tdy, hcc_condition_tdy  = get_cloud_extent(cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, sunset_fh_tdy, 
-                                                                                                                                            create_dashboard_flag, today_str, run)
-        distance_below_threshold_tmr, key_tmr, avg_first_three_tmr, avg_path_tmr, cloud_present_tmr, cloud_base_lvl_tmr, hcc_condition_tmr  = get_cloud_extent(cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, sunset_fh_tmr, 
-                                                                                                                                            create_dashboard_flag, tomorrow_str, run)
+        (
+            distance_below_threshold_tdy,
+            key_tdy,
+            avg_first_three_tdy,
+            avg_path_tdy,
+            cloud_present_tdy,
+            cloud_base_lvl_tdy,
+            hcc_condition_tdy,
+            cloud_profiles_tdy,
+            distance_axis_tdy,
+        ) = get_cloud_extent(
+            cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, sunset_fh_tdy,
+            create_dashboard_flag, today_str, run,
+        )
+        (
+            distance_below_threshold_tmr,
+            key_tmr,
+            avg_first_three_tmr,
+            avg_path_tmr,
+            cloud_present_tmr,
+            cloud_base_lvl_tmr,
+            hcc_condition_tmr,
+            cloud_profiles_tmr,
+            distance_axis_tmr,
+        ) = get_cloud_extent(
+            cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, sunset_fh_tmr,
+            create_dashboard_flag, tomorrow_str, run,
+        )
+
+        sunset_profile_payload_tdy = build_profile_payload(distance_axis_tdy, cloud_profiles_tdy)
+        sunset_profile_payload_tmr = build_profile_payload(distance_axis_tmr, cloud_profiles_tmr)
 
         geom_cond_tdy, geom_condition_LCL_used_tdy, lf_ma_tdy = geom_condition(cloud_base_lvl_tdy, distance_below_threshold_tdy, z_lcl_tdy)
         geom_cond_tmr, geom_condition_LCL_used_tmr, lf_ma_tmr = geom_condition(cloud_base_lvl_tmr, distance_below_threshold_tmr, z_lcl_tmr)
@@ -1148,6 +1213,10 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_cloud_base_lvl_tmr": cloud_base_lvl_tmr,
             "sunset_geom_condition_LCL_used_tdy": geom_condition_LCL_used_tdy,
             "sunset_geom_condition_LCL_used_tmr": geom_condition_LCL_used_tmr,
+            "sunset_geom_condition_tdy": geom_cond_tdy,
+            "sunset_geom_condition_tmr": geom_cond_tmr,
+            "sunset_lf_ma_tdy": lf_ma_tdy,
+            "sunset_lf_ma_tmr": lf_ma_tmr,
             "sunset_cloud_present_tdy": cloud_present_tdy,
             "sunset_cloud_present_tmr": cloud_present_tmr,
             "sunset_total_aod550_tdy": total_aod550[0],
@@ -1157,6 +1226,14 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_time_tdy": sunset_tdy,
             "sunset_hcc_condition_tdy": hcc_condition_tdy,
             "sunset_hcc_condition_tmr": hcc_condition_tmr,
+            "sunset_cloud_layer_key_tdy": key_tdy,
+            "sunset_cloud_layer_key_tmr": key_tmr,
+            "sunset_avg_path_tdy": avg_path_tdy,
+            "sunset_avg_path_tmr": avg_path_tmr,
+            "sunset_azimuth_tdy": sunset_azimuth,
+            "sunset_azimuth_tmr": sunset_azimuth_tmr,
+            "sunset_cloud_profiles_tdy": sunset_profile_payload_tdy,
+            "sunset_cloud_profiles_tmr": sunset_profile_payload_tmr,
         }
     else:
         logging.warning(f"Skipping sunset processing for {city.name}: sunset_fh_tdy={sunset_fh_tdy}, sunset_fh_tmr={sunset_fh_tmr}")
@@ -1171,6 +1248,10 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_cloud_base_lvl_tmr": np.nan,
             "sunset_geom_condition_LCL_used_tdy": False,
             "sunset_geom_condition_LCL_used_tmr": False,
+            "sunset_geom_condition_tdy": False,
+            "sunset_geom_condition_tmr": False,
+            "sunset_lf_ma_tdy": np.nan,
+            "sunset_lf_ma_tmr": np.nan,
             "sunset_cloud_present_tdy": False,
             "sunset_cloud_present_tmr": False,
             "sunset_total_aod550_tdy": np.nan,
@@ -1180,10 +1261,20 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_time_tdy": sunset_tdy,
             "sunset_hcc_condition_tdy": False,
             "sunset_hcc_condition_tmr": False,
+            "sunset_cloud_layer_key_tdy": None,
+            "sunset_cloud_layer_key_tmr": None,
+            "sunset_avg_path_tdy": np.nan,
+            "sunset_avg_path_tmr": np.nan,
+            "sunset_azimuth_tdy": sunset_azimuth,
+            "sunset_azimuth_tmr": sunset_azimuth_tmr,
+            "sunset_cloud_profiles_tdy": build_profile_payload([], {}),
+            "sunset_cloud_profiles_tmr": build_profile_payload([], {}),
         }
 
     # Process sunrise (new logic - similar to sunset)
     sunrise_results = {}
+    sunrise_profile_payload_tdy = build_profile_payload([], {})
+    sunrise_profile_payload_tmr = build_profile_payload([], {})
     if sunrise_fh_tdy is not None and sunrise_fh_tmr is not None:
         logging.info(f"Processing sunrise for {city.name}")
 
@@ -1191,40 +1282,13 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         grib_sunrise_tmr = f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2'
         
         # Pressure levels (t, q)
-        # ds_sunrise_tdy_plev = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
-        #                                       backend_kwargs={'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'}
-        #                                                       }, decode_timedelta= True)
-        # ds_sunrise_tmr_plev = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
-        #                                       backend_kwargs={'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'}
-        #                                                       }, decode_timedelta= True)
         ds_sunrise_tdy_plev = open_plev(grib_sunrise_tdy)
         ds_sunrise_tmr_plev = open_plev(grib_sunrise_tmr)
 
         # 2 m fields: open t2m and d2m separately and merge
-        # ds_sunrise_tdy_2m = load_2m_fields(grib_sunrise_tdy)
-        # ds_sunrise_tmr_2m = load_2m_fields(grib_sunrise_tmr)
         ds_sunrise_tdy_2m = open_2m_cached(grib_sunrise_tdy)
         ds_sunrise_tmr_2m = open_2m_cached(grib_sunrise_tmr)
 
-
-        # Cloud cover fields opened separately
-        # sunrise_tdy_tcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'tcc'}}, decode_timedelta=True)['tcc']
-        # sunrise_tdy_lcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'lcc'}}, decode_timedelta=True)['lcc']
-        # sunrise_tdy_mcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'mcc'}}, decode_timedelta=True)['mcc']
-        # sunrise_tdy_hcc = xr.open_dataset(grib_sunrise_tdy, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'hcc'}}, decode_timedelta=True)['hcc']
-
-        # sunrise_tmr_tcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'tcc'}}, decode_timedelta=True)['tcc']
-        # sunrise_tmr_lcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'lcc'}}, decode_timedelta=True)['lcc']
-        # sunrise_tmr_mcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'mcc'}}, decode_timedelta=True)['mcc']
-        # sunrise_tmr_hcc = xr.open_dataset(grib_sunrise_tmr, engine='cfgrib',
-        #                                   backend_kwargs={'filter_by_keys': {'shortName': 'hcc'}}, decode_timedelta=True)['hcc']
         sunrise_tdy_tcc = open_cloud_da(grib_sunrise_tdy, 'tcc')
         sunrise_tdy_lcc = open_cloud_da(grib_sunrise_tdy, 'lcc')
         sunrise_tdy_mcc = open_cloud_da(grib_sunrise_tdy, 'mcc')
@@ -1273,13 +1337,38 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         logging.info(f'sunrise tmr cloud_base: {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
 
         # Calculate cloud extent and afterglow parameters for sunrise
-        distance_below_threshold_sunrise_tdy, key_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy, cloud_present_sunrise_tdy, cloud_base_lvl_sunrise_tdy, hcc_condition_sunrise_tdy = get_cloud_extent(
-            cloud_vars_sunrise_tdy, city, lon, lat, sunrise_azimuth, cloud_base_lvl_sunrise_tdy, sunrise_fh_tdy, 
-            create_dashboard_flag, today_str, run)
-        
-        distance_below_threshold_sunrise_tmr, key_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr, cloud_present_sunrise_tmr, cloud_base_lvl_sunrise_tmr, hcc_condition_sunrise_tmr = get_cloud_extent(
-            cloud_vars_sunrise_tmr, city, lon, lat, sunrise_azimuth_tmr, cloud_base_lvl_sunrise_tmr, sunrise_fh_tmr, 
-            create_dashboard_flag, tomorrow_str, run)
+        (
+            distance_below_threshold_sunrise_tdy,
+            key_sunrise_tdy,
+            avg_first_three_sunrise_tdy,
+            avg_path_sunrise_tdy,
+            cloud_present_sunrise_tdy,
+            cloud_base_lvl_sunrise_tdy,
+            hcc_condition_sunrise_tdy,
+            cloud_profiles_sunrise_tdy,
+            distance_axis_sunrise_tdy,
+        ) = get_cloud_extent(
+            cloud_vars_sunrise_tdy, city, lon, lat, sunrise_azimuth, cloud_base_lvl_sunrise_tdy, sunrise_fh_tdy,
+            create_dashboard_flag, today_str, run,
+        )
+
+        (
+            distance_below_threshold_sunrise_tmr,
+            key_sunrise_tmr,
+            avg_first_three_sunrise_tmr,
+            avg_path_sunrise_tmr,
+            cloud_present_sunrise_tmr,
+            cloud_base_lvl_sunrise_tmr,
+            hcc_condition_sunrise_tmr,
+            cloud_profiles_sunrise_tmr,
+            distance_axis_sunrise_tmr,
+        ) = get_cloud_extent(
+            cloud_vars_sunrise_tmr, city, lon, lat, sunrise_azimuth_tmr, cloud_base_lvl_sunrise_tmr, sunrise_fh_tmr,
+            create_dashboard_flag, tomorrow_str, run,
+        )
+
+        sunrise_profile_payload_tdy = build_profile_payload(distance_axis_sunrise_tdy, cloud_profiles_sunrise_tdy)
+        sunrise_profile_payload_tmr = build_profile_payload(distance_axis_sunrise_tmr, cloud_profiles_sunrise_tmr)
 
         geom_cond_sunrise_tdy, geom_condition_LCL_used_sunrise_tdy, lf_ma_sunrise_tdy = geom_condition(cloud_base_lvl_sunrise_tdy, distance_below_threshold_sunrise_tdy, z_lcl_sunrise_tdy)
         geom_cond_sunrise_tmr, geom_condition_LCL_used_sunrise_tmr, lf_ma_sunrise_tmr = geom_condition(cloud_base_lvl_sunrise_tmr, distance_below_threshold_sunrise_tmr, z_lcl_sunrise_tmr)
@@ -1312,6 +1401,10 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_cloud_base_lvl_tmr": cloud_base_lvl_sunrise_tmr,
             "sunrise_geom_condition_LCL_used_tdy": geom_condition_LCL_used_sunrise_tdy,
             "sunrise_geom_condition_LCL_used_tmr": geom_condition_LCL_used_sunrise_tmr,
+            "sunrise_geom_condition_tdy": geom_cond_sunrise_tdy,
+            "sunrise_geom_condition_tmr": geom_cond_sunrise_tmr,
+            "sunrise_lf_ma_tdy": lf_ma_sunrise_tdy,
+            "sunrise_lf_ma_tmr": lf_ma_sunrise_tmr,
             "sunrise_cloud_present_tdy": cloud_present_sunrise_tdy,
             "sunrise_cloud_present_tmr": cloud_present_sunrise_tmr,
             "sunrise_total_aod550_tdy": total_aod550[0],
@@ -1321,6 +1414,12 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_time_tdy": sunrise_tdy,
             "sunrise_hcc_condition_tdy": hcc_condition_sunrise_tdy,
             "sunrise_hcc_condition_tmr": hcc_condition_sunrise_tmr,
+            "sunrise_cloud_layer_key_tdy": key_sunrise_tdy,
+            "sunrise_cloud_layer_key_tmr": key_sunrise_tmr,
+            "sunrise_avg_path_tdy": avg_path_sunrise_tdy,
+            "sunrise_avg_path_tmr": avg_path_sunrise_tmr,
+            "sunrise_azimuth_tdy": sunrise_azimuth,
+            "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
         }
     else:
         logging.warning(f"Skipping sunrise processing for {city.name}: sunrise_fh_tdy={sunrise_fh_tdy}, sunrise_fh_tmr={sunrise_fh_tmr}")
@@ -1335,6 +1434,10 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_cloud_base_lvl_tmr": np.nan,
             "sunrise_geom_condition_LCL_used_tdy": False,
             "sunrise_geom_condition_LCL_used_tmr": False,
+            "sunrise_geom_condition_tdy": False,
+            "sunrise_geom_condition_tmr": False,
+            "sunrise_lf_ma_tdy": np.nan,
+            "sunrise_lf_ma_tmr": np.nan,
             "sunrise_cloud_present_tdy": False,
             "sunrise_cloud_present_tmr": False,
             "sunrise_total_aod550_tdy": np.nan,
@@ -1344,11 +1447,18 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_time_tdy": sunrise_tdy,
             "sunrise_hcc_condition_tdy": False,
             "sunrise_hcc_condition_tmr": False,
+            "sunrise_cloud_layer_key_tdy": None,
+            "sunrise_cloud_layer_key_tmr": None,
+            "sunrise_avg_path_tdy": np.nan,
+            "sunrise_avg_path_tmr": np.nan,
+            "sunrise_azimuth_tdy": sunrise_azimuth,
+            "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
         }
     
     # Combine results
     return {
         "city": city.name,
+        "country": country,
         **sunset_results,
         **sunrise_results
     }

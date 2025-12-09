@@ -18,8 +18,8 @@
     background-image:
       radial-gradient(circle at 20% 25%, rgba(240, 143, 39, 0.847), transparent 55%),
       radial-gradient(circle at 80% 0%, rgba(143, 49, 25, 0.952), transparent 45%),
-      radial-gradient(circle at 45% 80%, rgba(113, 71, 157, 0.549), transparent 50%),
-      linear-gradient(135deg, #06010f 0%, #130524 40%, #05142b 100%);
+      radial-gradient(circle at 45% 80%, rgba(204, 114, 209, 0.826), transparent 50%),
+      linear-gradient(135deg, #06010f 0%, #0b12a3 40%, #05142b 100%);
   }
 
   #root {
