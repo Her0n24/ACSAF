@@ -51,9 +51,9 @@ Richmond,37.5295,-77.4756,United States,admin,America/New_York,False
 Memphis,35.1087,-89.9663,United States,capital,America/Chicago,False
 Oklahoma City,35.4676,-97.5136,United States,primary,America/Chicago,False
 Hartford,41.7661,-72.6834,United States,primary,America/New_York,False
-Reading,51.4542,-0.9731,United Kingdom,,Europe/London,True
+Reading,51.4542,-0.9731,United Kingdom,,Europe/London,False
 Manchester,53.479,-2.2452,United Kingdom,,Europe/London,False
-Cambridge,52.205,0.1225,United Kingdom,,Europe/London,True
+Cambridge,52.205,0.1225,United Kingdom,,Europe/London,False
 Tokyo,35.687,139.7495,Japan,admin,Asia/Tokyo,False
 Jakarta,-6.175,106.8275,Indonesia,admin,Asia/Jakarta,False
 Delhi,28.61,77.23,India,admin,Asia/Kolkata,False
@@ -107,7 +107,7 @@ Ahmedabad,23.0225,72.5714,India,admin,Asia/Kolkata,False
 Shenyang,41.8025,123.4281,China,admin,Asia/Manila,False
 Johannesburg,-26.2044,28.0456,South Africa,admin,Africa/Johannesburg,False
 Fuyang,32.89,115.814,China,admin,Asia/Manila,False
-Hong Kong,22.3,114.2,Hong Kong,admin,Asia/Manila,True
+Hong Kong,22.3,114.2,Hong Kong,admin,Asia/Manila,False
 Ganzhou,25.831,114.933,China,admin,Asia/Manila,False
 Shangqiu,34.415,115.656,China,admin,Asia/Manila,False
 Cangzhou,38.3047,116.8387,China,admin,Asia/Manila,False
@@ -1712,3 +1712,26 @@ Chalco,19.2647,-98.8975,Mexico,admin,America/Mexico_City,False
 Tehran,35.6889,51.3897,Iran,primary,Asia/Tehran,False
 Madrid,40.4169,-3.7033,Spain,admin,Europe/Paris,False
 Barcelona,41.3833,2.1833,Spain,admin,Europe/Paris,False
+Birmingham,52.48,-1.9025,United Kingdom,admin,Europe/London,False
+Portsmouth,50.8058,-1.0872,United Kingdom,admin,Europe/London,False
+Southampton,50.9025,-1.4042,United Kingdom,admin,Europe/London,False
+Bristol,51.4536,-2.5975,United Kingdom,admin,Europe/London,False
+Glasgow,55.8611,-4.25,United Kingdom,admin,Europe/London,False
+Manchester,53.479,-2.2452,United Kingdom,admin,Europe/London,False
+Leeds,53.7975,-1.5436,United Kingdom,admin,Europe/London,False
+Sheffield,53.3808,-1.4703,United Kingdom,admin,Europe/London,False
+Liverpool,53.4072,-2.9917,United Kingdom,admin,Europe/London,False
+Edinburgh,55.95,-3.1833,United Kingdom,admin,Europe/London,False
+Worthing,50.8147,-0.3714,United Kingdom,admin,Europe/London,False
+Leicester,52.6361,-1.1331,United Kingdom,admin,Europe/London,False
+Coventry,52.4081,-1.5106,United Kingdom,admin,Europe/London,False
+Caerdydd,51.4817,-3.1792,United Kingdom,admin,Europe/London,False
+Belfast,54.5967,-5.93,United Kingdom,admin,Europe/London,False
+Newcastle,54.978,-1.6102,United Kingdom,admin,Europe/London,False
+Nottingham,52.9561,-1.1512,United Kingdom,admin,Europe/London,False
+Plymouth,50.3714,-4.1422,United Kingdom,admin,Europe/London,False
+Southend,51.55,0.71,United Kingdom,admin,Europe/London,False
+Newport,51.5886,-2.9978,United Kingdom,admin,Europe/London,False
+York,53.96,-1.08,United Kingdom,admin,Europe/London,False
+Brighton,50.8208,-0.1375,United Kingdom,admin,Europe/London,False
+Oxford,51.7519,-1.2578,United Kingdom,admin,Europe/London,False

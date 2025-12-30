@@ -1,9 +1,9 @@
 cities = [
 {"name": "London",   "country": "UK", "tz": "Europe/London",    "lat": 51.5074, "lon": -0.1278, "create_dashboard": True},
-{"name": "New_York","country": "US", "tz": "America/New_York",  "lat": 40.7128, "lon": -74.0060, "create_dashboard": True},
-{"name": "Tokyo",    "country": "JP", "tz": "Asia/Tokyo",       "lat": 35.6895, "lon": 139.6917, "create_dashboard": True},
-{"name": "Sydney",   "country": "AU", "tz": "Australia/Sydney", "lat": -33.8688,"lon": 151.2093, "create_dashboard": True},
-{"name": "Los_Angeles","country": "US","tz": "America/Los_Angeles","lat": 34.0522,"lon": -118.2437,"create_dashboard": False},
+# {"name": "New_York","country": "US", "tz": "America/New_York",  "lat": 40.7128, "lon": -74.0060, "create_dashboard": False},
+# {"name": "Tokyo",    "country": "JP", "tz": "Asia/Tokyo",       "lat": 35.6895, "lon": 139.6917, "create_dashboard": False},
+# {"name": "Sydney",   "country": "AU", "tz": "Australia/Sydney", "lat": -33.8688,"lon": 151.2093, "create_dashboard": False},
+# {"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": True},
 ]
 
 # def run_tests():
@@ -57,7 +57,7 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2025,11,27,10,0,0)  # Simulate today as 2025-11-27 at 10:00 UTC
+    today = datetime.datetime(2025,12,24,0,0,0)  # Simulate today as selected date for testing
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)
@@ -83,6 +83,7 @@ def main():
     # Need global dataset for this - convert datetime to date
     get_cams_aod(today.date(), run, today_str, input_path) # type: ignore
 
+    run_date_str = today_str  # For test, use today_str as run_date_str (adjust if needed)
     results = []
     for c in cities:
         try:
@@ -95,8 +96,9 @@ def main():
                 today,
                 run,
                 today_str,
-                input_path,  # input_path: process_city uses module-level input_path if None (or adjust)
-                output_path,  # output_path: same as above
+                run_date_str,  # <-- add this argument
+                input_path,
+                output_path,
                 c.get("create_dashboard", False)
             )
             results.append(res)

@@ -29,7 +29,9 @@ from get_cds_global import get_cams_aod
 from geopy import Nominatim
 import logging 
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 warnings.filterwarnings("ignore", category=FutureWarning, module="cfgrib.xarray_plugin")
+warnings.filterwarnings("ignore", category=UserWarning, module="cfgrib.messages")
 logging.basicConfig(
     level=logging.INFO,
     datefmt= '%Y-%m-%d %H:%M:%S',
@@ -42,6 +44,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Afterglow forecast")
     parser.add_argument('--date', type=str, default=None,
                         help="Specify the date in YYYYMMDD format (default: today)")
+    parser.add_argument('--run', type=str, default=None,
+                        help="Optional forecast run hour (e.g. 00 or 12). Defaults to the latest available run")
+    parser.add_argument('--workers', type=int, default=2,
+                        help="Maximum number of parallel city workers (default: 2 on Raspberry Pi)")
     return parser.parse_args()
 
 output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
@@ -53,6 +59,18 @@ logging.info(f"Output path: {output_path}")
 def _indexpath(grib_path: str) -> str:
     # Reuse ecCodes index to speed repeated opens
     return f"{grib_path}.idx"
+
+def _format_local_time(dt_value, tz):
+    if dt_value is None or tz is None:
+        return None
+    try:
+        return dt_value.astimezone(tz).isoformat()
+    except Exception as exc:
+        logging.warning(f"Failed to convert {dt_value} to timezone {tz}: {exc}")
+        try:
+            return dt_value.isoformat()
+        except Exception:
+            return None
 
 @lru_cache(maxsize=None)
 def open_plev(grib_path: str) -> xr.Dataset:
@@ -132,7 +150,7 @@ def max_solar_elevation(city, date):
     max_angle = max(elevation(observer, t) for t in times)
     return max_angle
 
-#function to get the azuimuth angle at sunset
+#function to get the azimuth angle at sunset
 def get__sunset_azimuth(city, date):
     tz = pytz.timezone(city.timezone)
     observer = city.observer
@@ -207,7 +225,7 @@ def extract_variable(ds, var_name, lat_min, lat_max, lon_min, lon_max, verbose=F
     return var
 
 
-def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix, fcst_hr,
+def plot_cloud_cover_map(data_dict, city, lon, lat, run_date_str, run, title_prefix, fcst_hr,
                           sun_azimuth, save_path= output_path, cmap='gray', distance_km=500):
     """
     Plot 2x2 cloud cover maps: TCC, LCC, MCC, HCC.
@@ -284,7 +302,7 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, today_str, run, title_prefix
     fig.text(0.5, 0.92, f"Red × marks {city.name}", ha='center', fontsize=10, color='red')
     fig.text(0.5, 0.90, f"Orange marks sun azimuth {round(sun_azimuth,1)}°", ha='center', fontsize=10, color='darkorange')
 
-    plt.savefig(f'{save_path}' + f"/{today_str}{run}0000-{fcst_hr}h-AIFS_cloud_cover_{city.name}.png")
+    plt.savefig(f'{save_path}' + f"/{run_date_str}{run}0000-{fcst_hr}h-AIFS_cloud_cover_{city.name}.png")
     plt.close()
 
 def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=100):
@@ -357,7 +375,7 @@ def _serialize_distance(values):
         return []
     return [float(v) for v in np.asarray(values, dtype=float)]
 
-def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, save_fig: bool, save_path= output_path):
+def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, run_date_str, run, save_fig: bool, save_path= output_path):
     """
     Extract cloud cover data along the azimuth path. Plot the cloud cover along the azimuth line.
     
@@ -405,12 +423,12 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
         ax.set_ylim(0,100)
         ax.set_xlabel('Distance along Azimuth (km)')
         ax.set_ylabel('Cloud Cover (%)')
-        ax.set_title(f'{today_str} {run}z +{fcst_hr}h EC AIFS cloud cover Along Azimuth path ')
+        ax.set_title(f'{run_date_str} {run}z +{fcst_hr}h EC AIFS cloud cover Along Azimuth path ')
         #set subtitle
         ax.text(0.5, 1.02, f"Azimuth {azimuth}°", fontsize=10)
         ax.legend()
         
-        plt.savefig(save_path + f"/{today_str}{run}0000_{fcst_hr}h_AIFS_cloud_cover_azimuth_{city.name}.png")
+        plt.savefig(save_path + f"/{run_date_str}{run}0000_{fcst_hr}h_AIFS_cloud_cover_azimuth_{city.name}.png")
         plt.close()
     return distance_below_threshold, avg_first_three, avg_path
 
@@ -522,6 +540,14 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
     serialized_profiles = {layer: _serialize_series(raw_profiles.get(layer)) for layer in profile_layers}
     distance_axis_serialized = _serialize_distance(distance_axis_values)
 
+    # Final fallback: if cloud_base_lvl is still NaN, use lcl_lvl if available
+    if np.isnan(cloud_base_lvl):
+        try:
+            lcl_lvl = city.lcl_lvl if hasattr(city, 'lcl_lvl') else None
+        except Exception:
+            lcl_lvl = None
+        if lcl_lvl is not None and not np.isnan(lcl_lvl):
+            cloud_base_lvl = lcl_lvl
     return (
         distance_below_threshold,
         cloud_lvl_used or 'tcc',
@@ -690,7 +716,7 @@ def color_fill(index):
     return cmap(norm(index))
 
 
-def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, latitude, longitude,
+def create_dashboard(today, run_date_str, run, index_today, index_tomorrow, city, latitude, longitude,
                      azimuth, afterglow_length_tdy, afterglow_length_tmr, possible_colors_tdy,
                      possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr, 
                      z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550,
@@ -744,8 +770,12 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
     sunset_local = sunset.astimezone(sunset_tz)
     sunset_local_42 = sunset_tmr.astimezone(sunset_tz)
     
-    # Info text on the right
+    # Prepare AOD values (handle single-value arrays)
+    ta = np.atleast_1d(total_aod550)
+    aod_tdy = float(ta[0]) if ta.size >= 1 else np.nan
+    aod_tmr = float(ta[1]) if ta.size >= 2 else aod_tdy
 
+    # Info text on the right
     info_text = (
         f"Today: {today.strftime('%Y-%m-%d')}\n"
         f"Location: {city.name}\n"
@@ -753,7 +783,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
         f"Sunset Azimuth: {round(azimuth)}°\n"
         f"Length: {round(afterglow_length_tdy)} s\n"
         f"Cloud Height : {int(round(cloud_base_lvl_tdy, -2))} m\n"
-        f"Aerosol OD(550nm): {total_aod550[0]:.2f} \n"
+        f"Aerosol OD(550nm): {aod_tdy:.2f} \n"
         f"Colors: {', '.join(possible_colors_tdy) }\n"
     )
     
@@ -765,7 +795,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
         f"Tomorrow: {(today + datetime.timedelta(days=1)).strftime('%Y-%m-%d')}\n"
         f"Length: {round(afterglow_length_tmr)} s\n"
         f"Cloud Height : {int(round(cloud_base_lvl_tmr, -2))} m\n"
-        f"Aerosol OD(550nm): {total_aod550[1]:.2f} \n"
+        f"Aerosol OD(550nm): {aod_tmr:.2f} \n"
         f"Colors: {', '.join(possible_colors_tmr)}\n"
     )
     ax[1].text(0.7, 0.15, info_text, fontsize=15, ha='center', va='center', color='black', 
@@ -780,7 +810,7 @@ def create_dashboard(today, today_str, run, index_today, index_tomorrow, city, l
     
     fig.text(0.89, 0.01, f"Plots by A350XWBoy. V2025.9.7", color='white',fontsize=8)
 
-    plt.savefig(f'{output_path}/{today_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
+    plt.savefig(f'{output_path}/{run_date_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
 
 # Weighted likelihod index
 def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, lcl_lvl, theta, avg_first_three, avg_path):
@@ -812,9 +842,9 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         norm_lvl = min(cloud_base_lvl, max_lvl) / max_lvl
         cloud_base_score = (norm_lvl)
     
-    if aod >= 0 and aod <= 0.3:
+    if aod >= 0 and aod <= 0.2:
         aod_score = 1
-    elif aod > 0.3 and aod <= 0.5:
+    elif aod > 0.2 and aod <= 0.5:
         aod_score = 0.8
     elif aod > 0.5 and aod <= 0.7:
         aod_score = 0.2
@@ -849,7 +879,9 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
         
-        cloud_cover_score = 0.5 * x - 0.5 * y
+        k = 8 # Steepness
+        t = 0.5 # Threshold
+        cloud_cover_score = 0.7 *((2/(1+np.exp(k*(y-t))))-1) + 0.3 * x
     
     if cloud_base_lvl < 4000 and cloud_base_lvl >= 2000:
         avg_first_three = min(avg_first_three, 100)
@@ -858,7 +890,9 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
         
-        cloud_cover_score = 0.5 * x - 0.5 * y
+        k = 8 # Steepness
+        t = 0.6 # Threshold
+        cloud_cover_score = 0.7 *((2/(1+np.exp(k*(y-t))))-1) + 0.3 * x
         
     if cloud_base_lvl >= 4000:
         avg_first_three = min(avg_first_three, 100)
@@ -869,7 +903,9 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
         logging.info(f"x_score: {x}, y_score: {y}")
         
-        cloud_cover_score = 0.4 * x - 0.6 * y
+        k = 8 # Steepness
+        t = 0.6 # Threshold
+        cloud_cover_score = 0.7 *((2/(1+np.exp(k*(y-t))))-1) + 0.3 * x
     
     # Handle NaN in cloud_cover_score - set to 0 if NaN
     if np.isnan(cloud_cover_score):
@@ -883,46 +919,57 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
     if geom_condition == True:
         # Constants
         geom_condition_weight = 0.1
-        aod_weight = 0.15
+        aod_weight = 0.25
         dust_aod_ratio_weight = 0.05
         cloud_cover_weight = 0.4
-        cloud_base_lvl_weight = 0.25
+        cloud_base_lvl_weight = 0.15
         theta_weight = 0.05   
     else:
         # Constants
         geom_condition_weight = 0.5
-        aod_weight = 0.05
+        aod_weight = 0.10
         dust_aod_ratio_weight = 0.05
         cloud_cover_weight = 0.2
-        cloud_base_lvl_weight = 0.15
+        cloud_base_lvl_weight = 0.10
         theta_weight = 0.05
-        
+
     # Binary flag for geom_condition
     geom_flag = 1 if geom_condition else 0
-    # Compute weighted index
-    likelihood_index = (
-    signed_power(geom_flag, 1) * geom_condition_weight +
-    signed_power(aod_score, 2) * aod_weight +
-    signed_power(dust_ratio_score, 3) * dust_aod_ratio_weight +
-    signed_power(cloud_cover_score, 1) * cloud_cover_weight +
-    signed_power(cloud_base_score, 2) * cloud_base_lvl_weight +
-    signed_power(theta_score, 2) * theta_weight # Higher power for less importance 
-    )
-    logging.info(f"geom_flag: {geom_flag}, contribution: {signed_power(geom_flag, 1) * geom_condition_weight}")
-    logging.info(f"aod_score: {aod_score}, contribution: {signed_power(aod_score, 2) * aod_weight}")
-    logging.info(f"dust_ratio_score: {dust_ratio_score}, contribution: {signed_power(dust_ratio_score, 3) * dust_aod_ratio_weight}")
-    logging.info(f"cloud_cover_score: {cloud_cover_score}, contribution: {signed_power(cloud_cover_score, 1) * cloud_cover_weight}")
-    logging.info(f"cloud_base_score: {cloud_base_score}, contribution: {signed_power(cloud_base_score, 2) * cloud_base_lvl_weight}")
-    logging.info(f"theta_score: {theta_score}, contribution: {signed_power(theta_score, 2) * theta_weight}")
 
-    likelihood_index = np.clip(likelihood_index, 0, 1)  # Ensure it's between 0 and 1
-    
-    # Scale to 0-100 and round to whole number - handle NaN case
-    if np.isnan(likelihood_index):
-        logging.warning("likelihood_index is NaN after calculation, setting to 0")
+    # Build components and only include non-NaN scores. If a component (e.g. AOD)
+    # is NaN, its weight is ignored and remaining weights are renormalized.
+    components = [
+        ("geom", geom_flag, 1, geom_condition_weight),
+        ("aod", aod_score, 2, aod_weight),
+        ("dust_ratio", dust_ratio_score, 3, dust_aod_ratio_weight),
+        ("cloud_cover", cloud_cover_score, 1, cloud_cover_weight),
+        ("cloud_base", cloud_base_score, 2, cloud_base_lvl_weight),
+        ("theta", theta_score, 2, theta_weight),
+    ]
+
+    numerator = 0.0
+    weight_sum = 0.0
+    for name, score, power, weight in components:
+        if score is None or (isinstance(score, float) and np.isnan(score)):
+            logging.info(f"Skipping {name} contribution due to NaN or missing score")
+            continue
+        contrib = signed_power(score, power) * weight
+        logging.info(f"{name}: score={score}, power={power}, weight={weight}, contrib={contrib}")
+        numerator += contrib
+        weight_sum += weight
+
+    if weight_sum == 0:
+        logging.warning("All component scores are missing; setting likelihood to 0")
         likelihood_index = 0
     else:
-        likelihood_index = int(round(likelihood_index * 100))
+        likelihood_index = numerator / weight_sum
+        likelihood_index = np.clip(likelihood_index, 0, 1)  # Ensure it's between 0 and 1
+        if np.isnan(likelihood_index):
+            logging.warning("likelihood_index is NaN after calculation, setting to 0")
+            likelihood_index = 0
+        else:
+            likelihood_index = int(round(likelihood_index * 100))
+
     return likelihood_index
 
 
@@ -985,7 +1032,7 @@ def load_2m_fields(grib_path: str) -> xr.Dataset:
         merged = xr.merge([t_ds, d_ds], compat='override')
     return merged
 
-def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, input_path, output_path, create_dashboard_flag: bool):
+def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, run_date_str, input_path, output_path, create_dashboard_flag: bool):
     tz = pytz.timezone(timezone_str)
     current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
     #current_utc = datetime.datetime(2025, 11, 20, 10, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
@@ -1003,6 +1050,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         city = LocationInfo(city_name, country, timezone_str, lat, lon)
         return {"city": city_name, "error": "Invalid timezone, skipped city and defaulted to UTC"}
 
+    sunrise_day_after = None
+    sunset_day_after = None
     try:
         s_tdy = sun(city.observer, date=local_today, tzinfo=tz)
         sunset_tdy = s_tdy['sunset']
@@ -1011,10 +1060,30 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         s_tmr = sun(city.observer, date=local_today + datetime.timedelta(days=1), tzinfo=tz)
         sunrise_tmr = s_tmr['sunrise']
         sunset_tmr = s_tmr['sunset']
+
+        s_day_after = sun(city.observer, date=local_today + datetime.timedelta(days=2), tzinfo=tz)
+        sunrise_day_after = s_day_after['sunrise']
+        sunset_day_after = s_day_after['sunset']
     except Exception as e:
         logging.warning(f"Sun calculation failed for {city.name}: {e}")
         # handle polar/no-sun or skip city
         sunrise_tdy = sunset_tdy = sunrise_tmr = sunset_tmr = None
+        sunrise_day_after = sunset_day_after = None
+
+    sunrise_azimuth = sunrise_azimuth_tmr = sunrise_azimuth_day_after = None
+    sunset_azimuth = sunset_azimuth_tmr = sunset_azimuth_day_after = None
+    if sunrise_tdy is not None:
+        sunrise_azimuth = get__sunrise_azimuth(city, today)
+    if sunrise_tmr is not None:
+        sunrise_azimuth_tmr = get__sunrise_azimuth(city, today + datetime.timedelta(days=1))
+    if sunrise_day_after is not None:
+        sunrise_azimuth_day_after = get__sunrise_azimuth(city, today + datetime.timedelta(days=2))
+    if sunset_tdy is not None:
+        sunset_azimuth = get__sunset_azimuth(city, today)
+    if sunset_tmr is not None:
+        sunset_azimuth_tmr = get__sunset_azimuth(city, today + datetime.timedelta(days=1))
+    if sunset_day_after is not None:
+        sunset_azimuth_day_after = get__sunset_azimuth(city, today + datetime.timedelta(days=2))
 
     run_dt = latest_forecast_hours_run_to_download()
     #run_dt = datetime.datetime(2025, 11, 20, 0, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
@@ -1035,8 +1104,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     sunset_fh_tmr = picks.get(f'sunset_{sunset_tmr_date_str}') if sunset_tmr_date_str else None
 
     # check for day-after-tomorrow pick and allow shifting when today is missing
-    day_after_sunrise = (sunrise_tmr + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunrise_tmr else None
-    day_after_sunset = (sunset_tmr + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunset_tmr else None
+    day_after_sunrise = sunrise_day_after.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunrise_day_after else None
+    day_after_sunset = sunset_day_after.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunset_day_after else None
     sunrise_fh_day_after = picks.get(f"sunrise_{day_after_sunrise}") if day_after_sunrise else None
     sunset_fh_day_after = picks.get(f"sunset_{day_after_sunset}") if day_after_sunset else None
 
@@ -1045,23 +1114,30 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         logging.info(f"No pick for sunrise_{sunrise_tdy_date_str} for {city.name}; using tomorrow's pick ({sunrise_fh_tmr}) as today's.")
         sunrise_fh_tdy = sunrise_fh_tmr
         sunrise_fh_tmr = sunrise_fh_day_after if sunrise_fh_day_after is not None else None
+        sunrise_tdy = sunrise_tmr
+        sunrise_tmr = sunrise_day_after
+        sunrise_azimuth = sunrise_azimuth_tmr
+        sunrise_azimuth_tmr = sunrise_azimuth_day_after
 
     # Handle missing sunset picks
     if sunset_fh_tdy is None and sunset_fh_tmr is not None:
         logging.info(f"No pick for sunset_{sunset_tdy_date_str} for {city.name}; using tomorrow's pick ({sunset_fh_tmr}) as today's.")
         sunset_fh_tdy = sunset_fh_tmr
         sunset_fh_tmr = sunset_fh_day_after if sunset_fh_day_after is not None else None
+        sunset_tdy = sunset_tmr
+        sunset_tmr = sunset_day_after
+        sunset_azimuth = sunset_azimuth_tmr
+        sunset_azimuth_tmr = sunset_azimuth_day_after
     
     logging.info(f"Final picks for {city.name}: sunrise today +{sunrise_fh_tdy}h, sunrise tomorrow +{sunrise_fh_tmr}h, sunset today +{sunset_fh_tdy}h, sunset tomorrow +{sunset_fh_tmr}h")
 
+    sunrise_time_tdy_local = _format_local_time(sunrise_tdy, tz)
+    sunrise_time_tmr_local = _format_local_time(sunrise_tmr, tz)
+    sunset_time_tdy_local = _format_local_time(sunset_tdy, tz)
+    sunset_time_tmr_local = _format_local_time(sunset_tmr, tz)
+
     max_elev = max_solar_elevation(city, datetime.date.today())
     logging.info(f"Maximum solar elevation in {city.name}: {max_elev:.2f}°")
-
-    # Get azimuths for both sunrise and sunset
-    sunrise_azimuth = get__sunrise_azimuth(city, today)
-    sunrise_azimuth_tmr = get__sunrise_azimuth(city, today + datetime.timedelta(days=1))
-    sunset_azimuth = get__sunset_azimuth(city, today)
-    sunset_azimuth_tmr = get__sunset_azimuth(city, today + datetime.timedelta(days=1))
     
     logging.info(f"Sunrise azimuth angle in {city.name}: {sunrise_azimuth:.2f}°")
     logging.info(f"Sunset azimuth angle in {city.name}: {sunset_azimuth:.2f}°")
@@ -1086,8 +1162,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         # ds_tdy = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2', engine = 'cfgrib')
         # ds_tmr = xr.open_dataset(f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2', engine = 'cfgrib')
 
-        grib_tdy = f'{input_path}/{today_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2'
-        grib_tmr = f'{input_path}/{today_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2'
+        grib_tdy = f'{input_path}/{run_date_str}{run}0000-{sunset_fh_tdy}h-oper-fc.grib2'
+        grib_tmr = f'{input_path}/{run_date_str}{run}0000-{sunset_fh_tmr}h-oper-fc.grib2'
 
         ds_tdy_plev = open_plev(grib_tdy)
         ds_tmr_plev = open_plev(grib_tmr)
@@ -1122,11 +1198,11 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         cloud_vars_tmr = reduce_clouds_to_roi(cloud_vars_tmr, lon, lat, sunset_azimuth_tmr, distance_km=500, pad_km=80)
 
         if create_dashboard_flag:
-            plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, today_str, run,
+            plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, run_date_str, run,
                             f'{today_str} {run}z +{sunset_fh_tdy}h EC AIFS cloud cover (today sunset)',
                             sunset_fh_tdy, sunset_azimuth, save_path= output_path, cmap='gray')
 
-            plot_cloud_cover_map(cloud_vars_tmr, city, lon, lat, tomorrow_str, run,
+            plot_cloud_cover_map(cloud_vars_tmr, city, lon, lat, run_date_str, run,
                                 f'{tomorrow_str} {run}z +{sunset_fh_tmr}h EC AIFS cloud cover (tomorrow sunset)',
                                 sunset_fh_tmr, sunset_azimuth, save_path= output_path, cmap='gray')
 
@@ -1144,13 +1220,13 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_first_three_tdy,
             avg_path_tdy,
             cloud_present_tdy,
-            cloud_base_lvl_tdy,
+            cb_lvl_tdy,
             hcc_condition_tdy,
             cloud_profiles_tdy,
             distance_axis_tdy,
         ) = get_cloud_extent(
             cloud_vars_tdy, city, lon, lat, sunset_azimuth, cloud_base_lvl_tdy, sunset_fh_tdy,
-            create_dashboard_flag, today_str, run,
+            create_dashboard_flag, run_date_str, run,
         )
         (
             distance_below_threshold_tmr,
@@ -1158,14 +1234,24 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_first_three_tmr,
             avg_path_tmr,
             cloud_present_tmr,
-            cloud_base_lvl_tmr,
+            cb_lvl_tmr,
             hcc_condition_tmr,
             cloud_profiles_tmr,
             distance_axis_tmr,
         ) = get_cloud_extent(
             cloud_vars_tmr, city, lon, lat, sunset_azimuth_tmr, cloud_base_lvl_tmr, sunset_fh_tmr,
-            create_dashboard_flag, tomorrow_str, run,
+            create_dashboard_flag, run_date_str, run,
         )
+        # Guarantee cloud_base_lvl is always valid (lcl_lvl fallback already handled in get_cloud_extent)
+        cloud_base_lvl_tdy = cb_lvl_tdy
+        cloud_base_lvl_tmr = cb_lvl_tmr
+
+        if np.isnan(cloud_base_lvl_tdy) or cloud_base_lvl_tdy is None:
+            cloud_base_lvl_tdy = z_lcl_tdy
+            logging.info("Used LCL level for today's cloud base level")
+        if np.isnan(cloud_base_lvl_tmr) or cloud_base_lvl_tmr is None:
+            cloud_base_lvl_tmr = z_lcl_tmr
+            logging.info("Used LCL level for tomorrow's cloud base level")
 
         sunset_profile_payload_tdy = build_profile_payload(distance_axis_tdy, cloud_profiles_tdy)
         sunset_profile_payload_tmr = build_profile_payload(distance_axis_tmr, cloud_profiles_tmr)
@@ -1185,22 +1271,24 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         # The AOD value directly controls the value of the afterglow liklihood index in the weighted equation
 
         # Incorporate AOD
-
-        dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path) #Array of shape (2,) first is 18h , second is 42h
+        lats, lons = azimuth_line_points(lat, lon, sunset_azimuth, distance_km = 500, num_points=50)
+        dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path, lats, lons) #Array of shape (2,) first is 18h , second is 42h
 
         likelihood_index_tdy = weighted_likelihood_index(geom_cond_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_tdy, z_lcl_tdy, theta_tdy, avg_first_three_tdy, avg_path_tdy)
-        likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
+        likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], dust_aod550_ratio[1] if dust_aod550_ratio.size>1 else dust_aod550_ratio[0], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
         logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
         logging.info(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
 
         possible_colors_tdy = possible_colours(cloud_base_lvl_tdy, z_lcl_tdy, total_aod550[0], key_tdy)
-        possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1], key_tmr)
+        possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], key_tmr)
 
         if create_dashboard_flag:
             create_dashboard(
-                today, today_str, run, likelihood_index_tdy, likelihood_index_tmr, city, lat, lon, sunset_azimuth, actual_afterglow_time_tdy, actual_afterglow_time_tmr, possible_colors_tdy, possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr,
+                today, run_date_str, run, likelihood_index_tdy, likelihood_index_tmr, city, lat, lon, sunset_azimuth, actual_afterglow_time_tdy, actual_afterglow_time_tmr, possible_colors_tdy, possible_colors_tmr, cloud_base_lvl_tdy, cloud_base_lvl_tmr,
                 z_lcl_tdy, z_lcl_tmr, cloud_present_tdy, cloud_present_tmr, total_aod550, sunset_tdy, sunset_tmr, fcst_hr_tdy=sunset_fh_tdy, fcst_hr_tmr=sunset_fh_tmr
             )
+        
+
         
         sunset_results = {
             "sunset_likelihood_index_tdy": likelihood_index_tdy,
@@ -1211,6 +1299,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_afterglow_time_tmr": actual_afterglow_time_tmr,
             "sunset_cloud_base_lvl_tdy": cloud_base_lvl_tdy,
             "sunset_cloud_base_lvl_tmr": cloud_base_lvl_tmr,
+            "sunset_cloud_local_cover_tdy": avg_first_three_tdy,
+            "sunset_cloud_local_cover_tmr": avg_first_three_tmr,
             "sunset_geom_condition_LCL_used_tdy": geom_condition_LCL_used_tdy,
             "sunset_geom_condition_LCL_used_tmr": geom_condition_LCL_used_tmr,
             "sunset_geom_condition_tdy": geom_cond_tdy,
@@ -1219,11 +1309,12 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_lf_ma_tmr": lf_ma_tmr,
             "sunset_cloud_present_tdy": cloud_present_tdy,
             "sunset_cloud_present_tmr": cloud_present_tmr,
-            "sunset_total_aod550_tdy": total_aod550[0],
-            "sunset_total_aod550_tmr": total_aod550[1],
-            "sunset_dust_aod550_tdy": dust_aod550[0],
-            "sunset_dust_aod550_tmr": dust_aod550[1],
-            "sunset_time_tdy": sunset_tdy,
+            "sunset_total_aod550_tdy": float(total_aod550[0]) if hasattr(total_aod550, '__getitem__') else float(total_aod550),
+            "sunset_total_aod550_tmr": float(total_aod550[1]) if hasattr(total_aod550, '__getitem__') and total_aod550.size>1 else (float(total_aod550[0]) if hasattr(total_aod550, '__getitem__') else float(total_aod550)),
+            "sunset_dust_aod550_tdy": float(dust_aod550[0]) if hasattr(dust_aod550, '__getitem__') else float(dust_aod550),
+            "sunset_dust_aod550_tmr": float(dust_aod550[1]) if hasattr(dust_aod550, '__getitem__') and dust_aod550.size>1 else (float(dust_aod550[0]) if hasattr(dust_aod550, '__getitem__') else float(dust_aod550)),
+            "sunset_time_tdy": sunset_time_tdy_local,
+            "sunset_time_tmr": sunset_time_tmr_local,
             "sunset_hcc_condition_tdy": hcc_condition_tdy,
             "sunset_hcc_condition_tmr": hcc_condition_tmr,
             "sunset_cloud_layer_key_tdy": key_tdy,
@@ -1258,7 +1349,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_total_aod550_tmr": np.nan,
             "sunset_dust_aod550_tdy": np.nan,
             "sunset_dust_aod550_tmr": np.nan,
-            "sunset_time_tdy": sunset_tdy,
+            "sunset_time_tdy": sunset_time_tdy_local,
+            "sunset_time_tmr": sunset_time_tmr_local,
             "sunset_hcc_condition_tdy": False,
             "sunset_hcc_condition_tmr": False,
             "sunset_cloud_layer_key_tdy": None,
@@ -1278,8 +1370,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     if sunrise_fh_tdy is not None and sunrise_fh_tmr is not None:
         logging.info(f"Processing sunrise for {city.name}")
 
-        grib_sunrise_tdy = f'{input_path}/{today_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2'
-        grib_sunrise_tmr = f'{input_path}/{today_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2'
+        grib_sunrise_tdy = f'{input_path}/{run_date_str}{run}0000-{sunrise_fh_tdy}h-oper-fc.grib2'
+        grib_sunrise_tmr = f'{input_path}/{run_date_str}{run}0000-{sunrise_fh_tmr}h-oper-fc.grib2'
         
         # Pressure levels (t, q)
         ds_sunrise_tdy_plev = open_plev(grib_sunrise_tdy)
@@ -1318,38 +1410,39 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         cloud_vars_sunrise_tmr = reduce_clouds_to_roi(cloud_vars_sunrise_tmr, lon, lat, sunrise_azimuth_tmr, distance_km=500, pad_km=80)
 
         if create_dashboard_flag:
-            plot_cloud_cover_map(cloud_vars_sunrise_tdy, city, lon, lat, today_str, run,
+            plot_cloud_cover_map(cloud_vars_sunrise_tdy, city, lon, lat, run_date_str, run,
                             f'{today_str} {run}z +{sunrise_fh_tdy}h EC AIFS cloud cover (today sunrise)',
                             sunrise_fh_tdy, sunrise_azimuth, save_path= output_path, cmap='gray')
 
-            plot_cloud_cover_map(cloud_vars_sunrise_tmr, city, lon, lat, tomorrow_str, run,
+            plot_cloud_cover_map(cloud_vars_sunrise_tmr, city, lon, lat, run_date_str, run,
                                 f'{tomorrow_str} {run}z +{sunrise_fh_tmr}h EC AIFS cloud cover (tomorrow sunrise)',
                                 sunrise_fh_tmr, sunrise_azimuth_tmr, save_path= output_path, cmap='gray')
 
         # Calculate RH and cloud base for sunrise
         RH_sunrise_tdy, _ = specific_to_relative_humidity(ds_sunrise_tdy_plev.q, ds_sunrise_tdy_plev.t, ds_sunrise_tdy_plev.isobaricInhPa, lat, lon)
-        cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, RH_cb_sunrise_tdy = calc_cloud_base(ds_sunrise_tdy_2m["t2m"], ds_sunrise_tdy_2m["d2m"], ds_sunrise_tdy_plev.t, RH_sunrise_tdy, ds_sunrise_tdy_plev.isobaricInhPa, lat, lon)
+        orig_cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, RH_cb_sunrise_tdy = calc_cloud_base(ds_sunrise_tdy_2m["t2m"], ds_sunrise_tdy_2m["d2m"], ds_sunrise_tdy_plev.t, RH_sunrise_tdy, ds_sunrise_tdy_plev.isobaricInhPa, lat, lon)
 
         RH_sunrise_tmr, _ = specific_to_relative_humidity(ds_sunrise_tmr_plev.q, ds_sunrise_tmr_plev.t, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
-        cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, RH_cb_sunrise_tmr = calc_cloud_base(ds_sunrise_tmr_2m["t2m"], ds_sunrise_tmr_2m["d2m"], ds_sunrise_tmr_plev.t, RH_sunrise_tmr, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
+        orig_cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, RH_cb_sunrise_tmr = calc_cloud_base(ds_sunrise_tmr_2m["t2m"], ds_sunrise_tmr_2m["d2m"], ds_sunrise_tmr_plev.t, RH_sunrise_tmr, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
 
-        logging.info(f'sunrise tdy cloud_base:{cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
-        logging.info(f'sunrise tmr cloud_base: {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
+        logging.info(f'sunrise tdy cloud_base (before fallback):{orig_cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
+        logging.info(f'sunrise tmr cloud_base (before fallback): {orig_cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
 
         # Calculate cloud extent and afterglow parameters for sunrise
+        # Use the original value for fallback logic, but always use the returned value from get_cloud_extent for output
         (
             distance_below_threshold_sunrise_tdy,
             key_sunrise_tdy,
             avg_first_three_sunrise_tdy,
             avg_path_sunrise_tdy,
             cloud_present_sunrise_tdy,
-            cloud_base_lvl_sunrise_tdy,
+            cloud_base_lvl_sunrise_tdy,  # This is the fallback-corrected value
             hcc_condition_sunrise_tdy,
             cloud_profiles_sunrise_tdy,
             distance_axis_sunrise_tdy,
         ) = get_cloud_extent(
-            cloud_vars_sunrise_tdy, city, lon, lat, sunrise_azimuth, cloud_base_lvl_sunrise_tdy, sunrise_fh_tdy,
-            create_dashboard_flag, today_str, run,
+            cloud_vars_sunrise_tdy, city, lon, lat, sunrise_azimuth, orig_cloud_base_lvl_sunrise_tdy, sunrise_fh_tdy,
+            create_dashboard_flag, run_date_str, run,
         )
 
         (
@@ -1358,14 +1451,25 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_first_three_sunrise_tmr,
             avg_path_sunrise_tmr,
             cloud_present_sunrise_tmr,
-            cloud_base_lvl_sunrise_tmr,
+            cloud_base_lvl_sunrise_tmr,  # This is the fallback-corrected value
             hcc_condition_sunrise_tmr,
             cloud_profiles_sunrise_tmr,
             distance_axis_sunrise_tmr,
         ) = get_cloud_extent(
-            cloud_vars_sunrise_tmr, city, lon, lat, sunrise_azimuth_tmr, cloud_base_lvl_sunrise_tmr, sunrise_fh_tmr,
-            create_dashboard_flag, tomorrow_str, run,
+            cloud_vars_sunrise_tmr, city, lon, lat, sunrise_azimuth_tmr, orig_cloud_base_lvl_sunrise_tmr, sunrise_fh_tmr,
+            create_dashboard_flag, run_date_str, run,
         )
+
+        if np.isnan(cloud_base_lvl_sunrise_tdy) or cloud_base_lvl_sunrise_tdy is None:
+            cloud_base_lvl_sunrise_tdy = z_lcl_sunrise_tdy
+            logging.info(f"Sunrise today cloud base level invalid after get_cloud_extent; falling back to LCL: {z_lcl_sunrise_tdy} m")
+        if np.isnan(cloud_base_lvl_sunrise_tmr) or cloud_base_lvl_sunrise_tmr is None:
+            cloud_base_lvl_sunrise_tmr = z_lcl_sunrise_tmr
+            logging.info(f"Sunrise tomorrow cloud base level invalid after get_cloud_extent; falling back to LCL: {z_lcl_sunrise_tmr} m")
+
+        # Log after fallback
+        logging.info(f'sunrise tdy cloud_base (after fallback):{cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
+        logging.info(f'sunrise tmr cloud_base (after fallback): {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
 
         sunrise_profile_payload_tdy = build_profile_payload(distance_axis_sunrise_tdy, cloud_profiles_sunrise_tdy)
         sunrise_profile_payload_tmr = build_profile_payload(distance_axis_sunrise_tmr, cloud_profiles_sunrise_tmr)
@@ -1379,16 +1483,17 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         actual_afterglow_time_sunrise_tdy = get_afterglow_time(lat, today, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy)
         actual_afterglow_time_sunrise_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr)
 
-        dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path)
+        lats, lons = azimuth_line_points(lat, lon, sunrise_azimuth, distance_km = 500, num_points=50)
+        dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path, lats, lons)
 
-        likelihood_index_sunrise_tdy = weighted_likelihood_index(geom_cond_sunrise_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, theta_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy)
-        likelihood_index_sunrise_tmr = weighted_likelihood_index(geom_cond_sunrise_tmr, total_aod550[1], dust_aod550_ratio[1], cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, theta_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr)
+        likelihood_index_sunrise_tdy = weighted_likelihood_index(geom_cond_sunrise_tdy, total_aod550, dust_aod550_ratio, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, theta_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy)
+        likelihood_index_sunrise_tmr = weighted_likelihood_index(geom_cond_sunrise_tmr, total_aod550, dust_aod550_ratio, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, theta_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr)
         
         logging.info(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
         logging.info(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
 
-        possible_colors_sunrise_tdy = possible_colours(cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, total_aod550[0], key_sunrise_tdy)
-        possible_colors_sunrise_tmr = possible_colours(cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, total_aod550[1], key_sunrise_tmr)
+        possible_colors_sunrise_tdy = possible_colours(cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, total_aod550, key_sunrise_tdy)
+        possible_colors_sunrise_tmr = possible_colours(cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, total_aod550, key_sunrise_tmr)
 
         sunrise_results = {
             "sunrise_likelihood_index_tdy": likelihood_index_sunrise_tdy,
@@ -1399,6 +1504,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_afterglow_time_tmr": actual_afterglow_time_sunrise_tmr,
             "sunrise_cloud_base_lvl_tdy": cloud_base_lvl_sunrise_tdy,
             "sunrise_cloud_base_lvl_tmr": cloud_base_lvl_sunrise_tmr,
+            "sunrise_cloud_local_cover_tdy": avg_first_three_sunrise_tdy,
+            "sunrise_cloud_local_cover_tmr": avg_first_three_sunrise_tmr,
             "sunrise_geom_condition_LCL_used_tdy": geom_condition_LCL_used_sunrise_tdy,
             "sunrise_geom_condition_LCL_used_tmr": geom_condition_LCL_used_sunrise_tmr,
             "sunrise_geom_condition_tdy": geom_cond_sunrise_tdy,
@@ -1407,11 +1514,12 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_lf_ma_tmr": lf_ma_sunrise_tmr,
             "sunrise_cloud_present_tdy": cloud_present_sunrise_tdy,
             "sunrise_cloud_present_tmr": cloud_present_sunrise_tmr,
-            "sunrise_total_aod550_tdy": total_aod550[0],
-            "sunrise_total_aod550_tmr": total_aod550[1],
-            "sunrise_dust_aod550_tdy": dust_aod550[0],
-            "sunrise_dust_aod550_tmr": dust_aod550[1],
-            "sunrise_time_tdy": sunrise_tdy,
+            "sunrise_total_aod550_tdy": float(total_aod550[0]) if hasattr(total_aod550, '__getitem__') else float(total_aod550),
+            "sunrise_total_aod550_tmr": float(total_aod550[1]) if hasattr(total_aod550, '__getitem__') and total_aod550.size>1 else (float(total_aod550[0]) if hasattr(total_aod550, '__getitem__') else float(total_aod550)),
+            "sunrise_dust_aod550_tdy": float(dust_aod550[0]) if hasattr(dust_aod550, '__getitem__') else float(dust_aod550),
+            "sunrise_dust_aod550_tmr": float(dust_aod550[1]) if hasattr(dust_aod550, '__getitem__') and dust_aod550.size>1 else (float(dust_aod550[0]) if hasattr(dust_aod550, '__getitem__') else float(dust_aod550)),
+            "sunrise_time_tdy": sunrise_time_tdy_local,
+            "sunrise_time_tmr": sunrise_time_tmr_local,
             "sunrise_hcc_condition_tdy": hcc_condition_sunrise_tdy,
             "sunrise_hcc_condition_tmr": hcc_condition_sunrise_tmr,
             "sunrise_cloud_layer_key_tdy": key_sunrise_tdy,
@@ -1420,6 +1528,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_avg_path_tmr": avg_path_sunrise_tmr,
             "sunrise_azimuth_tdy": sunrise_azimuth,
             "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
+            "sunrise_cloud_profiles_tdy": sunrise_profile_payload_tdy,
+            "sunrise_cloud_profiles_tmr": sunrise_profile_payload_tmr,
         }
     else:
         logging.warning(f"Skipping sunrise processing for {city.name}: sunrise_fh_tdy={sunrise_fh_tdy}, sunrise_fh_tmr={sunrise_fh_tmr}")
@@ -1444,7 +1554,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_total_aod550_tmr": np.nan,
             "sunrise_dust_aod550_tdy": np.nan,
             "sunrise_dust_aod550_tmr": np.nan,
-            "sunrise_time_tdy": sunrise_tdy,
+            "sunrise_time_tdy": sunrise_time_tdy_local,
+            "sunrise_time_tmr": sunrise_time_tmr_local,
             "sunrise_hcc_condition_tdy": False,
             "sunrise_hcc_condition_tmr": False,
             "sunrise_cloud_layer_key_tdy": None,
@@ -1453,6 +1564,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_avg_path_tmr": np.nan,
             "sunrise_azimuth_tdy": sunrise_azimuth,
             "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
+            "sunrise_cloud_profiles_tdy": build_profile_payload([], {}),
+            "sunrise_cloud_profiles_tmr": build_profile_payload([], {}),
         }
     
     # Combine results
@@ -1515,6 +1628,7 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
 
     # Write out the forecast_hours times from run initialization time in 6-hour increments
     offsets = list(range(0,61,6)) # 0 to 60 hours in 6-hour increments
+    max_offset_hours = offsets[-1]
     forecast_hours_times = [run_datetime + datetime.timedelta(hours=i) for i in offsets]  # 0 to 60 hours
     last_ft = forecast_hours_times[-1]
 
@@ -1550,6 +1664,15 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
         # clamp and format
         hours_after = max(0, min(hours_after, offsets[-1]))
         return str(hours_after)
+
+    def warn_promoted_unavailable(event_time, promotion_label):
+        if event_time is None:
+            return
+        hours_ahead = (event_time - run_datetime).total_seconds() / 3600.0
+        if hours_ahead > max_offset_hours:
+            logging.warning(
+                f"Computed time for the now promoted {promotion_label} in {city.name} exceeds +{max_offset_hours}h window; treating the key as None."
+            )
     
     forecast_hours = {"city": city.name}
 
@@ -1557,11 +1680,32 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
         date_tdy = sunrise_time_tdy.date().strftime("%Y%m%d")
         date_tmr = (sunrise_time_tdy + datetime.timedelta(days=1)).date().strftime("%Y%m%d")
         date_day_next = (sunrise_time_tdy + datetime.timedelta(days=2)).date().strftime("%Y%m%d")
-        forecast_hours[f"sunrise_{date_tdy}"] = pick_for_event(sunrise_time_tdy, f"sunrise_{date_tdy}")
-        forecast_hours[f"sunrise_{date_tmr}"] = pick_for_event(sunrise_time_tmr, f"sunrise_{date_tmr}")
+
+        # Only create keys for dates on/after run init
+        if sunrise_time_tdy >= run_datetime:
+            forecast_hours[f"sunrise_{date_tdy}"] = pick_for_event(sunrise_time_tdy, f"sunrise_{date_tdy}")
+        if sunrise_time_tmr >= run_datetime:
+            forecast_hours[f"sunrise_{date_tmr}"] = pick_for_event(sunrise_time_tmr, f"sunrise_{date_tmr}")
+
+        need_day_after = False
         if run_datetime < sunrise_time_tdy <= threshold_time:
-            forecast_hours[f"sunrise_{date_day_next}"] = pick_for_event(sunrise_time_tmr + datetime.timedelta(days=1), f"sunrise_{date_day_next}")
-        
+            need_day_after = True
+        elif sunrise_time_tdy < run_datetime:
+            logging.info(
+                f"sunrise_{date_tdy} for {city.name} occurs before run init; preparing to promote tomorrow's pick."
+            )
+            need_day_after = True
+
+        if need_day_after:
+            next_sunrise_time = sunrise_time_tmr + datetime.timedelta(days=1) if sunrise_time_tmr is not None else None
+            key = f"sunrise_{date_day_next}"
+            if next_sunrise_time is None:
+                logging.warning(f"Unable to compute promoted {key} for {city.name}; missing downstream sunrise time.")
+            elif next_sunrise_time >= run_datetime:
+                fh_val = pick_for_event(next_sunrise_time, key)
+                if fh_val is None:
+                    warn_promoted_unavailable(next_sunrise_time, "sunrise_tmr")
+                forecast_hours[key] = fh_val
     else:
         logging.error(f"Sunrise times missing for {city.name}")
     
@@ -1569,10 +1713,32 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
         date_tdy = sunset_time_tdy.date().strftime("%Y%m%d")
         date_tmr = (sunset_time_tdy + datetime.timedelta(days=1)).date().strftime("%Y%m%d")
         date_day_next = (sunset_time_tdy + datetime.timedelta(days=2)).date().strftime("%Y%m%d")
-        forecast_hours[f"sunset_{date_tdy}"] = pick_for_event(sunset_time_tdy, f"sunset_{date_tdy}")
-        forecast_hours[f"sunset_{date_tmr}"] = pick_for_event(sunset_time_tmr, f"sunset_{date_tmr}")
+
+        # Only create keys for dates on/after run init
+        if sunset_time_tdy >= run_datetime:
+            forecast_hours[f"sunset_{date_tdy}"] = pick_for_event(sunset_time_tdy, f"sunset_{date_tdy}")
+        if sunset_time_tmr >= run_datetime:
+            forecast_hours[f"sunset_{date_tmr}"] = pick_for_event(sunset_time_tmr, f"sunset_{date_tmr}")
+
+        need_day_after = False
         if run_datetime < sunset_time_tdy <= threshold_time:
-            forecast_hours[f"sunset_{date_day_next}"] = pick_for_event(sunset_time_tmr + datetime.timedelta(days=1), f"sunset_{date_day_next}")
+            need_day_after = True
+        elif sunset_time_tdy < run_datetime:
+            logging.info(
+                f"sunset_{date_tdy} for {city.name} occurs before run init; preparing to promote tomorrow's pick."
+            )
+            need_day_after = True
+
+        if need_day_after:
+            next_sunset_time = sunset_time_tmr + datetime.timedelta(days=1) if sunset_time_tmr is not None else None
+            key = f"sunset_{date_day_next}"
+            if next_sunset_time is None:
+                logging.warning(f"Unable to compute promoted {key} for {city.name}; missing downstream sunset time.")
+            elif next_sunset_time >= run_datetime:
+                fh_val = pick_for_event(next_sunset_time, key)
+                if fh_val is None:
+                    warn_promoted_unavailable(next_sunset_time, "sunset_tmr")
+                forecast_hours[key] = fh_val
     else:
         logging.error(f"Sunset times missing for {city.name}")
 
@@ -1586,10 +1752,15 @@ def main():
     else:
         today = datetime.date.today()
 
-    run = str(latest_forecast_hours_run_to_download().hour)
-    run = run.zfill(2)
+    if args.run is not None:
+        run = args.run.zfill(2)
+        run_dt = datetime.datetime.combine(today, datetime.time(int(run), 0), tzinfo=datetime.timezone.utc)
+    else:
+        run_dt = latest_forecast_hours_run_to_download()
+        run = str(run_dt.hour).zfill(2)
     print(run)
     today_str = today.strftime("%Y%m%d")
+    run_date_str = run_dt.strftime("%Y%m%d")
 
     # fcst_hrs_to_download = set(forecast_hours.values()) # In order to do this, we need to access the process
     # city function first. So Instead, we download all time steps between 0 and 60 hours.
@@ -1597,31 +1768,61 @@ def main():
     # Get these outside the loop to download global dataset
 
     for fcst_hour in range(0, 61, 6):
-        url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
-        download_file(url, f"{input_path}/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
+        url = f"https://data.ecmwf.int/forecasts/{run_date_str}/{run}z/aifs-single/0p25/oper/{run_date_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
+        download_file(url, f"{input_path}/{run_date_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
 
     # Need global dataset for this
-    get_cams_aod(today, run, today_str, input_path) # type: ignore
+    get_cams_aod(today, run, run_date_str, input_path) # type: ignore
 
     # Load city data
     df = pd.read_csv('worldcities_info_wtimezone.csv', header=0, delimiter=',')
 
-    results = []
+    city_jobs = []
     for _, row in df.iterrows():
         try:
-            result = process_city(
-                row['city'], 
-                row['country'],
-                row['lat'], 
-                row['lng'], 
-                row['timezone'],
-                today, run, today_str, input_path, output_path,
-                row['create_dashboard']
+            city_jobs.append(
+                (
+                    row['city'],
+                    row['country'],
+                    float(row['lat']),
+                    float(row['lng']),
+                    row['timezone'],
+                    today,
+                    run,
+                    today_str,
+                    run_date_str,
+                    input_path,
+                    output_path,
+                    bool(row.get('create_dashboard', False)),
+                )
             )
-            results.append(result)
-        except (ValueError, KeyError, FileNotFoundError) as e:
-            logging.error(f"Error processing {row['city']}: {e}", exc_info=True)
-            continue # skips to next city, don't crash the script
+        except (KeyError, ValueError) as exc:
+            logging.error(f"Invalid city row encountered: {exc}", exc_info=True)
+    if not city_jobs:
+        logging.error("No valid city rows found; aborting processing.")
+        return pd.DataFrame()
+
+    cpu_cap = os.cpu_count() or 1
+    requested_workers = args.workers if args.workers and args.workers > 0 else 1
+    worker_target = min(requested_workers, cpu_cap)
+    worker_count = max(1, min(worker_target, len(city_jobs)))
+    logging.info(f"Processing {len(city_jobs)} cities using {worker_count} worker(s)...")
+
+    results = []
+    with ProcessPoolExecutor(max_workers=worker_count) as executor:
+        future_to_city = {
+            executor.submit(process_city, *args): args[0]
+            for args in city_jobs
+        }
+        for future in as_completed(future_to_city):
+            city_name = future_to_city[future]
+            try:
+                result = future.result()
+                results.append(result)
+            except (ValueError, KeyError, FileNotFoundError) as exc:
+                logging.error(f"Error processing {city_name}: {exc}", exc_info=True)
+            except Exception as exc:  # safeguard unexpected issues per city
+                logging.error(f"Unexpected error processing {city_name}: {exc}", exc_info=True)
 
     results_df = pd.DataFrame(results)
     
@@ -1635,7 +1836,7 @@ def main():
         results_df[col] = results_df[col].fillna(-1).astype(int).replace(-1, np.nan)
     
     # Export to JSON with controlled precision
-    output_json_path = f'{output_path}/all_cities_summary_{today_str}_{run}Z.json'
+    output_json_path = f'{output_path}/all_cities_summary_{run_date_str}_{run}Z.json'
     results_df.to_json(output_json_path, orient='records', indent=2, date_format='iso', double_precision=3)
     logging.info(f"Results saved to {output_json_path}")
     

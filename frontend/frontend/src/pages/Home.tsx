@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ChangelogPopup from "../ChangelogPopup";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
@@ -74,7 +75,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen px-4 pb-16">
+    <>
+      <ChangelogPopup />
+      <main className="min-h-screen px-4 pb-16">
       <section className="mx-auto flex min-h-[90vh] max-w-5xl items-center justify-center pt-12">
         <div className="w-full max-w-3xl space-y-10 rounded-[32px] border border-white/15 bg-white/10 p-10 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
           <header className="text-center space-y-4">
@@ -138,10 +141,9 @@ export default function Home() {
 
       <section className="mx-auto mt-35 flex max-w-5xl flex-col gap-12 rounded-[36px] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/0 p-10 text-white shadow-[0_30px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
         <div className="space-y-4 text-center">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/70">Made by cloud lovers, for cloud lovers</p>
           <h2 className="text-4xl font-semibold">ACSAF: The Aerosol and Cloud-Based Sunset/ Sunrise Afterglow Forecaster</h2>
           <p className="mx-auto max-w-3xl text-base text-white/80">
-            A quick and handy reference system to cloud lovers, sunset photographers, and anyone captivated by the sky's fleeting colors leveraging 
+            A quick and handy reference system to cloud lovers, sunset photographers, and anyone captivated by the sky's fleeting colors, leveraging 
             AI Numerical Weather Prediction (NWP) Outputs.
           </p>
         </div>
@@ -187,12 +189,16 @@ export default function Home() {
             <p className="text-xs uppercase tracking-[0.4em] text-white/60">About this tool</p>
             <h3 className="mt-2 text-2xl font-semibold">Limitations</h3>
             <p className="mt-4 text-white/80">
-              The computed scores are valid only for stratiform cloud layer. Convective clouds exhibits vertical structure, which 
-              generally allows afterglow to appear more easily. Raw NWP model ouput should be interpreted with caution as they are uncalibrated.  
+              The computed scores are valid only for stratiform cloud layer. Convective clouds exhibit vertical structure, which 
+              generally allows afterglow to appear more easily. Raw NWP ouput should be interpreted with caution as they are uncalibrated.  
             </p>
             <p className="mt-3 text-white/80">
               ACSAF scores are subjective
           and still lacks a holistic quantitative forecast verification. 
+            </p>
+            <p className="mt-3 text-white/80">
+              AIFS is not designed for short term or high resolution forecasting with its 6
+              hours temporal resolution. 
             </p>
           </article>
         </div>
@@ -206,7 +212,8 @@ export default function Home() {
           by or in connection with use on the content.
         </p>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

@@ -1,6 +1,14 @@
+import dns.resolver
+resolver = dns.resolver.Resolver()
+resolver.timeout = 5       # per try (s)
+resolver.lifetime = 30     # total (s)
+dns.resolver.default_resolver = resolver
+
 import argparse
 import pymongo
 from pymongo import MongoClient, UpdateOne
+from pymongo.errors import OperationFailure, ServerSelectionTimeoutError, ConfigurationError
+from pymongo.write_concern import WriteConcern
 import os, sys 
 # Add parent folder (/Users/hng/Documents/dev/Afterglow) to sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -13,6 +21,13 @@ load_dotenv(find_dotenv())
 from pymongo.errors import OperationFailure
 password = os.environ.get("MONGODB_PWD")
 user = os.environ.get("MONGODB_USER")
+
+# Optional environment variables to control direct hosts fallback and DB settings
+direct_hosts_env = os.environ.get("MONGODB_DIRECT_HOSTS")  # comma-separated host:port list
+replica_set = os.environ.get("MONGODB_REPLICA_SET")
+db_name = os.environ.get("MONGODB_DB", "ACSAF")
+auth_source = os.environ.get("MONGODB_AUTH_SOURCE", "admin")
+use_tls = os.environ.get("MONGODB_USE_TLS", "true").lower() in ("1", "true", "yes")
 
 
 def parse_args() -> argparse.Namespace:
@@ -81,20 +96,53 @@ run = run_datetime.strftime("%H")
 run_date = run_datetime.strftime("%Y%m%d")
 print(f"Using run {run}Z on {run_date}")
 
-connection_string = f"mongodb+srv://{user}:{password}@cluster0.fpibh6i.mongodb.net/?appName=Cluster0"
-client = MongoClient(connection_string)
-afterglow_db = client["ACSAF"]
+# Build SRV (default) and direct connection strings
+srv_connection_string = f"mongodb+srv://{user}:{password}@cluster0.fpibh6i.mongodb.net/?appName=Cluster0"
+direct_connection_string = None
+if direct_hosts_env:
+    hosts = ",".join([h.strip() for h in direct_hosts_env.split(",") if h.strip()])
+    tls_param = "true" if use_tls else "false"
+    replica_part = f"&replicaSet={replica_set}" if replica_set else ""
+    direct_connection_string = (
+        f"mongodb://{user}:{password}@{hosts}/{db_name}?authSource={auth_source}&tls={tls_param}&retryWrites=true{replica_part}"
+    )
+
+# Try SRV first, then fallback to direct if provided
+client = None
+last_exception = None
+attempts = []
+for uri_label, uri in (("SRV", srv_connection_string), ("Direct", direct_connection_string)):
+    if not uri:
+        continue
+    try:
+        print(f"Attempting MongoDB connection using: {uri_label} URI")
+        client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=120000,
+            connectTimeoutMS=60000,
+            socketTimeoutMS=120000,
+        )
+        client.admin.command("ping")
+        print(f"{uri_label} Mongo ping OK")
+        attempts.append((uri_label, True, None))
+        break
+    except (ServerSelectionTimeoutError, ConfigurationError, OperationFailure, Exception) as exc:
+        print(f"{uri_label} connection failed: {exc}")
+        last_exception = exc
+        attempts.append((uri_label, False, str(exc)))
+
+if client is None:
+    print("All connection attempts failed:")
+    for label, ok, msg in attempts:
+        print(f" - {label}: {'OK' if ok else 'FAILED'} {msg or ''}")
+    raise last_exception
+
+afterglow_db = client[db_name]
 collections = afterglow_db.list_collection_names()
 print(collections)
-afterglow_collection = afterglow_db["forecast_data"]
-
-try:
-    # Verify auth
-    client.admin.command("ping")
-    print("Mongo ping OK")
-except OperationFailure as e:
-    print(f"Auth failed: {e}")
-    raise
+# Use a write concern with a higher wtimeout to avoid transient write timeouts
+wc = WriteConcern(w=1, wtimeout=120000)
+afterglow_collection = afterglow_db.get_collection("forecast_data").with_options(write_concern=wc)
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 forecast_path = os.path.join(parent_dir, f"output/all_cities_summary_{run_date}_{run}Z.json")
@@ -107,6 +155,7 @@ with open(forecast_path, "r") as f:
 def attach_metadata(doc: dict) -> dict:
     doc["run"] = run
     doc["run_time"] = run_datetime.isoformat()
+    doc["uploaded_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     return doc
 
 

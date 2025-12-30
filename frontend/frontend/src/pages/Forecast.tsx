@@ -26,6 +26,36 @@ type OutlookRow = {
   tmr?: string;
 };
 
+const METRIC_ORDER: string[] = [
+  "afterglow_time",
+  "cloud_present",
+  "cloud_base_lvl",
+  "cloud_local_cover",
+  "avg_path",
+  "cloud_layer_key",
+  "azimuth",
+  "total_aod550",
+  "dust_aod550",
+  "geom_condition",
+  "geom_condition_LCL_used",
+  "hcc_condition",
+];
+
+const METRIC_LABEL_OVERRIDES: Record<string, string> = {
+  afterglow_time: "Afterglow Duration (s)",
+  cloud_present: "Cloud Present",
+  cloud_base_lvl: "Cloud Base Level (m)",
+  cloud_local_cover: "Local Cloud Cover (%)",
+  avg_path: "Path Cloud Cover (%)",
+  cloud_layer_key: "Cloud Layer Reasoning",
+  azimuth: "Azimuth (deg)",
+  total_aod550: "Total AOD550",
+  dust_aod550: "Dust AOD550",
+  geom_condition: "Geom Condition",
+  hcc_condition: "HCC Condition",
+  geom_condition_LCL_used: "LCL Used"
+};
+
 const DAY_LABEL: Record<DayKey, string> = {
   tdy: "Today",
   tmr: "Tomorrow",
@@ -138,7 +168,7 @@ export default function Forecast() {
 
         {overviewItems.length > 0 && (
           <section className="rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-            <h2 className="mb-4 text-2xl font-semibold text-white">Timing</h2>
+            <h2 className="mb-4 text-2xl font-semibold text-white">Timing (Local Time)</h2>
             <dl className="grid gap-4 sm:grid-cols-2">
               {overviewItems.map(({ label, value }) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -177,11 +207,11 @@ export default function Forecast() {
                 For the definitions of Low cloud cover (LCC), Medium cloud cover (MCC), High cloud cover (HCC), and Total cloud cover (TCC), refer to the ECMWF parameter Database.
                 The algorithm generally uses the dashed 60% line as a threshold to determine cloud cover. 
                 <p>&nbsp;</p>
-                HCC condition is...
+                Geom condition LCL - True or False. Whether the lifted condensation level (LCL) is used to infer the cloud base when the cloud cover is low or cannot be determined
+                from the AIFS output.
                 <p>&nbsp;</p>
-                Geom condition LCL used is....
-                <p>&nbsp;</p>
-                Total AOD550 is ...
+                Total AOD550 is - Dimensionless quantity. Total Aerosol Optical Depth at 550 nm wavelength. Generally, higher means stronger extinction of sun rays leading to less vibrant cloud afterglow. 
+                This effect is especially prominent on low clouds. The calculation assumes AOD550 does not vary with distance (local vertical path is considered).
               </p>
             </>
           ) : (
@@ -414,9 +444,7 @@ function buildOverview(doc: ForecastDoc): Array<{ label: string; value: string }
   const candidateKeys: Array<{ key: string; label: string }> = [
     { key: "forecast_time", label: "Forecast time" },
     { key: "sunrise_time_tdy", label: "Sunrise (today)" },
-    { key: "sunrise_time_tmr", label: "Sunrise (tomorrow)" },
     { key: "sunset_time_tdy", label: "Sunset (today)" },
-    { key: "sunset_time_tmr", label: "Sunset (tomorrow)" },
   ];
 
   return candidateKeys
@@ -427,7 +455,6 @@ function buildOverview(doc: ForecastDoc): Array<{ label: string; value: string }
 function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): OutlookRow[] {
   const excluded = new Set([
     "cloud_profiles",
-    "geom_condition_lcl_used",
     "lf_ma",
     "likelihood_index",
     "possible_colors",
@@ -450,12 +477,24 @@ function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): Outlo
 
     const day = (dayMatch?.[1] as DayKey | undefined) ?? "tdy";
 
-    const current = rows.get(metricKey) ?? { metric: toTitle(metricKey) };
+    const displayLabel = METRIC_LABEL_OVERRIDES[metricKey] ?? toTitle(metricKey);
+    const current = rows.get(metricKey) ?? { metric: displayLabel };
     current[day] = Array.isArray(value) ? value.map(formatValue).join(", ") : formatValue(value);
     rows.set(metricKey, current);
   });
 
-  return Array.from(rows.values()).sort((a, b) => a.metric.localeCompare(b.metric));
+  const orderRank = new Map(METRIC_ORDER.map((key, index) => [key, index]));
+
+  return Array.from(rows.entries())
+    .sort(([keyA, rowA], [keyB, rowB]) => {
+      const rankA = orderRank.get(keyA) ?? Number.MAX_SAFE_INTEGER;
+      const rankB = orderRank.get(keyB) ?? Number.MAX_SAFE_INTEGER;
+      if (rankA === rankB) {
+        return rowA.metric.localeCompare(rowB.metric);
+      }
+      return rankA - rankB;
+    })
+    .map(([, row]) => row);
 }
 
 function formatValue(value: unknown): string {
@@ -469,18 +508,10 @@ function formatValue(value: unknown): string {
     return value ? "Yes" : "No";
   }
   if (typeof value === "string") {
-    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
-      const date = new Date(value);
-      if (!Number.isNaN(date.getTime())) {
-        return date.toLocaleString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        });
-      }
+    // If ISO string with time, strip timezone and microseconds for 'local' time as in JSON
+    const isoMatch = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[1]} ${isoMatch[2]}`;
     }
     return value;
   }
@@ -554,6 +585,28 @@ function getPossibleColors(doc: ForecastDoc, mode: Mode, day: DayKey): string[] 
   return [];
 }
 
+function describeGlow(value: number | null): string {
+  if (value === null || Number.isNaN(value)) {
+    return "Awaiting glow rating";
+  }
+  if (value <= 0) {
+    return "No glow";
+  }
+  if (value <= 15) {
+    return "Dull glow";
+  }
+  if (value <= 40) {
+    return "Moderate glow";
+  }
+  if (value <= 60) {
+    return "Vivid glow";
+  }
+  if (value <= 75) {
+    return "Flaming glow";
+  }
+  return "Flamboyant glow";
+}
+
 function buildGradient(colors: string[]): string | null {
   if (!colors.length) {
     return null;
@@ -615,7 +668,7 @@ function LikelihoodCard({ label, value, subtle }: { label: string; value: number
       <p className="text-sm uppercase tracking-[0.3em] text-white/70">{label}</p>
       <div className="mt-3 flex items-baseline gap-3">
         <span className="text-6xl font-semibold text-white">{value ?? "—"}</span>
-        <span className="text-sm text-white/60">Vibrancy Score</span>
+        <span className="text-sm text-white/60">{describeGlow(value)}</span>
       </div>
     </div>
   );
