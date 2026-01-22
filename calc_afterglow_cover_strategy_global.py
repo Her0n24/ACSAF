@@ -401,9 +401,11 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
         avg_first_three = np.mean(cloud_cover_data[:3])
         avg_path = np.mean(cloud_cover_data[4:])
         if avg_first_three > 10 and avg_first_three < threshold and avg_path < threshold: # We still think there are cloud if local above 10% total cloud cover
-            distance_below_threshold = 250 # Assume a distance below threshold of 250 km
+            # Do not assign a default distance here — leave as NaN. get_cloud_extent
+            # will decide whether to apply a finite default based on the TCC path
+            # statistic (Q3) per user preference.
             logging.info(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%. Meet Criteria even threshold requirement not met.")
-            logging.info(f"There is cloud cover above, we assume disance below thres is {distance_below_threshold} km.")
+            logging.info("No distance assigned here; caller may assign a default based on TCC path statistics.")
             
     if save_fig:
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -460,77 +462,122 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
         if distance_axis_values is None and cloud_cover_data.size:
             distance_axis_values = np.linspace(0, distance_km, len(cloud_cover_data))
 
+    # Select cloud layer: choose the layer (lcc/mcc/hcc) with the highest
+    # local concentration (nearest sample) that is >= 60%. If none meet that
+    # criterion, use 'tcc' as the selected layer.
+    selection_candidates = []
     for key, base_height in priority_order:
-        cloud_cover_data = raw_profiles.get(key)
-        if cloud_cover_data is None:
+        local_val = local_cloud_cover_dict.get(key)
+        if local_val is None:
             continue
+        selection_candidates.append((key, float(local_val)))
 
-        avg_first_three = np.nanmean(cloud_cover_data[:3])
+    selected = None
+    if selection_candidates:
+        # filter those >= 60 and pick max local concentration
+        valid = [(k, v) for (k, v) in selection_candidates if v >= 60.0]
+        if valid:
+            best = max(valid, key=lambda x: x[1])
+            selected = best[0]
+            logging.info(f"Selected cloud layer by local concentration: {selected} ({best[1]:.2f}%)")
 
-        if key in ("lcc", "mcc"):
-            if avg_first_three > threshold:
-                cloud_lvl_used = key
-                avg_first_three_met = True
-                hcc_condition = False
-            else:
-                avg_first_three_met = False
-                hcc_condition = False
-        elif key == "hcc":
-            avg_path = np.nanmean(cloud_cover_data[4:])
-            if avg_first_three > threshold:
-                cloud_lvl_used = key
-                avg_first_three_met = True
-                hcc_condition = False
-            else:
-                hcc_condition = False
-                avg_first_three_met = False
-
-            if avg_first_three < avg_path:
-                avg_first_three_met = True
-                logging.info(f"Average first three cloud cover {avg_first_three}% is less than average path cloud cover {avg_path}%.")
-                if avg_path < 90.0:
-                    cloud_lvl_used = key
-                    hcc_condition = True
-                    avg_first_three_met = False
-                    logging.info("HCC condition met")
-                else:
-                    hcc_condition = False
-                    avg_first_three_met = False
-                    logging.info("HCC condition not met")
+    if selected is None:
+        cloud_lvl_used = 'tcc'
+        logging.info("No lcc/mcc/hcc with local >=60%; using tcc for path selection")
+    else:
+        cloud_lvl_used = selected
 
     if np.isnan(cloud_base_lvl):
+        # Choose the cloud layer that maximises the distance at which cloud
+        # cover drops below the threshold (distance_below_threshold). We only
+        # consider layers that have local cloud >= 15% and have a valid
+        # profile. For each candidate we call the path-analysis function in
+        # non-plotting mode to get the distance value.
+        candidates = []
         for key, base_height in priority_order:
-            if local_cloud_cover_dict.get(key, 0) >= 15:
-                cloud_base_lvl = base_height
-                break
+            if local_cloud_cover_dict.get(key, 0) >= 15 and raw_profiles.get(key) is not None:
+                profile = raw_profiles[key]
+                try:
+                    # compute distance_below_threshold for this layer without saving plots
+                    dist_below, local_av, path_av = plot_cloud_cover_along_azimuth(
+                        profile, azimuth, distance_km, fcst_hr, threshold, key,
+                        city, today_str, run, False, save_path=output_path
+                    )
+                    # convert NaN to -1 so it sorts last
+                    dist_val = float(dist_below) if not np.isnan(dist_below) else -1.0
+                except Exception:
+                    dist_val = -1.0
+                    local_av = float('nan')
+                    path_av = float('nan')
+                candidates.append((key, base_height, dist_val, local_av, path_av))
 
-    if avg_first_three_met is False:
-        cloud_lvl_used = 'tcc'
-        logging.info(f"RH requirement not met. Cloud base level {cloud_base_lvl} is assumed based on the first layer with cloud cover >= 15%")
-        logging.info("Trying to use tcc for cloud cover data")
-        cloud_cover_data = raw_profiles.get('tcc')
-        if cloud_cover_data is None:
-            logging.error(f"Cloud cover data is not available for forecast_hours hour {fcst_hr}.")
-            cloud_present = False
-        else:
-            distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(
-                cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path
+        if candidates:
+            # pick the candidate with the largest distance_below_threshold
+            best = max(candidates, key=lambda x: x[2])
+            cloud_base_lvl = best[1]
+            cloud_lvl_used = best[0]
+            logging.info(
+                f"Selected cloud base level from layer {best[0]} by max distance {best[2]:.2f} km -> {cloud_base_lvl} m (path avg {best[4]:.2f}%)"
             )
-    elif hcc_condition is True:
-        logging.info('hcc condition is True. We will assume a distance below threshold of 100 km.')
-        cloud_cover_data = raw_profiles.get(cloud_lvl_used)
-        if cloud_cover_data is not None:
-            avg_first_three = np.nanmean(cloud_cover_data[:3])
-            avg_path = np.nanmean(cloud_cover_data[4:])
-        distance_below_threshold = 100
+        else:
+            # Fallback: preserve previous behaviour (first layer with local >= 15%)
+            for key, base_height in priority_order:
+                if local_cloud_cover_dict.get(key, 0) >= 15:
+                    cloud_base_lvl = base_height
+                    logging.info(f"Fallback selected cloud base {cloud_base_lvl} m from {key}")
+                    break
+
+    # Use the selected layer (or tcc) to compute cloud extent along the azimuth.
+    cloud_cover_data = raw_profiles.get(cloud_lvl_used)
+    if cloud_cover_data is None:
+        logging.error(f"Cloud cover data for selected layer {cloud_lvl_used} is not available for forecast_hour {fcst_hr}.")
+        cloud_present = False
+        distance_below_threshold = np.nan
+        chosen_local_avg = np.nan
+        chosen_path_avg = np.nan
     else:
-        cloud_cover_data = raw_profiles.get(cloud_lvl_used)
-        if cloud_cover_data is None:
-            cloud_present = False
-        else:
-            distance_below_threshold, avg_first_three, avg_path = plot_cloud_cover_along_azimuth(
-                cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path
-            )
+        distance_below_threshold, chosen_local_avg, chosen_path_avg = plot_cloud_cover_along_azimuth(
+            cloud_cover_data, azimuth, distance_km, fcst_hr, threshold, cloud_lvl_used, city, today_str, run, plot_graph_flag, save_path= output_path
+        )
+
+    # For scoring, always use tcc averages (per new requirement). Compute tcc averages if available.
+    tcc_profile = raw_profiles.get('tcc')
+    if tcc_profile is not None and tcc_profile.size:
+        try:
+            avg_first_three_tcc = float(np.nanmean(tcc_profile[:3]))
+        except Exception:
+            avg_first_three_tcc = float('nan')
+        try:
+            # use 75th percentile (Q3) of the path values instead of mean
+            if tcc_profile.size >= 5:
+                arr = np.asarray(tcc_profile[4:], dtype=float)
+            else:
+                arr = np.asarray(tcc_profile, dtype=float)
+            avg_path_tcc = float(np.nanpercentile(arr, 75))
+        except Exception:
+            avg_path_tcc = float('nan')
+    else:
+        avg_first_three_tcc = np.nan
+        avg_path_tcc = np.nan
+
+    # Use tcc-derived values for returning avg_first_three and avg_path (these feed the weighted index)
+    avg_first_three = avg_first_three_tcc
+    avg_path = avg_path_tcc
+
+    # If no valid distance_below_threshold was found for the selected layer,
+    # assume a finite default only if the TCC path statistic (here Q3 stored
+    # in avg_path) is below the threshold. This implements the requested
+    # behaviour: default extent only when overall TCC path suggests mostly
+    # below-threshold conditions.
+    if not np.isfinite(distance_below_threshold):
+        try:
+            if not np.isnan(avg_path) and avg_path < threshold:
+                distance_below_threshold = 250  # km default
+                logging.info(f"No layer crossing found; using default distance {distance_below_threshold} km because TCC path Q3 {avg_path:.1f}% < threshold {threshold}%")
+            else:
+                logging.info("No layer crossing found and TCC path Q3 >= threshold; leaving distance_below_threshold as NaN")
+        except Exception:
+            pass
 
     distance_below_threshold = distance_below_threshold * 1000
 
@@ -585,6 +632,13 @@ def geom_condition(cloud_base_height, cloud_extent, LCL):
         logging.info(f"lf_ma: {round(lf_ma)} m")
         geom_condition_LCL_used = True
         geom_condition = False
+    # If cloud_extent is not a finite number we cannot assert a geometry condition.
+    # This prevents returning True when no valid extent (e.g. NaN or None) was computed.
+    if cloud_extent is None or not np.isfinite(cloud_extent):
+        logging.info("cloud_extent not finite or missing; geom_condition set to False")
+        geom_condition = False
+        return geom_condition, geom_condition_LCL_used, lf_ma
+
     # Compare with cloud_extent
     if lf_ma > cloud_extent:
         geom_condition = True
@@ -623,9 +677,9 @@ def get_afterglow_time(lat, today, distance_below_threshold, lf_ma, cloud_base_l
         
         overhead_afterglow_time = np.abs(t1-t2)
         
-        actual_afterglow_time = total_afterglow_time - overhead_afterglow_time
+        actual_afterglow_time = total_afterglow_time + overhead_afterglow_time
         
-        actual_afterglow_time = actual_afterglow_time + ((cloud_base_lvl/np.tan(np.deg2rad(15)))/(21*1000/60)) # Accounting for the clouds in visual contact assuming 15 deg elevation
+        actual_afterglow_time = actual_afterglow_time + ((cloud_base_lvl/np.tan(np.deg2rad(5)))/(21*1000/60)) # Accounting for the clouds in visual contact assuming 5 deg elevation
         
         logging.info(f"Total Afterglow time: {total_afterglow_time} seconds")
         logging.info(f"Overhead Afterglow time: {overhead_afterglow_time} seconds")
@@ -878,10 +932,14 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
+
+        local_weight = 0.3
+        local_thr = 0.3
+        local_component = local_weight * (x - local_thr) / (1 - local_thr)
         
         k = 8 # Steepness
-        t = 0.5 # Threshold
-        cloud_cover_score = 0.7 *((2/(1+np.exp(k*(y-t))))-1) + 0.3 * x
+        t = 0.4 # Threshold
+        cloud_cover_score = (1-local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
     
     if cloud_base_lvl < 4000 and cloud_base_lvl >= 2000:
         avg_first_three = min(avg_first_three, 100)
@@ -889,10 +947,15 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
+
+        local_weight = 0.3
+        local_thr = 0.3
+
+        local_component = local_weight * (x - local_thr) / (1 - local_thr)
         
         k = 8 # Steepness
-        t = 0.6 # Threshold
-        cloud_cover_score = 0.7 *((2/(1+np.exp(k*(y-t))))-1) + 0.3 * x
+        t = 0.4 # Threshold
+        cloud_cover_score = (1-local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
         
     if cloud_base_lvl >= 4000:
         avg_first_three = min(avg_first_three, 100)
@@ -901,11 +964,16 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
 
+        local_weight = 0.3
+        local_thr = 0.3
+
+        local_component = local_weight * (x - local_thr) / (1 - local_thr)
+
         logging.info(f"x_score: {x}, y_score: {y}")
         
         k = 8 # Steepness
-        t = 0.6 # Threshold
-        cloud_cover_score = 0.7 *((2/(1+np.exp(k*(y-t))))-1) + 0.3 * x
+        t = 0.5 # Threshold
+        cloud_cover_score = (1- local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
     
     # Handle NaN in cloud_cover_score - set to 0 if NaN
     if np.isnan(cloud_cover_score):
@@ -926,12 +994,12 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         theta_weight = 0.05   
     else:
         # Constants
-        geom_condition_weight = 0.5
-        aod_weight = 0.10
-        dust_aod_ratio_weight = 0.05
-        cloud_cover_weight = 0.2
-        cloud_base_lvl_weight = 0.10
-        theta_weight = 0.05
+        geom_condition_weight = 0.6
+        aod_weight = 0
+        dust_aod_ratio_weight = 0
+        cloud_cover_weight = 0.3
+        cloud_base_lvl_weight = 0.1
+        theta_weight = 0.0
 
     # Binary flag for geom_condition
     geom_flag = 1 if geom_condition else 0

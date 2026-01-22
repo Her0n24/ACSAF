@@ -68,11 +68,11 @@ def calc_cloud_base(T2m, Td2m, T, RH, p, lat, lon):
     # Approximate LCL height
     z_lcl = (T2m - T_lcl) / gamma_d
     
-    # Find the cloud base, the lowest pressure level with RH > 85% for temperature above 0 and with RH > 80% for temperature below 0.
+    # Find the cloud base, the lowest pressure level with RH > 95% for temperature above 0 and with RH > 80% for temperature below 0.
     T_C = T - 273.15
     
     # Define mask based on temperature-dependent RH threshold to account for ice clouds
-    condition = ((T_C > 0) & (RH >= 85)) | ((T_C <= 0) & (RH >= 70))
+    condition = ((T_C > 0) & (RH >= 95)) | ((T_C <= 0) & (RH >= 80))
     
     logging.info("RH")
     logging.info(RH)

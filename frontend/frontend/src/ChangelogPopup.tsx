@@ -1,16 +1,6 @@
 import { useState } from "react";
 
 const changelogEntries = [
-  {
-    date: "2025.12.22",
-    changes: [
-      " Main Script: Fixed logic error shifting + 1 day forecast when city sunset time is before forecast initiation",
-      "Display: Renamed diagnostic variables for clarity",
-      "Display: Frontend table row and label customization",
-      "Display: Sunrise and Sunset time are now explicitly stated in local time",
-      "Display: Added missing sunrise azimuth profiles",
-    ],
-  },
     {
     date: "2025.12.23",
     changes: [
@@ -25,6 +15,15 @@ const changelogEntries = [
       "Main Script: Changed AOD score logic"
     ],
   },
+  {
+    date: "2026.1.11",
+    changes: [
+      "Main Script: Changed the assumed elevation angle that can be viewed by an observer used in the computation of actual afterglow time from 15 to 5 degrees",
+      "Main Script: Increased RH threshold for determining cloud base for liquid phase clouds (cloud layer where temperature is above 0 deg) from 85 to 95%. For supposed ice phase clouds, RH threshold remains at 80%",
+      "Display: Now, score won’t be displayed when there is no cloud cover",
+      "Display: Emphasis this is a score for CLOUD afterglow in the home page"
+    ],
+  }
 ];
 
 export default function ChangelogPopup() {

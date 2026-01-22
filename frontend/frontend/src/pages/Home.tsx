@@ -82,9 +82,9 @@ export default function Home() {
         <div className="w-full max-w-3xl space-y-10 rounded-[32px] border border-white/15 bg-white/10 p-10 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
           <header className="text-center space-y-4">
             <p className="text-xs uppercase tracking-[0.4em] text-white/70">Project ACSAF</p>
-            <h1 className="text-4xl font-semibold text-white">Afterglow Forecast</h1>
+            <h1 className="text-4xl font-semibold text-white">Cloud Afterglow Forecast</h1>
             <p className="text-base text-white/80">
-              Discover the latest forecast of sunset and sunrise glow score out of 100.
+              Catch the next brilliant dusk/ dawn cloud glow with AI-powered NWP forecast!
             </p>
           </header>
 
@@ -141,15 +141,15 @@ export default function Home() {
 
       <section className="mx-auto mt-35 flex max-w-5xl flex-col gap-12 rounded-[36px] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/0 p-10 text-white shadow-[0_30px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
         <div className="space-y-4 text-center">
-          <h2 className="text-4xl font-semibold">ACSAF: The Aerosol and Cloud-Based Sunset/ Sunrise Afterglow Forecaster</h2>
+          <h2 className="text-4xl font-semibold">ACSAF: The Aerosol and Cloud-Based Sunset/ Sunrise cloud Afterglow Forecaster</h2>
           <p className="mx-auto max-w-3xl text-base text-white/80">
-            A quick and handy reference system to cloud lovers, sunset photographers, and anyone captivated by the sky's fleeting colors, leveraging 
-            AI Numerical Weather Prediction (NWP) Outputs.
+            ACSAF is a quick and handy reference system to landscape photographers, cloud lovers, or anyone captivated by clouds' fleeting colors around the world, leveraging 
+            AI-powered Numerical Weather Prediction (NWP) outputs. Daily cloud glow displays are rated out of 100. Save travel time and effort for the next best cloud glows!
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {["ECMWF AIFS data", "CAMS aerosol data", "Update Twice Daily"].map((title, index) => {
+          {["ECMWF AIFS data", "CAMS aerosol data", "Update twice daily"].map((title, index) => {
             const body = [
               "Gold standard global cloud cover, temperature and humidity data for computing cloud geometry effects.",
               "High resolution total aerosol and dust measurements to assist in determining afterglow color and vibrancy.",

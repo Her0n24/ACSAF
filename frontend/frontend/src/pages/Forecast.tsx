@@ -42,7 +42,7 @@ const METRIC_ORDER: string[] = [
 ];
 
 const METRIC_LABEL_OVERRIDES: Record<string, string> = {
-  afterglow_time: "Afterglow Duration (s)",
+  afterglow_time: "Afterglow Duration (min:s)",
   cloud_present: "Cloud Present",
   cloud_base_lvl: "Cloud Base Level (m)",
   cloud_local_cover: "Local Cloud Cover (%)",
@@ -98,6 +98,8 @@ export default function Forecast() {
   const activeRows = mode === "sunset" ? sunsetRows : sunriseRows;
   const likelihoodToday = getLikelihood(doc, mode, "tdy");
   const likelihoodTomorrow = getLikelihood(doc, mode, "tmr");
+  const cloudPresentToday = getCloudPresent(doc, mode, "tdy");
+  const cloudPresentTomorrow = getCloudPresent(doc, mode, "tmr");
   const possibleColors = getPossibleColors(doc, mode, "tdy");
   const gradient = buildGradient(possibleColors);
   const modelRun = doc["run_time"] ? formatValue(doc["run_time"]) : null;
@@ -136,8 +138,8 @@ export default function Forecast() {
             <ModeSlider active={mode} onChange={setMode} />
 
             <div className="grid gap-4 md:grid-cols-2">
-              <LikelihoodCard label="Today" value={likelihoodToday} />
-              <LikelihoodCard label="Tomorrow" value={likelihoodTomorrow} subtle />
+              <LikelihoodCard label="Today" value={likelihoodToday} noClouds={cloudPresentToday === false} />
+              <LikelihoodCard label="Tomorrow" value={likelihoodTomorrow} subtle noClouds={cloudPresentTomorrow === false} />
             </div>
 
             {(possibleColors.length > 0 || modelRun) && (
@@ -479,7 +481,7 @@ function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): Outlo
 
     const displayLabel = METRIC_LABEL_OVERRIDES[metricKey] ?? toTitle(metricKey);
     const current = rows.get(metricKey) ?? { metric: displayLabel };
-    current[day] = Array.isArray(value) ? value.map(formatValue).join(", ") : formatValue(value);
+    current[day] = Array.isArray(value) ? value.map((v) => formatMetricValue(metricKey, v)).join(", ") : formatMetricValue(metricKey, value);
     rows.set(metricKey, current);
   });
 
@@ -519,6 +521,55 @@ function formatValue(value: unknown): string {
     return value.map((item) => formatValue(item)).join(", ");
   }
   return JSON.stringify(value);
+}
+
+function isNumeric(value: unknown): boolean {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "string") return value.trim() !== "" && !Number.isNaN(Number(value));
+  return false;
+}
+
+function formatMetricValue(metricKey: string, value: unknown): string {
+  if (value === null || value === undefined) return "—";
+
+  // Cloud base level rounded to nearest 100 m
+  if (metricKey === "cloud_base_lvl") {
+    if (isNumeric(value)) {
+      const num = Math.round(Number(value) / 100) * 100;
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(num);
+    }
+    return formatValue(value);
+  }
+
+  // Cloud cover percentages and average path rounded to nearest integer
+  if (metricKey === "cloud_local_cover" || metricKey === "avg_path") {
+    if (isNumeric(value)) {
+      return String(Math.round(Number(value)));
+    }
+    return formatValue(value);
+  }
+
+  // Azimuth rounded to nearest integer
+  if (metricKey === "azimuth") {
+    if (isNumeric(value)) {
+      return String(Math.round(Number(value)));
+    }
+    return formatValue(value);
+  }
+
+  // Afterglow duration: display as minutes:seconds
+  if (metricKey === "afterglow_time") {
+    if (isNumeric(value)) {
+      const total = Math.max(0, Math.round(Number(value)));
+      const mins = Math.floor(total / 60);
+      const secs = total % 60;
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+    return formatValue(value);
+  }
+
+  if (Array.isArray(value)) return value.map((v) => formatMetricValue(metricKey, v)).join(", ");
+  return formatValue(value);
 }
 
 function toTitle(value: string): string {
@@ -583,6 +634,24 @@ function getPossibleColors(doc: ForecastDoc, mode: Mode, day: DayKey): string[] 
     return value.map((item) => String(item));
   }
   return [];
+}
+
+function getCloudPresent(doc: ForecastDoc, mode: Mode, day: DayKey): boolean | null {
+  const key = `${mode}_cloud_present_${day}`;
+  const value = doc[key];
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    if (v === "no" || v === "false") return false;
+    if (v === "yes" || v === "true") return true;
+    return null;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  return null;
 }
 
 function describeGlow(value: number | null): string {
@@ -658,7 +727,8 @@ function ModeSlider({ active, onChange }: { active: Mode; onChange: (mode: Mode)
   );
 }
 
-function LikelihoodCard({ label, value, subtle }: { label: string; value: number | null; subtle?: boolean }) {
+function LikelihoodCard({ label, value, subtle, noClouds }: { label: string; value: number | null; subtle?: boolean; noClouds?: boolean }) {
+  const describeText = noClouds ? "No clouds" : describeGlow(value);
   return (
     <div
       className={`rounded-[28px] border border-white/15 p-5 backdrop-blur-2xl ${
@@ -667,8 +737,10 @@ function LikelihoodCard({ label, value, subtle }: { label: string; value: number
     >
       <p className="text-sm uppercase tracking-[0.3em] text-white/70">{label}</p>
       <div className="mt-3 flex items-baseline gap-3">
-        <span className="text-6xl font-semibold text-white">{value ?? "—"}</span>
-        <span className="text-sm text-white/60">{describeGlow(value)}</span>
+        <span className="text-6xl font-semibold text-white">
+          {noClouds ? "--" : (value ?? "—-")}
+        </span>
+        <span className="text-sm text-white/60">{describeText}</span>
       </div>
     </div>
   );

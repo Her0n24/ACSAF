@@ -3,7 +3,8 @@ cities = [
 # {"name": "New_York","country": "US", "tz": "America/New_York",  "lat": 40.7128, "lon": -74.0060, "create_dashboard": False},
 # {"name": "Tokyo",    "country": "JP", "tz": "Asia/Tokyo",       "lat": 35.6895, "lon": 139.6917, "create_dashboard": False},
 # {"name": "Sydney",   "country": "AU", "tz": "Australia/Sydney", "lat": -33.8688,"lon": 151.2093, "create_dashboard": False},
-# {"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": True},
+{"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": True},
+{"name": "Reading",  "country": "UK", "tz": "Europe/London",   "lat": 51.4545, "lon": -0.9781, "create_dashboard": False},
 ]
 
 # def run_tests():
@@ -57,11 +58,11 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2025,12,24,0,0,0)  # Simulate today as selected date for testing
+    today = datetime.datetime(2026,1,21,22,0,0)  # Simulate today as selected date for testing
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)
-    run = "00".zfill(2)
+    run = "12".zfill(2) # Change this when simulating as well!
     # run_dt = latest_forecast_hours_run_to_download()
     # run = str(run_dt.hour).zfill(2)
 
