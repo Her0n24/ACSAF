@@ -17,6 +17,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import datetime
+import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from astral.sun import sun, elevation, azimuth
@@ -1809,6 +1810,8 @@ def main():
     for fcst_hour in range(0, 61, 6):
         url = f"https://data.ecmwf.int/forecasts/{run_date_str}/{run}z/aifs-single/0p25/oper/{run_date_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
         download_file(url, f"{input_path}/{run_date_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
+        # Add small delay between downloads to avoid overwhelming the server
+        time.sleep(1)
 
     # Need global dataset for this
     get_cams_aod(today, run, run_date_str, input_path) # type: ignore

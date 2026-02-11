@@ -933,7 +933,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
 
-        local_weight = 0.3
+        local_weight = 0.2
         local_thr = 0.3
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
         
@@ -948,7 +948,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
 
-        local_weight = 0.3
+        local_weight = 0.2
         local_thr = 0.3
 
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
@@ -964,7 +964,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         x = avg_first_three / 100.0  # normalised
         y = avg_path / 100.0         # normalised
 
-        local_weight = 0.3
+        local_weight = 0.2
         local_thr = 0.3
 
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
