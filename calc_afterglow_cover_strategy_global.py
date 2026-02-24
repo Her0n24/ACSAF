@@ -34,7 +34,8 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="cfgrib.xarray_
 warnings.filterwarnings("ignore", category=UserWarning, module="cfgrib.messages")
 logging.basicConfig(
     level=logging.INFO,
-    datefmt= '%Y-%m-%d %H:%M:%S',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
                     )
 from calc_aod_global import calc_aod
 import argparse
@@ -387,16 +388,16 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
     """
     # Check for the first distance where cloud cover falls below the threshold
     below_threshold_index = np.argmax(cloud_cover_data <= threshold)
-    logging.info(f" below_threshold_index: {below_threshold_index}")
+    logging.debug(f" below_threshold_index: {below_threshold_index}")
 
     if below_threshold_index > 0:  # Ensure that the threshold is met somewhere in the data
         distance_below_threshold = np.linspace(0, distance_km, len(cloud_cover_data))[below_threshold_index]
         avg_first_three = np.mean(cloud_cover_data[:3])
         avg_path = np.mean(cloud_cover_data[4:])
-        logging.info(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%.")
-        logging.info(f"The cloud cover falls below {threshold}% at {distance_below_threshold} km.")
+        logging.debug(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%.")
+        logging.debug(f"The cloud cover falls below {threshold}% at {distance_below_threshold} km.")
     else:
-        logging.info(f"Cloud cover does not fall below {threshold}%.")
+        logging.debug(f"Cloud cover does not fall below {threshold}%.")
         distance_below_threshold = np.nan
         avg_first_three = np.mean(cloud_cover_data[:3])
         avg_path = np.mean(cloud_cover_data[4:])
@@ -404,8 +405,8 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
             # Do not assign a default distance here — leave as NaN. get_cloud_extent
             # will decide whether to apply a finite default based on the TCC path
             # statistic (Q3) per user preference.
-            logging.info(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%. Meet Criteria even threshold requirement not met.")
-            logging.info("No distance assigned here; caller may assign a default based on TCC path statistics.")
+            logging.debug(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%. Meet Criteria even threshold requirement not met.")
+            logging.debug("No distance assigned here; caller may assign a default based on TCC path statistics.")
             
     if save_fig:
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -479,11 +480,11 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
         if valid:
             best = max(valid, key=lambda x: x[1])
             selected = best[0]
-            logging.info(f"Selected cloud layer by local concentration: {selected} ({best[1]:.2f}%)")
+            logging.debug(f"Selected cloud layer by local concentration: {selected} ({best[1]:.2f}%)")
 
     if selected is None:
         cloud_lvl_used = 'tcc'
-        logging.info("No lcc/mcc/hcc with local >=60%; using tcc for path selection")
+        logging.debug("No lcc/mcc/hcc with local >=60%; using tcc for path selection")
     else:
         cloud_lvl_used = selected
 
@@ -516,7 +517,7 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
             best = max(candidates, key=lambda x: x[2])
             cloud_base_lvl = best[1]
             cloud_lvl_used = best[0]
-            logging.info(
+            logging.debug(
                 f"Selected cloud base level from layer {best[0]} by max distance {best[2]:.2f} km -> {cloud_base_lvl} m (path avg {best[4]:.2f}%)"
             )
         else:
@@ -524,7 +525,7 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
             for key, base_height in priority_order:
                 if local_cloud_cover_dict.get(key, 0) >= 15:
                     cloud_base_lvl = base_height
-                    logging.info(f"Fallback selected cloud base {cloud_base_lvl} m from {key}")
+                    logging.debug(f"Fallback selected cloud base {cloud_base_lvl} m from {key}")
                     break
 
     # Use the selected layer (or tcc) to compute cloud extent along the azimuth.
@@ -573,9 +574,9 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
         try:
             if not np.isnan(avg_path) and avg_path < threshold:
                 distance_below_threshold = 250  # km default
-                logging.info(f"No layer crossing found; using default distance {distance_below_threshold} km because TCC path Q3 {avg_path:.1f}% < threshold {threshold}%")
+                logging.debug(f"No layer crossing found; using default distance {distance_below_threshold} km because TCC path Q3 {avg_path:.1f}% < threshold {threshold}%")
             else:
-                logging.info("No layer crossing found and TCC path Q3 >= threshold; leaving distance_below_threshold as NaN")
+                logging.debug("No layer crossing found and TCC path Q3 >= threshold; leaving distance_below_threshold as NaN")
         except Exception:
             pass
 
@@ -622,14 +623,14 @@ def geom_condition(cloud_base_height, cloud_extent, LCL):
     R = 6371*10**3  # Radius of the Earth in meters
     lf_ma = 2*np.sqrt(2*R*cloud_base_height) 
     try:
-        logging.info(f"lf_ma: {round(lf_ma)} m")
+        logging.debug(f"lf_ma: {round(lf_ma)} m")
         geom_condition_LCL_used = False
     except ValueError as e:
         logging.error(f"Error: {e}")
         logging.error(f"lf_ma is {lf_ma}")
         logging.error('We will assume lf_ma using LCL')
         lf_ma = 2*np.sqrt(2*R*LCL)
-        logging.info(f"lf_ma: {round(lf_ma)} m")
+        logging.debug(f"lf_ma: {round(lf_ma)} m")
         geom_condition_LCL_used = True
         geom_condition = False
     # If cloud_extent is not a finite number we cannot assert a geometry condition.
@@ -644,7 +645,7 @@ def geom_condition(cloud_base_height, cloud_extent, LCL):
         geom_condition = True
     else:
         geom_condition = False
-    logging.info(f"cloud geometry condition: {geom_condition}")
+    logging.debug(f"cloud geometry condition: {geom_condition}")
     return geom_condition, geom_condition_LCL_used, lf_ma
 
 
@@ -681,9 +682,9 @@ def get_afterglow_time(lat, today, distance_below_threshold, lf_ma, cloud_base_l
         
         actual_afterglow_time = actual_afterglow_time + ((cloud_base_lvl/np.tan(np.deg2rad(5)))/(21*1000/60)) # Accounting for the clouds in visual contact assuming 5 deg elevation
         
-        logging.info(f"Total Afterglow time: {total_afterglow_time} seconds")
-        logging.info(f"Overhead Afterglow time: {overhead_afterglow_time} seconds")
-        logging.info(f"Actual Afterglow time: {actual_afterglow_time} seconds")
+        logging.debug(f"Total Afterglow time: {total_afterglow_time} seconds")
+        logging.debug(f"Overhead Afterglow time: {overhead_afterglow_time} seconds")
+        logging.debug(f"Actual Afterglow time: {actual_afterglow_time} seconds")
     else:
         logging.info(f"Sun ray extent lf_max is less than cloud extent. No afterglow is possible.")
         actual_afterglow_time = 0
@@ -746,16 +747,16 @@ def get_elevation_afterglow(cloud_base_lvl, distance_below_threshold, lf_ma, lcl
     if distance_below_threshold == False or np.isnan(distance_below_threshold):
         logging.info("Cloud cover and elevation estimated using tcc")
         theta = np.arctan((cloud_base_lvl-(lf_ma**2/(2*R)))/lf_ma)
-        logging.info(f"Elevation angle: {np.rad2deg(theta)}°")
+        logging.debug(f"Elevation angle: {np.rad2deg(theta)}°")
         return theta
     elif np.isnan(cloud_base_lvl):
         logging.info("Cloud cover and elevation estimated using tcc and LCL")
         theta = np.arctan((lcl-((distance_below_threshold**2)/(2*R)))/distance_below_threshold)
-        logging.info(f"Elevation angle: {np.rad2deg(theta)}°")
+        logging.debug(f"Elevation angle: {np.rad2deg(theta)}°")
         return theta
     else:
         theta = np.arctan((cloud_base_lvl-(distance_below_threshold**2/(2*R)))/distance_below_threshold)
-        logging.info(f"Elevation angle: {np.rad2deg(theta)}°")
+        logging.debug(f"Elevation angle: {np.rad2deg(theta)}°")
         return theta
 
 
@@ -969,7 +970,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
 
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
 
-        logging.info(f"x_score: {x}, y_score: {y}")
+        logging.debug(f"x_score: {x}, y_score: {y}")
         
         k = 8 # Steepness
         t = 0.5 # Threshold
@@ -980,7 +981,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         logging.warning("cloud_cover_score is NaN, setting to 0")
         cloud_cover_score = 0
     
-    logging.info(f"Cloud cover score: {cloud_cover_score}")
+    logging.debug(f"Cloud cover score: {cloud_cover_score}")
 
     # import pdb; pdb.set_trace()  # Debugging point to inspect variables
     
@@ -1022,7 +1023,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
             logging.info(f"Skipping {name} contribution due to NaN or missing score")
             continue
         contrib = signed_power(score, power) * weight
-        logging.info(f"{name}: score={score}, power={power}, weight={weight}, contrib={contrib}")
+        logging.debug(f"{name}: score={score}, power={power}, weight={weight}, contrib={contrib}")
         numerator += contrib
         weight_sum += weight
 
@@ -1205,12 +1206,12 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     sunset_time_tmr_local = _format_local_time(sunset_tmr, tz)
 
     max_elev = max_solar_elevation(city, datetime.date.today())
-    logging.info(f"Maximum solar elevation in {city.name}: {max_elev:.2f}°")
+    logging.debug(f"Maximum solar elevation in {city.name}: {max_elev:.2f}°")
     
-    logging.info(f"Sunrise azimuth angle in {city.name}: {sunrise_azimuth:.2f}°")
-    logging.info(f"Sunset azimuth angle in {city.name}: {sunset_azimuth:.2f}°")
-    logging.info(f"sunrise time in {city.name}: {sunrise_tdy}")
-    logging.info(f"sunset time in {city.name}: {sunset_tdy}")
+    logging.debug(f"Sunrise azimuth angle in {city.name}: {sunrise_azimuth:.2f}°")
+    logging.debug(f"Sunset azimuth angle in {city.name}: {sunset_azimuth:.2f}°")
+    logging.debug(f"sunrise time in {city.name}: {sunrise_tdy}")
+    logging.debug(f"sunset time in {city.name}: {sunset_tdy}")
 
     # Define a square box enclosing the region of interest
     lat_min, lat_max = lat - 5, lat + 5
@@ -1279,8 +1280,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
         RH_tmr, p_42 = specific_to_relative_humidity(ds_tmr_plev.q, ds_tmr_plev.t, ds_tmr_plev.isobaricInhPa, lat, lon)
         cloud_base_lvl_tmr, z_lcl_tmr, RH_cb_tmr = calc_cloud_base(ds_tmr_2m["t2m"], ds_tmr_2m["d2m"], ds_tmr_plev.t, RH_tmr, ds_tmr_plev.isobaricInhPa, lat, lon)
-        logging.info(f'sunset tdy cloud_base:{cloud_base_lvl_tdy}, z_lcl:{z_lcl_tdy}, RH_cb:{RH_cb_tdy}')
-        logging.info(f'sunset tmr cloud_base: {cloud_base_lvl_tmr}, z_lcl:{z_lcl_tmr}, RH_cb:{RH_cb_tmr}')
+        logging.debug(f'sunset tdy cloud_base:{cloud_base_lvl_tdy}, z_lcl:{z_lcl_tdy}, RH_cb:{RH_cb_tdy}')
+        logging.debug(f'sunset tmr cloud_base: {cloud_base_lvl_tmr}, z_lcl:{z_lcl_tmr}, RH_cb:{RH_cb_tmr}')
 
         (
             distance_below_threshold_tdy,
@@ -1316,10 +1317,10 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
         if np.isnan(cloud_base_lvl_tdy) or cloud_base_lvl_tdy is None:
             cloud_base_lvl_tdy = z_lcl_tdy
-            logging.info("Used LCL level for today's cloud base level")
+            logging.debug("Used LCL level for today's cloud base level")
         if np.isnan(cloud_base_lvl_tmr) or cloud_base_lvl_tmr is None:
             cloud_base_lvl_tmr = z_lcl_tmr
-            logging.info("Used LCL level for tomorrow's cloud base level")
+            logging.debug("Used LCL level for tomorrow's cloud base level")
 
         sunset_profile_payload_tdy = build_profile_payload(distance_axis_tdy, cloud_profiles_tdy)
         sunset_profile_payload_tmr = build_profile_payload(distance_axis_tmr, cloud_profiles_tmr)
@@ -1344,8 +1345,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
 
         likelihood_index_tdy = weighted_likelihood_index(geom_cond_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_tdy, z_lcl_tdy, theta_tdy, avg_first_three_tdy, avg_path_tdy)
         likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], dust_aod550_ratio[1] if dust_aod550_ratio.size>1 else dust_aod550_ratio[0], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
-        logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
-        logging.info(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
+        logging.debug(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
+        logging.debug(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
 
         possible_colors_tdy = possible_colours(cloud_base_lvl_tdy, z_lcl_tdy, total_aod550[0], key_tdy)
         possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], key_tmr)
@@ -1493,8 +1494,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         RH_sunrise_tmr, _ = specific_to_relative_humidity(ds_sunrise_tmr_plev.q, ds_sunrise_tmr_plev.t, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
         orig_cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, RH_cb_sunrise_tmr = calc_cloud_base(ds_sunrise_tmr_2m["t2m"], ds_sunrise_tmr_2m["d2m"], ds_sunrise_tmr_plev.t, RH_sunrise_tmr, ds_sunrise_tmr_plev.isobaricInhPa, lat, lon)
 
-        logging.info(f'sunrise tdy cloud_base (before fallback):{orig_cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
-        logging.info(f'sunrise tmr cloud_base (before fallback): {orig_cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
+        logging.debug(f'sunrise tdy cloud_base (before fallback):{orig_cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
+        logging.debug(f'sunrise tmr cloud_base (before fallback): {orig_cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
 
         # Calculate cloud extent and afterglow parameters for sunrise
         # Use the original value for fallback logic, but always use the returned value from get_cloud_extent for output
@@ -1536,8 +1537,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             logging.info(f"Sunrise tomorrow cloud base level invalid after get_cloud_extent; falling back to LCL: {z_lcl_sunrise_tmr} m")
 
         # Log after fallback
-        logging.info(f'sunrise tdy cloud_base (after fallback):{cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
-        logging.info(f'sunrise tmr cloud_base (after fallback): {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
+        logging.debug(f'sunrise tdy cloud_base (after fallback):{cloud_base_lvl_sunrise_tdy}, z_lcl:{z_lcl_sunrise_tdy}, RH_cb:{RH_cb_sunrise_tdy}')
+        logging.debug(f'sunrise tmr cloud_base (after fallback): {cloud_base_lvl_sunrise_tmr}, z_lcl:{z_lcl_sunrise_tmr}, RH_cb:{RH_cb_sunrise_tmr}')
 
         sunrise_profile_payload_tdy = build_profile_payload(distance_axis_sunrise_tdy, cloud_profiles_sunrise_tdy)
         sunrise_profile_payload_tmr = build_profile_payload(distance_axis_sunrise_tmr, cloud_profiles_sunrise_tmr)
@@ -1557,8 +1558,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         likelihood_index_sunrise_tdy = weighted_likelihood_index(geom_cond_sunrise_tdy, total_aod550, dust_aod550_ratio, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, theta_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy)
         likelihood_index_sunrise_tmr = weighted_likelihood_index(geom_cond_sunrise_tmr, total_aod550, dust_aod550_ratio, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, theta_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr)
         
-        logging.info(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
-        logging.info(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
+        logging.debug(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
+        logging.debug(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
 
         possible_colors_sunrise_tdy = possible_colours(cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, total_aod550, key_sunrise_tdy)
         possible_colors_sunrise_tmr = possible_colours(cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, total_aod550, key_sunrise_tmr)
@@ -1843,7 +1844,8 @@ def main():
     get_cams_aod(today, run, run_date_str, input_path) # type: ignore
 
     # Load city data
-    df = pd.read_csv('worldcities_info_wtimezone.csv', header=0, delimiter=',')
+    csv_path = os.path.join(os.path.dirname(__file__), 'worldcities_info_wtimezone.csv')
+    df = pd.read_csv(csv_path, header=0, delimiter=',')
 
     city_jobs = []
     for _, row in df.iterrows():

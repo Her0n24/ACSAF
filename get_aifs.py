@@ -16,9 +16,11 @@ from urllib3.exceptions import ProtocolError
 import os
 import logging
 import time
+import sys
 logging.basicConfig(
     level=logging.INFO,
-    datefmt= '%Y-%m-%d %H:%M:%S',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
                     )
 
 # Define run to 2 digits
@@ -73,12 +75,14 @@ def download_file(url, local_filename, max_retries: int = 4, backoff_seconds: in
 
                 total_size = int(r.headers.get('content-length', 0))
                 try:
+                    # Disable tqdm progress bar when not in interactive terminal (e.g., cron)
                     with open(tmp_name, 'wb') as f, tqdm(
                         desc="Downloading",
                         total=total_size,
                         unit='B',
                         unit_scale=True,
                         unit_divisor=1024,
+                        disable=not sys.stdout.isatty(),
                     ) as bar:
                         for chunk in r.iter_content(chunk_size=8192):
                             if chunk:  # filter out keep-alive new chunks
