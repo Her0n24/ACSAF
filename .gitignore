@@ -35,4 +35,4 @@ Thumbs.db
 *.yml
 *.yaml
 *.env
-.pyc
+*.pyc
