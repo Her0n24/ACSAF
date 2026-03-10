@@ -47,7 +47,7 @@ def parse_args():
                         help="Specify the date in YYYYMMDD format (default: today)")
     parser.add_argument('--run', type=str, default=None,
                         help="Optional forecast run hour (e.g. 00 or 12). Defaults to the latest available run")
-    parser.add_argument('--workers', type=int, default=2,
+    parser.add_argument('--workers', type=int, default=8,
                         help="Maximum number of parallel city workers (default: 2 on Raspberry Pi)")
     return parser.parse_args()
 
@@ -935,11 +935,11 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         y = avg_path / 100.0         # normalised
 
         local_weight = 0.2
-        local_thr = 0.3
+        local_thr = 0.5
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
         
         k = 8 # Steepness
-        t = 0.4 # Threshold
+        t = 0.5 # Threshold
         cloud_cover_score = (1-local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
     
     if cloud_base_lvl < 4000 and cloud_base_lvl >= 2000:
@@ -950,12 +950,12 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         y = avg_path / 100.0         # normalised
 
         local_weight = 0.2
-        local_thr = 0.3
+        local_thr = 0.5
 
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
         
         k = 8 # Steepness
-        t = 0.4 # Threshold
+        t = 0.5 # Threshold
         cloud_cover_score = (1-local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
         
     if cloud_base_lvl >= 4000:
@@ -966,7 +966,7 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         y = avg_path / 100.0         # normalised
 
         local_weight = 0.2
-        local_thr = 0.3
+        local_thr = 0.5
 
         local_component = local_weight * (x - local_thr) / (1 - local_thr)
 
@@ -995,10 +995,10 @@ def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lv
         theta_weight = 0.05   
     else:
         # Constants
-        geom_condition_weight = 0.6
+        geom_condition_weight = 0.4
         aod_weight = 0
         dust_aod_ratio_weight = 0
-        cloud_cover_weight = 0.3
+        cloud_cover_weight = 0.5
         cloud_base_lvl_weight = 0.1
         theta_weight = 0.0
 

@@ -106,6 +106,14 @@ def download_file(url, local_filename, max_retries: int = 4, backoff_seconds: in
                     sleep_time = backoff_seconds * (2 ** (attempt - 1))
                     time.sleep(sleep_time)
                     continue
+        except requests.exceptions.ConnectionError as ex:
+            if attempt > max_retries:
+                logging.error(f"Failed to download {url}: {ex}")
+                return
+            sleep_time = backoff_seconds * (2 ** (attempt - 1))
+            logging.warning(f"Connection error for {url}: {ex}. Retrying in {sleep_time} seconds... (Attempt {attempt}/{max_retries})")
+            time.sleep(sleep_time)
+            continue
         except Exception as ex:
             logging.error(f"Failed to download {url}: {ex}")
             return

@@ -11,6 +11,10 @@
 *.sql
 *.sqlite
 
+# Result output
+######################
+*.json
+
 # OS generated files #
 ######################
 .DS_Store
@@ -31,3 +35,4 @@ Thumbs.db
 *.yml
 *.yaml
 *.env
+.pyc
