@@ -1,27 +1,33 @@
 import { useState } from "react";
 
 const changelogEntries = [
-    {
-    date: "2025.12.23",
+  {
+    date: "2026.03.19",
     changes: [
-      " Main Script: Logic overhaul of the cloud cover score",
-      "Display: Now correctly displays cloud base level inferred from LCL if cloud base level cannot be determined from cloud cover",
+      "Display: Now supports Traditional Chinese.",
     ],
   },
   {
+  date: "2026.01.11",
+  changes: [
+    "Main Script: Changed the assumed elevation angle that can be viewed by an observer used in the computation of actual afterglow time from 15 to 5 degrees",
+    "Main Script: Increased RH threshold for determining cloud base for liquid phase clouds (cloud layer where temperature is above 0 deg) from 85 to 95%. For supposed ice phase clouds, RH threshold remains at 80%",
+    "Display: Now, score won’t be displayed when there is no cloud cover",
+    "Display: Emphasis this is a score for CLOUD afterglow in the home page"
+  ],
+  },
+    {
     date: "2025.12.24",
     changes: [
       " Main Script: Fixed an issue where final scores used wrong AOD value. AOD scores and displayed AOD were global averages instead of city specific values",
       "Main Script: Changed AOD score logic"
     ],
   },
-  {
-    date: "2026.1.11",
+    {
+    date: "2025.12.23",
     changes: [
-      "Main Script: Changed the assumed elevation angle that can be viewed by an observer used in the computation of actual afterglow time from 15 to 5 degrees",
-      "Main Script: Increased RH threshold for determining cloud base for liquid phase clouds (cloud layer where temperature is above 0 deg) from 85 to 95%. For supposed ice phase clouds, RH threshold remains at 80%",
-      "Display: Now, score won’t be displayed when there is no cloud cover",
-      "Display: Emphasis this is a score for CLOUD afterglow in the home page"
+      " Main Script: Logic overhaul of the cloud cover score",
+      "Display: Now correctly displays cloud base level inferred from LCL if cloud base level cannot be determined from cloud cover",
     ],
   }
 ];

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { fetchForecast } from "../api/client";
+import { useLanguage } from "../context/LanguageContext";
+import { t } from "../translations";
 
 type DayKey = "tdy" | "tmr";
 type Mode = "sunset" | "sunrise";
@@ -42,23 +44,23 @@ const METRIC_ORDER: string[] = [
 ];
 
 const METRIC_LABEL_OVERRIDES: Record<string, string> = {
-  afterglow_time: "Afterglow Duration (min:s)",
-  cloud_present: "Cloud Present",
-  cloud_base_lvl: "Cloud Base Level (m)",
-  cloud_local_cover: "Local Cloud Cover (%)",
-  avg_path: "Path Cloud Cover (%)",
-  cloud_layer_key: "Cloud Layer Reasoning",
-  azimuth: "Azimuth (deg)",
-  total_aod550: "Total AOD550",
-  dust_aod550: "Dust AOD550",
-  geom_condition: "Geom Condition",
-  hcc_condition: "HCC Condition",
-  geom_condition_LCL_used: "LCL Used"
+  afterglow_time: "metric.afterglowTime",
+  cloud_present: "metric.cloudPresent",
+  cloud_base_lvl: "metric.cloudBaseLevel",
+  cloud_local_cover: "metric.cloudLocalCover",
+  avg_path: "metric.avgPath",
+  cloud_layer_key: "metric.cloudLayerReasoning",
+  azimuth: "metric.azimuth",
+  total_aod550: "metric.totalAod550",
+  dust_aod550: "metric.dustAod550",
+  geom_condition: "metric.geomCondition",
+  hcc_condition: "metric.hccCondition",
+  geom_condition_LCL_used: "metric.geomConditionLcl"
 };
 
 const DAY_LABEL: Record<DayKey, string> = {
-  tdy: "Today",
-  tmr: "Tomorrow",
+  tdy: "forecast.today",
+  tmr: "forecast.tomorrow",
 };
 const EMPTY_FORECAST: ForecastDoc = {};
 
@@ -69,6 +71,7 @@ export default function Forecast() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("sunset");
   const [profileDay, setProfileDay] = useState<DayKey>("tdy");
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!city) {
@@ -92,9 +95,9 @@ export default function Forecast() {
   }, [city]);
 
   const doc = data ?? EMPTY_FORECAST;
-  const overviewItems = useMemo(() => buildOverview(doc), [doc]);
-  const sunsetRows = useMemo(() => buildOutlookRows(doc, "sunset"), [doc]);
-  const sunriseRows = useMemo(() => buildOutlookRows(doc, "sunrise"), [doc]);
+  const overviewItems = useMemo(() => buildOverview(doc, language), [doc, language]);
+  const sunsetRows = useMemo(() => buildOutlookRows(doc, "sunset", language), [doc, language]);
+  const sunriseRows = useMemo(() => buildOutlookRows(doc, "sunrise", language), [doc, language]);
   const activeRows = mode === "sunset" ? sunsetRows : sunriseRows;
   const likelihoodToday = getLikelihood(doc, mode, "tdy");
   const likelihoodTomorrow = getLikelihood(doc, mode, "tmr");
@@ -106,14 +109,14 @@ export default function Forecast() {
   const activeProfile = useMemo(() => getCloudProfile(doc, mode, profileDay), [doc, mode, profileDay]);
 
   if (loading) {
-    return <FullScreenMessage message="Loading forecast…" />;
+    return <FullScreenMessage message={t("forecast.loadingForecast", language)} />;
   }
 
   if (error || !data) {
     return (
       <FullScreenMessage
-        message={error ?? "No forecast available."}
-        actionLabel="Back to search"
+        message={error ?? t("forecast.noForecast", language)}
+        actionLabel={t("forecast.backToSearch", language)}
         actionHref="/"
       />
     );
@@ -127,19 +130,19 @@ export default function Forecast() {
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
         <div className="flex flex-col gap-3">
           <Link to="/" className="text-sm text-white/70 hover:text-white">
-            ← Back to search
+            ← {t("forecast.backToSearch", language)}
           </Link>
-          <p className="text-xs uppercase tracking-[0.5em] text-white/60">City Forecast</p>
+          <p className="text-xs uppercase tracking-[0.5em] text-white/60">{t("forecast.cityForecast", language)}</p>
           <h1 className="text-4xl font-semibold text-white">{data.city}, {data.country}</h1>
         </div>
 
         <section className="rounded-[32px] border border-white/15 bg-white/10 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
           <div className="flex flex-col gap-6">
-            <ModeSlider active={mode} onChange={setMode} />
+            <ModeSlider active={mode} onChange={setMode} language={language} />
 
             <div className="grid gap-4 md:grid-cols-2">
-              <LikelihoodCard label="Today" value={likelihoodToday} noClouds={cloudPresentToday === false} />
-              <LikelihoodCard label="Tomorrow" value={likelihoodTomorrow} subtle noClouds={cloudPresentTomorrow === false} />
+              <LikelihoodCard label={t("forecast.today", language)} value={likelihoodToday} noClouds={cloudPresentToday === false} language={language} />
+              <LikelihoodCard label={t("forecast.tomorrow", language)} value={likelihoodTomorrow} subtle noClouds={cloudPresentTomorrow === false} language={language} />
             </div>
 
             {(possibleColors.length > 0 || modelRun) && (
@@ -151,7 +154,7 @@ export default function Forecast() {
                         key={color}
                         className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/80"
                       >
-                        {color}
+                        {translateColorName(color, language)}
                       </span>
                     ))}
                   </div>
@@ -159,7 +162,7 @@ export default function Forecast() {
 
                 {modelRun && (
                   <p className="text-xs uppercase tracking-[0.15em] text-white/60 sm:text-right">
-                    Model run
+                    {t("forecast.modelRun", language)}
                     <span className="ml-2 text-white/90">{modelRun}Z</span>
                   </p>
                 )}
@@ -170,7 +173,7 @@ export default function Forecast() {
 
         {overviewItems.length > 0 && (
           <section className="rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-            <h2 className="mb-4 text-2xl font-semibold text-white">Timing (Local Time)</h2>
+            <h2 className="mb-4 text-2xl font-semibold text-white">{t("forecast.timingLocalTime", language)}</h2>
             <dl className="grid gap-4 sm:grid-cols-2">
               {overviewItems.map(({ label, value }) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -184,41 +187,39 @@ export default function Forecast() {
 
         <section className="rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
           <header className="mb-4 flex flex-col gap-1">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/60">{mode === "sunset" ? "Sunset" : "Sunrise"} metrics</p>
-            <h2 className="text-2xl font-semibold text-white">Atmospheric Condition</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/60">{mode === "sunset" ? t("forecast.sunset", language) : t("forecast.sunrise", language)} {t("forecast.metrics", language)}</p>
+            <h2 className="text-2xl font-semibold text-white">{t("forecast.atmosphericCondition", language)}</h2>
           </header>
           <OutlookTable
             rows={activeRows}
-            emptyMessage={`No ${mode} metrics available.`}
+            emptyMessage={`No ${mode} ${t("forecast.metrics", language).toLowerCase()} available.`}
+            language={language}
           />
         </section>
 
         <section className="rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
           <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/60">{mode === "sunset" ? "Sunset" : "Sunrise"} cloud profile</p>
-              <h2 className="text-2xl font-semibold text-white">Cloud Cover Along Azimuth</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/60">{mode === "sunset" ? t("forecast.sunset", language) : t("forecast.sunrise", language)} {t("forecast.cloudProfile", language)}</p>
+              <h2 className="text-2xl font-semibold text-white">{t("forecast.cloudCoverAlongAzimuth", language)}</h2>
             </div>
-            <DayToggle value={profileDay} onChange={setProfileDay} />
+            <DayToggle value={profileDay} onChange={setProfileDay} language={language} />
           </header>
 
           {activeProfile ? (
             <>
-              <CloudProfileChart profile={activeProfile} mode={mode} day={profileDay} />
+              <CloudProfileChart profile={activeProfile} mode={mode} day={profileDay} language={language} />
               <p className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
-                For the definitions of Low cloud cover (LCC), Medium cloud cover (MCC), High cloud cover (HCC), and Total cloud cover (TCC), refer to the ECMWF parameter Database.
-                The algorithm generally uses the dashed 60% line as a threshold to determine cloud cover. 
+                {t("forecast.cloudInfo", language)}
                 <p>&nbsp;</p>
-                Geom condition LCL - True or False. Whether the lifted condensation level (LCL) is used to infer the cloud base when the cloud cover is low or cannot be determined
-                from the AIFS output.
+                {t("forecast.geomCondition", language)}
                 <p>&nbsp;</p>
-                Total AOD550 is - Dimensionless quantity. Total Aerosol Optical Depth at 550 nm wavelength. Generally, higher means stronger extinction of sun rays leading to less vibrant cloud afterglow. 
-                This effect is especially prominent on low clouds. The calculation assumes AOD550 does not vary with distance (local vertical path is considered).
+                {t("forecast.aodInfo", language)}
               </p>
             </>
           ) : (
             <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/70">
-              No {mode} cloud profile available for {DAY_LABEL[profileDay].toLowerCase()}.
+              {t("forecast.noCloudProfile", language)} {t(DAY_LABEL[profileDay], language).toLowerCase()}.
             </p>
           )}
         </section>
@@ -297,7 +298,7 @@ function toNumberArray(value: unknown): number[] {
     .filter((entry): entry is number => entry !== null);
 }
 
-function DayToggle({ value, onChange }: { value: DayKey; onChange: (day: DayKey) => void }) {
+function DayToggle({ value, onChange, language }: { value: DayKey; onChange: (day: DayKey) => void; language: "en" | "zh" }) {
   return (
     <div className="inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-xs text-white/80">
       {( ["tdy", "tmr"] as DayKey[] ).map((day) => {
@@ -311,7 +312,7 @@ function DayToggle({ value, onChange }: { value: DayKey; onChange: (day: DayKey)
               selected ? "bg-white/30 text-slate-900" : "text-white/70 hover:text-white"
             }`}
           >
-            {DAY_LABEL[day]}
+            {t(DAY_LABEL[day], language)}
           </button>
         );
       })}
@@ -319,7 +320,7 @@ function DayToggle({ value, onChange }: { value: DayKey; onChange: (day: DayKey)
   );
 }
 
-function CloudProfileChart({ profile, mode, day }: { profile: CloudProfile; mode: Mode; day: DayKey }) {
+function CloudProfileChart({ profile, mode, day, language }: { profile: CloudProfile; mode: Mode; day: DayKey; language: "en" | "zh" }) {
   const width = 650;
   const height = 280;
   const padding = 40;
@@ -369,7 +370,7 @@ function CloudProfileChart({ profile, mode, day }: { profile: CloudProfile; mode
   return (
     <div className="space-y-3">
       <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Cloud cover profile for ${mode} ${DAY_LABEL[day]}`} className="w-full">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${t("forecast.cloudProfile", language)} for ${mode} ${t(DAY_LABEL[day], language)}`} className="w-full">
           <defs>
             <linearGradient id="gridFade" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
@@ -438,23 +439,23 @@ function CloudProfileChart({ profile, mode, day }: { profile: CloudProfile; mode
   );
 }
 
-function buildOverview(doc: ForecastDoc): Array<{ label: string; value: string }> {
+function buildOverview(doc: ForecastDoc, language: "en" | "zh"): Array<{ label: string; value: string }> {
   if (!doc) {
     return [];
   }
 
   const candidateKeys: Array<{ key: string; label: string }> = [
-    { key: "forecast_time", label: "Forecast time" },
-    { key: "sunrise_time_tdy", label: "Sunrise (today)" },
-    { key: "sunset_time_tdy", label: "Sunset (today)" },
+    { key: "forecast_time", label: "forecast.forecastTime" },
+    { key: "sunrise_time_tdy", label: "forecast.sunriseToday" },
+    { key: "sunset_time_tdy", label: "forecast.sunsetToday" },
   ];
 
   return candidateKeys
     .filter(({ key }) => key in doc)
-    .map(({ key, label }) => ({ label, value: formatValue(doc[key]) }));
+    .map(({ key, label }) => ({ label: t(label, language), value: formatValue(doc[key]) }));
 }
 
-function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): OutlookRow[] {
+function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise", language: "en" | "zh"): OutlookRow[] {
   const excluded = new Set([
     "cloud_profiles",
     "lf_ma",
@@ -479,9 +480,11 @@ function buildOutlookRows(doc: ForecastDoc, prefix: "sunset" | "sunrise"): Outlo
 
     const day = (dayMatch?.[1] as DayKey | undefined) ?? "tdy";
 
-    const displayLabel = METRIC_LABEL_OVERRIDES[metricKey] ?? toTitle(metricKey);
+    const displayLabel = METRIC_LABEL_OVERRIDES[metricKey] ? t(METRIC_LABEL_OVERRIDES[metricKey], language) : toTitle(metricKey);
     const current = rows.get(metricKey) ?? { metric: displayLabel };
-    current[day] = Array.isArray(value) ? value.map((v) => formatMetricValue(metricKey, v)).join(", ") : formatMetricValue(metricKey, value);
+    current[day] = Array.isArray(value)
+      ? value.map((v) => formatMetricValue(metricKey, v, language)).join(", ")
+      : formatMetricValue(metricKey, value, language);
     rows.set(metricKey, current);
   });
 
@@ -529,7 +532,7 @@ function isNumeric(value: unknown): boolean {
   return false;
 }
 
-function formatMetricValue(metricKey: string, value: unknown): string {
+function formatMetricValue(metricKey: string, value: unknown, language: "en" | "zh"): string {
   if (value === null || value === undefined) return "—";
 
   // Cloud base level rounded to nearest 100 m
@@ -568,7 +571,11 @@ function formatMetricValue(metricKey: string, value: unknown): string {
     return formatValue(value);
   }
 
-  if (Array.isArray(value)) return value.map((v) => formatMetricValue(metricKey, v)).join(", ");
+  if (metricKey === "cloud_layer_key" && typeof value === "string") {
+    return translateColorName(value, language);
+  }
+
+  if (Array.isArray(value)) return value.map((v) => formatMetricValue(metricKey, v, language)).join(", ");
   return formatValue(value);
 }
 
@@ -578,7 +585,7 @@ function toTitle(value: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function OutlookTable({ rows, emptyMessage }: { rows: OutlookRow[]; emptyMessage: string }) {
+function OutlookTable({ rows, emptyMessage, language }: { rows: OutlookRow[]; emptyMessage: string; language?: "en" | "zh" }) {
   if (rows.length === 0) {
     return <p className="text-sm text-white/70">{emptyMessage}</p>;
   }
@@ -589,13 +596,13 @@ function OutlookTable({ rows, emptyMessage }: { rows: OutlookRow[]; emptyMessage
         <thead className="bg-white/10 text-xs uppercase tracking-wide text-white/70">
           <tr>
             <th scope="col" className="px-4 py-3 font-semibold">
-              Metric
+              {language ? t("forecast.metricHeader", language) : "Metric"}
             </th>
             <th scope="col" className="px-4 py-3 font-semibold">
-              {DAY_LABEL.tdy}
+              {language ? t(DAY_LABEL.tdy, language) : DAY_LABEL.tdy}
             </th>
             <th scope="col" className="px-4 py-3 font-semibold">
-              {DAY_LABEL.tmr}
+              {language ? t(DAY_LABEL.tmr, language) : DAY_LABEL.tmr}
             </th>
           </tr>
         </thead>
@@ -654,26 +661,26 @@ function getCloudPresent(doc: ForecastDoc, mode: Mode, day: DayKey): boolean | n
   return null;
 }
 
-function describeGlow(value: number | null): string {
+function describeGlow(value: number | null, language: "en" | "zh"): string {
   if (value === null || Number.isNaN(value)) {
-    return "Awaiting glow rating";
+    return t("forecast.awaiting", language);
   }
   if (value <= 0) {
-    return "No glow";
+    return t("forecast.noGlow", language);
   }
   if (value <= 15) {
-    return "Dull glow";
+    return t("forecast.dullGlow", language);
   }
   if (value <= 40) {
-    return "Moderate glow";
+    return t("forecast.moderateGlow", language);
   }
   if (value <= 60) {
-    return "Vivid glow";
+    return t("forecast.vividGlow", language);
   }
   if (value <= 75) {
-    return "Flaming glow";
+    return t("forecast.flamingGlow", language);
   }
-  return "Flamboyant glow";
+  return t("forecast.flamboyantGlow", language);
 }
 
 function buildGradient(colors: string[]): string | null {
@@ -702,7 +709,13 @@ function mapColorName(name: string): string {
   return presets[name] ?? name;
 }
 
-function ModeSlider({ active, onChange }: { active: Mode; onChange: (mode: Mode) => void }) {
+function translateColorName(name: string, language: "en" | "zh"): string {
+  const key = `color.${name.toLowerCase()}`;
+  const translated = t(key, language);
+  return translated === key ? name : translated;
+}
+
+function ModeSlider({ active, onChange, language }: { active: Mode; onChange: (mode: Mode) => void; language: "en" | "zh" }) {
   const options: Mode[] = ["sunset", "sunrise"];
   return (
     <div className="relative flex rounded-full border border-white/15 bg-white/5 p-1 text-sm text-white/70">
@@ -719,7 +732,7 @@ function ModeSlider({ active, onChange }: { active: Mode; onChange: (mode: Mode)
                 : "text-white/70 hover:text-white"
             }`}
           >
-            {option === "sunset" ? "Sunset" : "Sunrise"}
+            {option === "sunset" ? t("forecast.sunset", language) : t("forecast.sunrise", language)}
           </button>
         );
       })}
@@ -727,8 +740,8 @@ function ModeSlider({ active, onChange }: { active: Mode; onChange: (mode: Mode)
   );
 }
 
-function LikelihoodCard({ label, value, subtle, noClouds }: { label: string; value: number | null; subtle?: boolean; noClouds?: boolean }) {
-  const describeText = noClouds ? "No clouds" : describeGlow(value);
+function LikelihoodCard({ label, value, subtle, noClouds, language }: { label: string; value: number | null; subtle?: boolean; noClouds?: boolean; language: "en" | "zh" }) {
+  const describeText = noClouds ? t("forecast.noClouds", language) : describeGlow(value, language);
   return (
     <div
       className={`rounded-[28px] border border-white/15 p-5 backdrop-blur-2xl ${

@@ -66,8 +66,8 @@ def build_connection():
 	raise last_exc or RuntimeError("No MongoDB URI available")
 
 
-def main():
-	args = parse_args()
+def cleanup_oldest_runs(limit: int = 1, yes: bool = False):
+	"""Delete oldest forecast runs from MongoDB, or print a dry-run summary."""
 	client = build_connection()
 	db = client[db_name]
 	coll = db.get_collection("forecast_data")
@@ -82,7 +82,7 @@ def main():
 			continue
 		if not oldest_run_times or oldest_run_times[-1] != rt:
 			oldest_run_times.append(rt)
-		if len(oldest_run_times) >= args.limit:
+		if len(oldest_run_times) >= limit:
 			break
 
 	if not oldest_run_times:
@@ -95,9 +95,9 @@ def main():
 		count = coll.count_documents({"run_time": rt})
 		print(f" - {rt}  (documents: {count})")
 
-	if not args.yes:
+	if not yes:
 		print("Dry-run mode: no documents were deleted. Re-run with --yes to delete the above runs.")
-		return
+		return 0
 
 	# Perform deletions
 	total_deleted = 0
@@ -107,6 +107,12 @@ def main():
 		total_deleted += res.deleted_count
 
 	print(f"Total documents deleted: {total_deleted}")
+	return total_deleted
+
+
+def main():
+	args = parse_args()
+	cleanup_oldest_runs(limit=args.limit, yes=args.yes)
 
 
 if __name__ == "__main__":

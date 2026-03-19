@@ -10,6 +10,8 @@ from pymongo import MongoClient, UpdateOne
 from pymongo.errors import OperationFailure, ServerSelectionTimeoutError, ConfigurationError
 from pymongo.write_concern import WriteConcern
 import os, sys 
+from free_space import cleanup_oldest_runs
+
 # Add parent folder (/Users/hng/Documents/dev/Afterglow) to sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
@@ -86,6 +88,9 @@ def latest_forecast_hours_run_to_download() -> datetime.datetime:
 
 
 cli_args = parse_args()
+print("Cleaning space before upload by deleting 1 oldest run.")
+cleanup_oldest_runs(limit=1, yes=True)
+
 if cli_args.date and cli_args.run:
     run_datetime = datetime.datetime.strptime(
         f"{cli_args.date}{cli_args.run}", "%Y%m%d%H"
@@ -135,7 +140,7 @@ if client is None:
     print("All connection attempts failed:")
     for label, ok, msg in attempts:
         print(f" - {label}: {'OK' if ok else 'FAILED'} {msg or ''}")
-    raise last_exception
+    raise last_exception or RuntimeError("MongoDB connection failed for all configured URIs.")
 
 afterglow_db = client[db_name]
 collections = afterglow_db.list_collection_names()
