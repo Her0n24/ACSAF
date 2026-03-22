@@ -1,6 +1,6 @@
 """
-Project ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow forecaster
-
+Project ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow forecaster v2
+Cloud and Aerosol Trasmittance Physical Model with realistic ray path
 This script uses the ECMWF AIFS cloud cover data and CAMS AOD550 data to visualize the cloud cover maps and calculate various parameters related to afterglow.
 
 Data availability (HH:MM)
@@ -40,26 +40,38 @@ logging.basicConfig(
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
 from calc_aod_global import calc_aod
+from CONST import (
+    MAX_CLOUD_HEIGHT,
+    VIEW_ELEVATION_ANGLE,
+    TIMESTEP_ARRAY,
+    ALPHA_COEFF,
+    LCC_HMIN,
+    LCC_HMAX,
+    MCC_HMIN,
+    MCC_HMAX,
+    HCC_HMIN,
+    HCC_HMAX,
+    LCC_HEIGHT,
+    MCC_HEIGHT,
+    HCC_HEIGHT,
+    DESIRED_NUM_POINTS,
+    TAU_EFF_MAP,
+    H_AERO_KM_DEFAULT,
+    DEFAULT_AZIMUTH_LINE_DISTANCE_KM,
+    ASSUMED_DISTANCE_BELOW_THRESHOLD_KM,
+    DEBUG_TS,
+    I_RAY_THRESHOLD_DEFAULT,
+    R_EARTH_M,
+    RAY_NORM_CONSANT,
+)
 import argparse
 from functools import lru_cache
 
-max_cloud_height = 9000 # in meters
-view_elevation_angle = 5 # in degrees, the assumed minimum elevation angle that an observer can see the afterglow, lower means nearer to horizon, obstructed by ground objects.
-
-m = max_cloud_height/(np.arctan(view_elevation_angle*np.pi/180)) # in m, how far distant cloud at the max_cloud_height should we consider for computation
-
-t = np.arange(0, 1081, 60) # time in seconds, calculation every 60 seconds up to 18 minutes after sunset/sunrise for all possible paths
-
-alpha = -5.14*10**(-5)*t # angle of the sun ray as a function of time.
-
-LCC_HMIN, LCC_HMAX = 0000, 1999
-MCC_HMIN, MCC_HMAX = 2000, 5999
-HCC_HMIN, HCC_HMAX = 6000, 9000
-
-# Presumed cloud layer heights for computation
-LCC_HEIGHT = 1000  # 1 km
-MCC_HEIGHT = 4000  # 4 km
-HCC_HEIGHT = 9000  # 9 km
+# Derived runtime values
+# `TIMESTEP_ARRAY` and `ALPHA_COEFF` are imported from CONST; compute `alpha` here
+m = MAX_CLOUD_HEIGHT / (np.arctan(VIEW_ELEVATION_ANGLE * np.pi / 180.0))
+t = TIMESTEP_ARRAY
+alpha = ALPHA_COEFF * t
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Afterglow forecast")
@@ -349,7 +361,7 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, run_date_str, run, title_pre
     plt.savefig(f'{save_path}' + f"/{run_date_str}{run}0000-{fcst_hr}h-AIFS_cloud_cover_{city.name}.png")
     plt.close()
 
-def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=25):
+def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=DESIRED_NUM_POINTS):
     """
     Generate a series of points along a given azimuth line (in degrees) starting from the given coordinates.
     
@@ -379,7 +391,7 @@ def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=25):
 
     return lons, lats
 
-def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km, num_points=25):
+def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km, num_points=DESIRED_NUM_POINTS):
     """
     Extract cloud cover data along an azimuth line over a certain distance.
     
@@ -402,7 +414,7 @@ def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km,
     return cloud_cover_data
 
 
-def extract_cloud_cover_with_ray_tracing(cloud_layers_da, lons, lats, distances_m, cloud_base_lvl, R_earth_m=6.371e6):
+def extract_cloud_cover_with_ray_tracing(cloud_layers_da, lons, lats, distances_m, cloud_base_lvl, R_earth_m=R_EARTH_M):
     """
     Extract cloud cover along an azimuth considering parabolic ray paths at multiple timesteps.
     
@@ -569,8 +581,8 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
         distances_m = np.asarray(distances_m, dtype=float)
 
     num_timesteps = int(ray_cloud_profile.shape[0])
-    # Force sampling to the ECMWF AIFS support (~0.25 deg -> 25 support index)
-    desired_num_points = 25
+    # Force sampling to the ECMWF AIFS support (~0.25 deg -> DESIRED_NUM_POINTS) # 25
+    desired_num_points = int(DESIRED_NUM_POINTS)
     orig_num_points = int(ray_cloud_profile.shape[1])
     total_transmitted_light = np.ones(num_timesteps)
     aerosol_trans_array = np.ones(num_timesteps)
@@ -592,9 +604,8 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
             # create placeholder; actual ds_km used per-timestep below
             ds_km = None
 
-    # Effective optical depths per layer (lcc, mcc, hcc) as provided
-    # Effective optical depths per layer (lcc, mcc, hcc)
-    tau_eff_map = {'lcc': 2.0, 'mcc': 1.0, 'hcc': 0.3}
+    # Effective optical depths per layer come from constants
+    tau_eff_map = TAU_EFF_MAP
 
     # For each timestep, calculate path transmittance using per-grid-box cloud cover
     # Resample (interpolate) ray heights and cloud profile to `desired_num_points` along the ray
@@ -665,8 +676,8 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
         logging.debug(f"ts={ts}: cloud_points={cloud_points}, min_factor={min_factor:.6f}, T_cloud={T:.6e}")
 
         # --- Aerosol along-path transmittance limited to aerosol layer height ---
-        # Assume aerosol layer top (km). Use 3 km default unless overridden elsewhere.
-        H_aero_km = 3
+        # Assume aerosol layer top (km). Use default from constants unless overridden elsewhere.
+        H_aero_km = float(H_AERO_KM_DEFAULT)
         H_aero_m = H_aero_km * 1000.0
         T_aero = 1.0
         try:
@@ -703,7 +714,7 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
 
         # Final transmitted light: cloud * aerosol (aerosol only along slant below H_aero)
         # If user requested, dump detailed per-point diagnostics for a particular timestep
-        debug_ts = 14
+        debug_ts = DEBUG_TS
         if ts == debug_ts:
             per_point_lines = []
             for pi in range(len(heights_interp)):
@@ -753,39 +764,10 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
     return total_transmitted_light, aerosol_trans_array
 
 
-def calculate_event_score(total_transmitted_light, normalize_max=1.0, I_ray_threshold=0.1):
-    """
-    Calculate event score based on maximum I_ray (transmitted light).
-    parameter normalize_max refers to the normalization of the I_ray_max (the maximum transmitted light), not the final event score. 
-    It is used to scale I_ray_max before mapping it to a 0–100 score.
-    I_ray is normalized to 0.8 max, and score ranges 0-100.
-    If I_ray < threshold, score is capped to 0.
-    
-    Parameters:
-    - total_transmitted_light: 1D array (num_timesteps,) - transmittance values
-    - normalize_max: Maximum value to normalize I_ray to (default 0.8)
-    - I_ray_threshold: Minimum I_ray to generate non-zero score (default 0.05)
-    
-    Returns:
-    - I_ray_max: Maximum transmitted light value across all timesteps
-    - event_score: Score from 0-100, or 0 if I_ray < threshold
-    """
-    I_ray_max = np.nanmax(total_transmitted_light)
-    
-    if I_ray_max < I_ray_threshold:
-        event_score = 0
-        logging.info(f"I_ray={I_ray_max:.4f} below threshold {I_ray_threshold}, score capped to 0")
-    else:
-        # Normalize I_ray to [0, normalize_max]
-        normalized_I_ray = (I_ray_max / 1.0) * normalize_max  # Assuming max transmittance is 1.0
-        # Map normalized value to 0-100 score
-        event_score = int(round((normalized_I_ray / normalize_max) * 100))
-        event_score = np.clip(event_score, 0, 100)
-    
-    return I_ray_max, event_score
+# Old scoring function removed. Scoring is now handled inline in process_event_with_ray_tracing.
 
 
-def calculate_afterglow_time_from_ray_tracing(total_transmitted_light, I_ray_threshold=0.05):
+def calculate_afterglow_time_from_ray_tracing(total_transmitted_light, I_ray_threshold=I_RAY_THRESHOLD_DEFAULT):
     """
     Calculate afterglow time based on number of timesteps where I_ray > threshold.
     Each timestep represents 60 seconds.
@@ -845,7 +827,7 @@ def get_possible_colors_by_layer_threshold(selected_layers, totalAOD550):
     return tuple(colors)
 
 
-def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, distance_km=700, num_points=25, event_type='event', city_name='forecast', fcst_hr=0, run='00', run_date_str='20260321'):
+def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, distance_km=DEFAULT_AZIMUTH_LINE_DISTANCE_KM, num_points=DESIRED_NUM_POINTS, event_type='event', city_name='forecast', fcst_hr=0, run='00', run_date_str='20260321'):
     """
     Process a sunset/sunrise event using ray tracing to calculate transmittance and event score.
     
@@ -929,15 +911,20 @@ def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, d
         )
         
         # Use the local cloud cover of the highest selected cloud layer (lcc < mcc < hcc)
+        # Determine which cloud level was used for analysis (highest selected)
         if selected_layers.get('hcc', False):
             highest_local = hcc_local
+            cloud_lvl_used = 'hcc'
         elif selected_layers.get('mcc', False):
             highest_local = mcc_local
+            cloud_lvl_used = 'mcc'
         elif selected_layers.get('lcc', False):
             highest_local = lcc_local
+            cloud_lvl_used = 'lcc'
         else:
             highest_local = 0
-
+            cloud_lvl_used = 'tcc'
+            
         # Calculate transmittance
         # Use average AOD over the path (totalAOD550 is already the mean over the path)
         avg_aod = float(totalAOD550) if hasattr(totalAOD550, '__len__') and len(totalAOD550) == 1 else float(np.nanmean(totalAOD550))
@@ -952,31 +939,36 @@ def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, d
         # Calculate event score: choose I_ray among candidate timesteps only
         I_ray_max = 0.0
         try:
-            if total_transmitted_light_array is None or len(total_transmitted_light_array) == 0:
+            trans_array = total_transmitted_light_array
+            if trans_array is None or len(trans_array) == 0:
                 I_ray_max = 0.0
             else:
-                # Choose start index based on cloud level used. Use 0-based indices where
-                # LCC -> start at index 2 (3rd sample), MCC -> 3, HCC -> 4 to match selection policy
-                start_idx_map = {'lcc': 2, 'mcc': 3, 'hcc': 4}
+                start_idx_map = {'lcc': 3, 'mcc': 4, 'hcc': 5}
                 start_idx = start_idx_map.get(cloud_lvl_used, 0)
-                if start_idx < len(total_transmitted_light_array):
-                    candidates = np.arange(start_idx, len(total_transmitted_light_array))
-                    cand_vals = total_transmitted_light_array[candidates]
-                    # filter out NaNs (invalid rays)
-                    valid_mask = ~np.isnan(cand_vals)
-                    if np.any(valid_mask):
-                        # pick the maximum transmittance among valid candidates
-                        I_ray_max = float(np.nanmax(cand_vals[valid_mask]))
-                    else:
-                        # fallback to global max (ignore NaNs)
-                        I_ray_max = float(np.nanmax(total_transmitted_light_array))
+                candidates = np.arange(start_idx, len(trans_array))
+                candidate_vals = trans_array[candidates]
+                valid_mask = ~np.isnan(candidate_vals)
+                valid_candidates = candidates[valid_mask]
+                valid_values = candidate_vals[valid_mask]
+                logging.info(f"Scoring candidates (indices): {valid_candidates}")
+                logging.info(f"Scoring candidates (values): {valid_values}")
+                if valid_candidates.size > 0:
+                    max_idx = np.argmax(valid_values)
+                    I_ray_max = float(valid_values[max_idx])
+                    selected_ts = int(valid_candidates[max_idx])
+                    logging.info(f"Selected candidate timestep for scoring: {selected_ts}, I_ray_max={I_ray_max:.6f}")
                 else:
-                    I_ray_max = float(np.nanmax(total_transmitted_light_array))
+                    I_ray_max = 0.0
         except Exception:
             I_ray_max = float(np.nanmax(total_transmitted_light_array)) if len(total_transmitted_light_array) > 0 else 0.0
-
+        
+        # Normalise I_ray_max to 0-0.7 range for scoring
+        I_ray_max = np.clip(I_ray_max, 0.0, RAY_NORM_CONSANT) / RAY_NORM_CONSANT
+        
         # Compute score using the bell-curve weight for local cloud cover
-        event_score = I_ray_max * bell_curve_cloud_cover_weight(highest_local / 100) * 100
+        weight = bell_curve_cloud_cover_weight(highest_local / 100)
+        logging.info(f"Scoring debug: trans_array={total_transmitted_light_array}, I_ray_max={I_ray_max:.6f}, highest_local={highest_local:.1f}%, weight={weight:.4f}")
+        event_score = I_ray_max * weight * 100
         event_score = int(round(np.clip(event_score, 0, 100)))
         
         # Calculate afterglow time
@@ -988,15 +980,7 @@ def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, d
         logging.info(f"Ray tracing event score: {event_score}, afterglow time: {afterglow_time_seconds}s")
         logging.info(f"Selected layers: {selected_layers}, colors: {possible_colors}")
         
-        # Determine which cloud level was used for analysis (highest selected)
-        if selected_layers.get('hcc', False):
-            cloud_lvl_used = 'hcc'
-        elif selected_layers.get('mcc', False):
-            cloud_lvl_used = 'mcc'
-        elif selected_layers.get('lcc', False):
-            cloud_lvl_used = 'lcc'
-        else:
-            cloud_lvl_used = 'tcc'
+        
 
         # Plot the ray path with cloud profiles, passing avg_aod, aerosol_trans and cloud level
         try:
@@ -1064,7 +1048,7 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
         avg_first_three = np.mean(cloud_cover_data[:3])
         avg_path = np.mean(cloud_cover_data[4:])
         if avg_first_three > 10 and avg_first_three < threshold and avg_path < threshold: # We still think there are cloud if local above 10% total cloud cover
-            distance_below_threshold = 250 # Assume a distance below threshold of 250 km
+            distance_below_threshold = ASSUMED_DISTANCE_BELOW_THRESHOLD_KM # Assume a distance below threshold
             logging.info(f"Local cloud cover is {avg_first_three}%. Average path cloud cover is {avg_path}%. Meet Criteria even threshold requirement not met.")
             logging.info(f"There is cloud cover above, we assume disance below thres is {distance_below_threshold} km.")
             
@@ -1490,149 +1474,9 @@ def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, 
         distance_axis_serialized,
     )
 
-def geom_condition(cloud_base_height, cloud_extent, LCL):
-    """
-    Calculate the geometric condition for afterglow based on cloud base height and cloud extent.
-    
-    Parameters:
-    - cloud_base_height: Cloud base height (hPa)
-    - cloud_extent: Cloud extent (m)
-    
-    Returns:
-    - geom_condition: Geometric condition for afterglow
-    """
-    # Cosntant
-    R = 6371*10**3  # Radius of the Earth in meters
-    lf_ma = 2*np.sqrt(2*R*cloud_base_height) 
-    try:
-        logging.info(f"lf_ma: {round(lf_ma)} m")
-        geom_condition_LCL_used = False
-    except ValueError as e:
-        logging.error(f"Error: {e}")
-        logging.error(f"lf_ma is {lf_ma}")
-        logging.error('We will assume lf_ma using LCL')
-        lf_ma = 2*np.sqrt(2*R*LCL)
-        logging.info(f"lf_ma: {round(lf_ma)} m")
-        geom_condition_LCL_used = True
-        geom_condition = False
-    # Compare with cloud_extent
-    if lf_ma > cloud_extent:
-        geom_condition = True
-    else:
-        geom_condition = False
-    logging.info(f"cloud geometry condition: {geom_condition}")
-    return geom_condition, geom_condition_LCL_used, lf_ma
 
-
-def get_afterglow_time(lat, today, distance_below_threshold, lf_ma, cloud_base_lvl, z_lvl):
-    
-    day_of_year = today.timetuple().tm_yday
-    
-    R = 6371  # Earth's radius in km
-    T = 1440  # minutes in a day
-
-    if np.isnan(cloud_base_lvl):
-        cloud_base_lvl = z_lvl
-    if lf_ma >= distance_below_threshold:
-        # Convert latitude to radians
-        phi = np.deg2rad(lat)
-
-        # Approximate solar declination angle (in degrees then radians)
-        decl_deg = 23.44 * np.sin(np.deg2rad((360 / 365) * (day_of_year - 81)))
-        delta = np.deg2rad(decl_deg)
-
-        # Linear speed of sunrays at given latitude and time of year based on https://doi.org/10.1016/j.asr.2023.08.036
-        speed = (2 * np.pi * R * np.cos(phi)) / T * np.cos(delta) #In km/minutes
-        
-        total_afterglow_time = np.sqrt((R*cloud_base_lvl))/speed #minutes
-        
-        # Make a straight line between origin and point (total_afterglow_time, lf_ma)
-        
-        t1 =  -distance_below_threshold * (total_afterglow_time/lf_ma) # rearrange purple y=mx
-        t2 =  total_afterglow_time + (-distance_below_threshold)*(2*total_afterglow_time/lf_ma) # rearrange purple y=mx
-        
-        overhead_afterglow_time = np.abs(t1-t2)
-        
-        actual_afterglow_time = total_afterglow_time + overhead_afterglow_time
-        
-        actual_afterglow_time = actual_afterglow_time + ((cloud_base_lvl/np.tan(np.deg2rad(5)))/(21*1000/60)) # Accounting for the clouds in visual contact assuming 5 deg elevation
-        
-        logging.info(f"Total Afterglow time: {total_afterglow_time} seconds")
-        logging.info(f"Overhead Afterglow time: {overhead_afterglow_time} seconds")
-        logging.info(f"Actual Afterglow time: {actual_afterglow_time} seconds")
-    else:
-        logging.info(f"Sun ray extent lf_max is less than cloud extent. No afterglow is possible.")
-        actual_afterglow_time = 0
-    return actual_afterglow_time
-
-
-def possible_colours(cloud_base_lvl, lcl_lvl, total_aod_550, key):
-    """
-    Determine the possible colours for the afterglow based on cloud base level, inferred cloud cover and AOD_550.
-    Cloud cover is inferred through RH of the cloud base level. 
-    
-    Parameters:
-    """
-    color = ('none',)
-    if np.isnan(cloud_base_lvl):
-        if np.isnan(lcl_lvl):
-            color = ('none',)
-        else:
-            cloud_base_lvl = lcl_lvl
-    if cloud_base_lvl <= 2000.0:
-        if total_aod_550 <= 0.2:
-            color = ('orange-red',)
-        if key == 'lcc':
-            color = ('orange-red',)
-        elif key == 'mcc':
-            color = ('orange-red', 'dark-red', 'crimson',)
-        elif key == 'hcc':
-            color = ('orange-red', 'dark-red', 'magenta',)
-        else:
-            color = ('dirty-orange',)
-    elif cloud_base_lvl > 2000.0 and cloud_base_lvl <= 6000.0:
-        if key == 'lcc':
-            color = ('orange-red', 'dark-red',)
-        if key == 'mcc':
-            color = ('orange-red', 'dark-red', 'crimson',)
-        if key == 'hcc':
-            color = ('orange-yellow', 'golden-yellow', 'magenta',)
-    elif cloud_base_lvl > 6000.0:
-        color = ('golden-yellow', 'crimson', 'magenta',)
-        
-    return color
-
-def get_elevation_afterglow(cloud_base_lvl, distance_below_threshold, lf_ma, lcl):
-    """
-    Calculate the elevation angle for afterglow based on cloud base height and distance below threshold.
-    
-    Parameters:
-    - cloud_base_lvl: Cloud base level (m)
-    - distance_below_threshold: Distance below threshold (m)
-    - lf_ma: Distance to the cloud base (m)
-    - lcl: Lifted condensation level (m)
-    
-    returns:
-    - theta: Elevation angle (radians)
-
-    """
-    #Constants
-    R = 6371*10**3  # Radius of the Earth in meters
-    
-    if distance_below_threshold == False or np.isnan(distance_below_threshold):
-        logging.info("Cloud cover and elevation estimated using tcc")
-        theta = np.arctan((cloud_base_lvl-(lf_ma**2/(2*R)))/lf_ma)
-        logging.info(f"Elevation angle: {np.rad2deg(theta)}°")
-        return theta
-    elif np.isnan(cloud_base_lvl):
-        logging.info("Cloud cover and elevation estimated using tcc and LCL")
-        theta = np.arctan((lcl-((distance_below_threshold**2)/(2*R)))/distance_below_threshold)
-        logging.info(f"Elevation angle: {np.rad2deg(theta)}°")
-        return theta
-    else:
-        theta = np.arctan((cloud_base_lvl-(distance_below_threshold**2/(2*R)))/distance_below_threshold)
-        logging.info(f"Elevation angle: {np.rad2deg(theta)}°")
-        return theta
+# Removed old geometric afterglow helper functions (geom_condition, get_afterglow_time, possible_colours, get_elevation_afterglow)
+# New implementation relies on ray-tracing outputs and `calculate_afterglow_time_from_ray_tracing`.
 
 
 def signed_power(x, p):
@@ -1738,18 +1582,20 @@ def create_dashboard(today, run_date_str, run, index_today, index_tomorrow, city
         "Based on daily 00z ECMWF AIFS and Copernicus Atmosphere Monitoring Service forecasts. Valid only for stratiform cloud layer. See supplementary figures for details.",
          ha='left', va='bottom', color='white', fontsize=8)
     
-    fig.text(0.89, 0.01, f"Plots by A350XWBoy. V2025.9.7", color='white',fontsize=8)
+    fig.text(0.89, 0.01, f"Plots by A350XWBoy. V2026.3.22", color='white',fontsize=8)
 
     plt.savefig(f'{output_path}/{run_date_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
 
 # Weighted likelihod index
-def bell_curve_cloud_cover_weight(cloud_cover, peak=0.6, width=0.15):
+def bell_curve_cloud_cover_weight(cloud_cover, peak=0.6, sigma_left=0.3, sigma_right=0.8, peak_height=1.0):
     # cloud_cover: 0-1
-    import numpy as np
     try: 
-        return np.exp(-((cloud_cover - peak) ** 2) / (2 * width ** 2))
+        c = np.clip(np.asarray(cloud_cover, dtype=float), 0.0, 1.0)
+        left = peak_height * np.exp(-((c - peak) ** 2) / (2 * sigma_left ** 2))
+        right = peak_height * np.exp(-((c - peak) ** 2) / (2 * sigma_right ** 2))
+        return np.where(c <= peak, left, right)
     except Exception as e:
-        logging.error(f"Error calculating bell curve weight: {e}")
+        logging.error(f"Error calculating asym bell curve weight: {e}")
         return 1.0
 
 def load_2m_fields(grib_path: str) -> xr.Dataset:
@@ -1813,8 +1659,8 @@ def load_2m_fields(grib_path: str) -> xr.Dataset:
 
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, run_date_str, input_path, output_path, create_dashboard_flag: bool):
     tz = pytz.timezone(timezone_str)
-    #current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
-    current_utc = datetime.datetime(2026, 3, 20, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
+    #current_utc = datetime.datetime(2026, 3, 21, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
     local_today = current_utc.astimezone(tz).date()
 
     tomorrow = today + datetime.timedelta(days=1)
@@ -1864,8 +1710,8 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     if sunset_day_after is not None:
         sunset_azimuth_day_after = get__sunset_azimuth(city, today + datetime.timedelta(days=2))
 
-    #run_dt = latest_forecast_hours_run_to_download()
-    run_dt = datetime.datetime(2026, 3, 20, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    run_dt = latest_forecast_hours_run_to_download()
+    #run_dt = datetime.datetime(2026, 3, 21, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
         # Use the provided run argument to set run_dt correctly (00 or 12 UTC)
     if run is not None:
         run_hour = int(run)
@@ -2007,7 +1853,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_path_tdy,
             cloud_present_tdy,
             cb_lvl_tdy,
-            hcc_condition_tdy,
+            _,
             cloud_profiles_tdy,
             distance_axis_tdy,
         ) = get_cloud_extent(
@@ -2021,7 +1867,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_path_tmr,
             cloud_present_tmr,
             cb_lvl_tmr,
-            hcc_condition_tmr,
+            _,
             cloud_profiles_tmr,
             distance_axis_tmr,
         ) = get_cloud_extent(
@@ -2042,14 +1888,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         sunset_profile_payload_tdy = build_profile_payload(distance_axis_tdy, cloud_profiles_tdy)
         sunset_profile_payload_tmr = build_profile_payload(distance_axis_tmr, cloud_profiles_tmr)
 
-        geom_cond_tdy, geom_condition_LCL_used_tdy, lf_ma_tdy = geom_condition(cloud_base_lvl_tdy, distance_below_threshold_tdy, z_lcl_tdy)
-        geom_cond_tmr, geom_condition_LCL_used_tmr, lf_ma_tmr = geom_condition(cloud_base_lvl_tmr, distance_below_threshold_tmr, z_lcl_tmr)
-
-        theta_tdy = get_elevation_afterglow(cloud_base_lvl_tdy, distance_below_threshold_tdy, lf_ma_tdy, z_lcl_tdy)
-        theta_tmr = get_elevation_afterglow(cloud_base_lvl_tmr, distance_below_threshold_tmr, lf_ma_tmr, z_lcl_tmr)
-
-        actual_afterglow_time_tdy = get_afterglow_time(lat, today, distance_below_threshold_tdy, lf_ma_tdy, cloud_base_lvl_tdy, z_lcl_tdy)
-        actual_afterglow_time_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_tmr, lf_ma_tmr, cloud_base_lvl_tmr, z_lcl_tmr)
+        # Geometric helpers removed; rely on ray-tracing for afterglow timing
 
         # Incorporate AOD and use ray tracing for scoring
         lats, lons = azimuth_line_points(lat, lon, sunset_azimuth, distance_km = 700, num_points=25)
@@ -2065,13 +1904,10 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             cloud_vars_tmr, lat, lon, sunset_azimuth_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], distance_km=700, num_points=25, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tmr, run=run, run_date_str=run_date_str
         )
         
-        # Use ray tracing afterglow time if available, otherwise fall back to geometric calculation
-        if actual_afterglow_time_tdy == 0:
-            actual_afterglow_time_tdy = get_afterglow_time(lat, today, distance_below_threshold_tdy, lf_ma_tdy, cloud_base_lvl_tdy, z_lcl_tdy)
+        # Use ray-tracing afterglow time (no geometric fallback)
         if actual_afterglow_time_tmr_ray > 0:
             actual_afterglow_time_tmr = actual_afterglow_time_tmr_ray
-        else:
-            actual_afterglow_time_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_tmr, lf_ma_tmr, cloud_base_lvl_tmr, z_lcl_tmr)
+        # actual_afterglow_time_tdy was already set by process_event_with_ray_tracing above
         
         logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
         logging.info(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
@@ -2095,12 +1931,6 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_cloud_base_lvl_tmr": cloud_base_lvl_tmr,
             "sunset_cloud_local_cover_tdy": avg_first_three_tdy,
             "sunset_cloud_local_cover_tmr": avg_first_three_tmr,
-            "sunset_geom_condition_LCL_used_tdy": geom_condition_LCL_used_tdy,
-            "sunset_geom_condition_LCL_used_tmr": geom_condition_LCL_used_tmr,
-            "sunset_geom_condition_tdy": geom_cond_tdy,
-            "sunset_geom_condition_tmr": geom_cond_tmr,
-            "sunset_lf_ma_tdy": lf_ma_tdy,
-            "sunset_lf_ma_tmr": lf_ma_tmr,
             "sunset_cloud_present_tdy": cloud_present_tdy,
             "sunset_cloud_present_tmr": cloud_present_tmr,
             "sunset_total_aod550_tdy": float(total_aod550[0]) if hasattr(total_aod550, '__getitem__') else float(total_aod550),
@@ -2109,8 +1939,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_dust_aod550_tmr": float(dust_aod550[1]) if hasattr(dust_aod550, '__getitem__') and dust_aod550.size>1 else (float(dust_aod550[0]) if hasattr(dust_aod550, '__getitem__') else float(dust_aod550)),
             "sunset_time_tdy": sunset_time_tdy_local,
             "sunset_time_tmr": sunset_time_tmr_local,
-            "sunset_hcc_condition_tdy": hcc_condition_tdy,
-            "sunset_hcc_condition_tmr": hcc_condition_tmr,
+            
             "sunset_cloud_layer_key_tdy": key_tdy,
             "sunset_cloud_layer_key_tmr": key_tmr,
             "sunset_avg_path_tdy": avg_path_tdy,
@@ -2131,12 +1960,6 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_afterglow_time_tmr": np.nan,
             "sunset_cloud_base_lvl_tdy": np.nan,
             "sunset_cloud_base_lvl_tmr": np.nan,
-            "sunset_geom_condition_LCL_used_tdy": False,
-            "sunset_geom_condition_LCL_used_tmr": False,
-            "sunset_geom_condition_tdy": False,
-            "sunset_geom_condition_tmr": False,
-            "sunset_lf_ma_tdy": np.nan,
-            "sunset_lf_ma_tmr": np.nan,
             "sunset_cloud_present_tdy": False,
             "sunset_cloud_present_tmr": False,
             "sunset_total_aod550_tdy": np.nan,
@@ -2145,8 +1968,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunset_dust_aod550_tmr": np.nan,
             "sunset_time_tdy": sunset_time_tdy_local,
             "sunset_time_tmr": sunset_time_tmr_local,
-            "sunset_hcc_condition_tdy": False,
-            "sunset_hcc_condition_tmr": False,
+            
             "sunset_cloud_layer_key_tdy": None,
             "sunset_cloud_layer_key_tmr": None,
             "sunset_avg_path_tdy": np.nan,
@@ -2231,7 +2053,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_path_sunrise_tdy,
             cloud_present_sunrise_tdy,
             cloud_base_lvl_sunrise_tdy,  # This is the fallback-corrected value
-            hcc_condition_sunrise_tdy,
+            _,
             cloud_profiles_sunrise_tdy,
             distance_axis_sunrise_tdy,
         ) = get_cloud_extent(
@@ -2246,7 +2068,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             avg_path_sunrise_tmr,
             cloud_present_sunrise_tmr,
             cloud_base_lvl_sunrise_tmr,  # This is the fallback-corrected value
-            hcc_condition_sunrise_tmr,
+            _,
             cloud_profiles_sunrise_tmr,
             distance_axis_sunrise_tmr,
         ) = get_cloud_extent(
@@ -2268,14 +2090,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         sunrise_profile_payload_tdy = build_profile_payload(distance_axis_sunrise_tdy, cloud_profiles_sunrise_tdy)
         sunrise_profile_payload_tmr = build_profile_payload(distance_axis_sunrise_tmr, cloud_profiles_sunrise_tmr)
 
-        geom_cond_sunrise_tdy, geom_condition_LCL_used_sunrise_tdy, lf_ma_sunrise_tdy = geom_condition(cloud_base_lvl_sunrise_tdy, distance_below_threshold_sunrise_tdy, z_lcl_sunrise_tdy)
-        geom_cond_sunrise_tmr, geom_condition_LCL_used_sunrise_tmr, lf_ma_sunrise_tmr = geom_condition(cloud_base_lvl_sunrise_tmr, distance_below_threshold_sunrise_tmr, z_lcl_sunrise_tmr)
-
-        theta_sunrise_tdy = get_elevation_afterglow(cloud_base_lvl_sunrise_tdy, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, z_lcl_sunrise_tdy)
-        theta_sunrise_tmr = get_elevation_afterglow(cloud_base_lvl_sunrise_tmr, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, z_lcl_sunrise_tmr)
-
-        actual_afterglow_time_sunrise_tdy = get_afterglow_time(lat, today, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy)
-        actual_afterglow_time_sunrise_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr)
+        # Geometric helpers removed; rely on ray-tracing for afterglow timing
 
         lats, lons = azimuth_line_points(lat, lon, sunrise_azimuth, distance_km = 700, num_points=25)
         dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path, lats, lons)
@@ -2288,13 +2103,9 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             cloud_vars_sunrise_tmr, lat, lon, sunrise_azimuth_tmr, total_aod550[1] if hasattr(total_aod550, '__getitem__') and total_aod550.size>1 else (total_aod550[0] if hasattr(total_aod550, '__getitem__') else total_aod550), distance_km=700, num_points=25, event_type='sunrise', city_name=city_name, fcst_hr=sunrise_fh_tmr, run=run, run_date_str=run_date_str
         )
         
-        # Use ray tracing afterglow time if available, otherwise fall back to geometric calculation
-        if actual_afterglow_time_sunrise_tdy == 0:
-            actual_afterglow_time_sunrise_tdy = get_afterglow_time(lat, today, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy)
+        # Use ray-tracing afterglow time (no geometric fallback)
         if actual_afterglow_time_sunrise_tmr_ray > 0:
             actual_afterglow_time_sunrise_tmr = actual_afterglow_time_sunrise_tmr_ray
-        else:
-            actual_afterglow_time_sunrise_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr)
         
         logging.info(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
         logging.info(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
@@ -2310,12 +2121,6 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_cloud_base_lvl_tmr": cloud_base_lvl_sunrise_tmr,
             "sunrise_cloud_local_cover_tdy": avg_first_three_sunrise_tdy,
             "sunrise_cloud_local_cover_tmr": avg_first_three_sunrise_tmr,
-            "sunrise_geom_condition_LCL_used_tdy": geom_condition_LCL_used_sunrise_tdy,
-            "sunrise_geom_condition_LCL_used_tmr": geom_condition_LCL_used_sunrise_tmr,
-            "sunrise_geom_condition_tdy": geom_cond_sunrise_tdy,
-            "sunrise_geom_condition_tmr": geom_cond_sunrise_tmr,
-            "sunrise_lf_ma_tdy": lf_ma_sunrise_tdy,
-            "sunrise_lf_ma_tmr": lf_ma_sunrise_tmr,
             "sunrise_cloud_present_tdy": cloud_present_sunrise_tdy,
             "sunrise_cloud_present_tmr": cloud_present_sunrise_tmr,
             "sunrise_total_aod550_tdy": float(total_aod550[0]) if hasattr(total_aod550, '__getitem__') else float(total_aod550),
@@ -2324,8 +2129,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_dust_aod550_tmr": float(dust_aod550[1]) if hasattr(dust_aod550, '__getitem__') and dust_aod550.size>1 else (float(dust_aod550[0]) if hasattr(dust_aod550, '__getitem__') else float(dust_aod550)),
             "sunrise_time_tdy": sunrise_time_tdy_local,
             "sunrise_time_tmr": sunrise_time_tmr_local,
-            "sunrise_hcc_condition_tdy": hcc_condition_sunrise_tdy,
-            "sunrise_hcc_condition_tmr": hcc_condition_sunrise_tmr,
+            
             "sunrise_cloud_layer_key_tdy": key_sunrise_tdy,
             "sunrise_cloud_layer_key_tmr": key_sunrise_tmr,
             "sunrise_avg_path_tdy": avg_path_sunrise_tdy,
@@ -2346,12 +2150,6 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_afterglow_time_tmr": np.nan,
             "sunrise_cloud_base_lvl_tdy": np.nan,
             "sunrise_cloud_base_lvl_tmr": np.nan,
-            "sunrise_geom_condition_LCL_used_tdy": False,
-            "sunrise_geom_condition_LCL_used_tmr": False,
-            "sunrise_geom_condition_tdy": False,
-            "sunrise_geom_condition_tmr": False,
-            "sunrise_lf_ma_tdy": np.nan,
-            "sunrise_lf_ma_tmr": np.nan,
             "sunrise_cloud_present_tdy": False,
             "sunrise_cloud_present_tmr": False,
             "sunrise_total_aod550_tdy": np.nan,
@@ -2360,8 +2158,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             "sunrise_dust_aod550_tmr": np.nan,
             "sunrise_time_tdy": sunrise_time_tdy_local,
             "sunrise_time_tmr": sunrise_time_tmr_local,
-            "sunrise_hcc_condition_tdy": False,
-            "sunrise_hcc_condition_tmr": False,
+            
             "sunrise_cloud_layer_key_tdy": None,
             "sunrise_cloud_layer_key_tmr": None,
             "sunrise_avg_path_tdy": np.nan,
@@ -2652,7 +2449,3 @@ def main():
 
 if __name__ == "__main__":
     results = main()
-
-
-# Work on the case with ecloud extent too large
-# The case where cloud cover increases midway along the azimuth path?

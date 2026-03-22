@@ -1915,7 +1915,3 @@ def main():
 
 if __name__ == "__main__":
     results = main()
-
-
-# Work on the case with ecloud extent too large
-# The case where cloud cover increases midway along the azimuth path?

@@ -59,7 +59,7 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2026,3,20,23,0,0)  # Simulate today as selected date for testing
+    today = datetime.datetime(2026,3,21,23,0,0)  # Simulate today as selected date for testing
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)

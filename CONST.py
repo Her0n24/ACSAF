@@ -1,0 +1,42 @@
+"""Centralized constants for Afterglow project."""
+import numpy as np
+
+# Physical / geometric
+MAX_CLOUD_HEIGHT = 9000  # meters
+VIEW_ELEVATION_ANGLE = 5  # degrees
+R_EARTH_M = 6.371e6  # Earth radius in meters
+
+# Ray sampling / temporal
+TIMESTEP_SECONDS = 60
+TIMESTEP_ARRAY = np.arange(0, 1081, TIMESTEP_SECONDS)
+ALPHA_COEFF = -5.14e-5
+
+# Scoring
+RAY_NORM_CONSANT = 0.7  # Max I_ray value for normalization in scoring
+
+# Cloud layer height bins (meters)
+LCC_HMIN, LCC_HMAX = 0, 1999
+MCC_HMIN, MCC_HMAX = 2000, 5999
+HCC_HMIN, HCC_HMAX = 6000, 9000
+
+# Representative layer heights (meters)
+LCC_HEIGHT = 1000
+MCC_HEIGHT = 4000
+HCC_HEIGHT = 9000
+
+# Resampling and optical depths
+DESIRED_NUM_POINTS = 25
+TAU_EFF_MAP = {
+    'lcc': 2.0,
+    'mcc': 1.0,
+    'hcc': 0.3,
+}
+
+# Aerosol layer
+H_AERO_KM_DEFAULT = 3.0
+
+# Defaults for plotting / selection
+DEFAULT_AZIMUTH_LINE_DISTANCE_KM = 700
+ASSUMED_DISTANCE_BELOW_THRESHOLD_KM = 250
+DEBUG_TS = 14
+I_RAY_THRESHOLD_DEFAULT = 0.05
