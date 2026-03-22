@@ -1,10 +1,11 @@
 cities = [
-{"name": "London",   "country": "UK", "tz": "Europe/London",    "lat": 51.5074, "lon": -0.1278, "create_dashboard": True},
+{"name": "London",   "country": "UK", "tz": "Europe/London",    "lat": 51.5074, "lon": -0.1278, "create_dashboard": False},
 # {"name": "New_York","country": "US", "tz": "America/New_York",  "lat": 40.7128, "lon": -74.0060, "create_dashboard": False},
 # {"name": "Tokyo",    "country": "JP", "tz": "Asia/Tokyo",       "lat": 35.6895, "lon": 139.6917, "create_dashboard": False},
 # {"name": "Sydney",   "country": "AU", "tz": "Australia/Sydney", "lat": -33.8688,"lon": 151.2093, "create_dashboard": False},
 {"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": True},
-{"name": "Reading",  "country": "UK", "tz": "Europe/London",   "lat": 51.4545, "lon": -0.9781, "create_dashboard": False},
+{"name": "Reading",  "country": "UK", "tz": "Europe/London",   "lat": 51.4545, "lon": -0.9781, "create_dashboard": True},
+{"name": "Oxford",   "country": "UK", "tz": "Europe/London",   "lat": 51.7520, "lon": -1.2577, "create_dashboard": True},
 ]
 
 # def run_tests():
@@ -44,7 +45,7 @@ cities = [
 import datetime
 from astral import LocationInfo
 from city_test import cities           # must be a module-level list as above
-from calc_afterglow_cover_strategy_global import process_city, latest_forecast_hours_run_to_download
+from calc_afterglow_realistic_path_global import process_city, latest_forecast_hours_run_to_download
 from get_cds_global import get_cams_aod
 from get_aifs import download_file
 import requests
@@ -58,7 +59,7 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2026,1,21,22,0,0)  # Simulate today as selected date for testing
+    today = datetime.datetime(2026,3,20,23,0,0)  # Simulate today as selected date for testing
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)

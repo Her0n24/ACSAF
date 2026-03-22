@@ -20,6 +20,8 @@ import datetime
 import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.patheffects as patheffects
+import inspect
 from astral.sun import sun, elevation, azimuth
 from astral import LocationInfo
 import pytz
@@ -40,6 +42,24 @@ logging.basicConfig(
 from calc_aod_global import calc_aod
 import argparse
 from functools import lru_cache
+
+max_cloud_height = 9000 # in meters
+view_elevation_angle = 5 # in degrees, the assumed minimum elevation angle that an observer can see the afterglow, lower means nearer to horizon, obstructed by ground objects.
+
+m = max_cloud_height/(np.arctan(view_elevation_angle*np.pi/180)) # in m, how far distant cloud at the max_cloud_height should we consider for computation
+
+t = np.arange(0, 1081, 60) # time in seconds, calculation every 60 seconds up to 18 minutes after sunset/sunrise for all possible paths
+
+alpha = -5.14*10**(-5)*t # angle of the sun ray as a function of time.
+
+LCC_HMIN, LCC_HMAX = 0000, 1999
+MCC_HMIN, MCC_HMAX = 2000, 5999
+HCC_HMIN, HCC_HMAX = 6000, 9000
+
+# Presumed cloud layer heights for computation
+LCC_HEIGHT = 1000  # 1 km
+MCC_HEIGHT = 4000  # 4 km
+HCC_HEIGHT = 9000  # 9 km
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Afterglow forecast")
@@ -97,6 +117,24 @@ def open_cloud_da(grib_path: str, short_name: str) -> xr.DataArray:
         decode_timedelta=True,
     )
     return ds[short_name]
+
+def combine_cloud_layers(grib_path: str) -> xr.DataArray:
+    """
+    Load lcc, mcc, hcc and combine into single DataArray with lvl dimension.
+    
+    Returns:
+    - cloud_da: DataArray with dimensions (lvl, latitude, longitude)
+                where lvl = ['lcc', 'mcc', 'hcc']
+    """
+    lcc = open_cloud_da(grib_path, 'lcc')
+    mcc = open_cloud_da(grib_path, 'mcc')
+    hcc = open_cloud_da(grib_path, 'hcc')
+    
+    # Stack along new 'lvl' dimension
+    cloud_da = xr.concat([lcc, mcc, hcc], dim='lvl')
+    cloud_da = cloud_da.assign_coords(lvl=['lcc', 'mcc', 'hcc'])
+    
+    return cloud_da
 
 @lru_cache(maxsize=None)
 def open_2m_cached(grib_path: str) -> xr.Dataset:
@@ -213,9 +251,14 @@ def calc_afterglow_time(h, max_elev, l1):
     z = t1 + t2
     return z
 
-def calc_cloud_hole_size(z):
-    # Equation to calculate the cloud hole size in km
-    q = (z/1440)*40076
+def parabolic_ray_equation(x, m, alpha, r, H):
+    # Parabolic ray equation that depicts the actual cloud ray path height varying with distance assuming local flat 
+    # Earth surface frame.
+    # alpha = -5.14*10^5 times t
+    return (x-m)*np.tan(alpha) + (0.5*(x-m)**2)/r + H
+
+def total_transmitted_light(cloud_cover_profile):
+    return np.prod(1 - cloud_cover_profile/100)
 
 def extract_variable(ds, var_name, lat_min, lat_max, lon_min, lon_max, verbose=False):
     var = getattr(ds, var_name)
@@ -227,7 +270,7 @@ def extract_variable(ds, var_name, lat_min, lat_max, lon_min, lon_max, verbose=F
 
 
 def plot_cloud_cover_map(data_dict, city, lon, lat, run_date_str, run, title_prefix, fcst_hr,
-                          sun_azimuth, save_path= output_path, cmap='gray', distance_km=500):
+                          sun_azimuth, save_path= output_path, cmap='gray', distance_km=700):
     """
     Plot 2x2 cloud cover maps: TCC, LCC, MCC, HCC.
 
@@ -306,7 +349,7 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, run_date_str, run, title_pre
     plt.savefig(f'{save_path}' + f"/{run_date_str}{run}0000-{fcst_hr}h-AIFS_cloud_cover_{city.name}.png")
     plt.close()
 
-def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=100):
+def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=25):
     """
     Generate a series of points along a given azimuth line (in degrees) starting from the given coordinates.
     
@@ -336,7 +379,7 @@ def azimuth_line_points(lon, lat, azimuth, distance_km, num_points=100):
 
     return lons, lats
 
-def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km, num_points=20):
+def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km, num_points=25):
     """
     Extract cloud cover data along an azimuth line over a certain distance.
     
@@ -357,6 +400,625 @@ def extract_cloud_cover_along_azimuth(data_dict, lon, lat, azimuth, distance_km,
     cloud_cover_data = np.diag(data_dict.interp(longitude=lons, latitude=lats, method='nearest').values) #diagonal entries are the target coordinates (points along the azimuth line)
     
     return cloud_cover_data
+
+
+def extract_cloud_cover_with_ray_tracing(cloud_layers_da, lons, lats, distances_m, cloud_base_lvl, R_earth_m=6.371e6):
+    """
+    Extract cloud cover along an azimuth considering parabolic ray paths at multiple timesteps.
+    
+    For each distance along azimuth and each timestep (alpha value), calculates the ray height
+    using parabolic_ray_equation and determines which cloud layer (lcc, mcc, hcc) the ray passes through.
+    
+    Parameters:
+    - cloud_layers_da: Combined cloud layers DataArray with dims (lvl, latitude, longitude)
+                       where lvl = ['lcc', 'mcc', 'hcc']
+    - lons, lats: Arrays of longitudes/latitudes along the azimuth
+    - distances_m: Array of distances in meters along the azimuth
+    - cloud_base_lvl: Reference cloud base height (m) for ray equation
+    - R_earth_m: Earth radius in meters (default: 6.371e6)
+    
+    Returns:
+    - ray_cloud_profile: 2D array with dims (num_timesteps, num_points)
+                        Cloud cover values selected based on ray height at each distance/time
+    - ray_heights: 2D array with dims (num_timesteps, num_points)
+                  Ray heights from parabolic equation at each distance/time
+    """
+    global alpha, m
+    
+    num_points = len(distances_m)
+    num_timesteps = len(alpha)
+    
+    # Compute radius of curvature for ray path
+    r = R_earth_m  # approximate ray curvature radius
+    
+    ray_cloud_profile = np.full((num_timesteps, num_points), np.nan)
+    ray_heights = np.full((num_timesteps, num_points), np.nan)
+    
+    # Interpolate cloud data at each lon/lat along azimuth
+    cloud_interp = cloud_layers_da.interp(longitude=lons, latitude=lats, method='nearest')
+    
+    # Height boundaries for layer selection
+    layer_bounds = {
+        'lcc': (LCC_HMIN, LCC_HMAX),
+        'mcc': (MCC_HMIN, MCC_HMAX),
+        'hcc': (HCC_HMIN, HCC_HMAX),
+    }
+    
+    # For each timestep, calculate full ray path and validate
+    for t_idx, alpha_val in enumerate(alpha):
+        # First pass: calculate all ray heights for this timestep
+        timestep_ray_heights = np.full(len(distances_m), np.nan)
+        try:
+            for d_idx, dist_m in enumerate(distances_m):
+                try:
+                    # DEBUG: Log types for every call
+                    logging.debug(f"parabolic_ray_equation call: dist_m={dist_m} (type={type(dist_m).__name__}), m=0 (type={type(0).__name__}), alpha_val={alpha_val} (type={type(alpha_val).__name__}), r={r} (type={type(r).__name__}), cloud_base_lvl={cloud_base_lvl} (type={type(cloud_base_lvl).__name__})")
+                    ray_h = parabolic_ray_equation(dist_m, 0, alpha_val, r, cloud_base_lvl)
+                    timestep_ray_heights[d_idx] = ray_h
+                except Exception as e:
+                    logging.warning(f"Ray calculation failed at distance {dist_m}m, timestep {t_idx}: {e}")
+                    logging.warning(f"TYPES: dist_m={type(dist_m)}, alpha_val={type(alpha_val)}, r={type(r)}, cloud_base_lvl={type(cloud_base_lvl)}")
+                    continue
+            
+            # Check if any point in this ray path goes below or touches ground
+            if np.any(timestep_ray_heights <= 0):
+                logging.debug(f"Timestep {t_idx} (alpha={alpha_val}): Ray trajectory invalid - ray hits or goes below ground. Discarding entire timestep.")
+                # Mark entire timestep as invalid
+                ray_heights[t_idx, :] = np.nan
+                ray_cloud_profile[t_idx, :] = np.nan
+                continue
+            
+            # Ray path is valid, store heights and extract cloud cover
+            ray_heights[t_idx, :] = timestep_ray_heights
+            
+            # Second pass: extract cloud cover for valid ray path
+            for d_idx, dist_m in enumerate(distances_m):
+                ray_h = timestep_ray_heights[d_idx]
+                
+                # Determine which layer the ray is in
+                selected_layer = None
+                for layer_name, (h_min, h_max) in layer_bounds.items():
+                    if h_min <= ray_h <= h_max:
+                        selected_layer = layer_name
+                        break
+                
+                if selected_layer is None:
+                    # Ray is outside defined layer ranges
+                    logging.debug(f"Ray height {ray_h}m at distance {dist_m}m outside layer bounds")
+                    continue
+                
+                # Extract cloud cover from selected layer at this location
+                try:
+                    cloud_val = cloud_interp.sel(lvl=selected_layer).isel(
+                        longitude=d_idx, latitude=d_idx
+                    ).values
+                    ray_cloud_profile[t_idx, d_idx] = float(cloud_val)
+                except Exception as e:
+                    logging.warning(f"Cloud extraction failed at distance {dist_m}m, layer {selected_layer}: {e}")
+        except Exception as e:
+            logging.warning(f"Timestep {t_idx} processing failed: {e}")
+            ray_heights[t_idx, :] = np.nan
+            ray_cloud_profile[t_idx, :] = np.nan
+    
+    return ray_cloud_profile, ray_heights
+
+
+def aggregate_ray_traced_profile(ray_cloud_profile, aggregation='mean'):
+    """
+    Aggregate ray-traced cloud profiles across all timesteps into a single profile.
+    
+    Parameters:
+    - ray_cloud_profile: 2D array with dims (num_timesteps, num_points)
+    - aggregation: 'mean', 'max', or 'median' - how to combine across timesteps
+    
+    Returns:
+    - aggregated_profile: 1D array with shape (num_points,)
+    """
+    if aggregation == 'mean':
+        return np.nanmean(ray_cloud_profile, axis=0)
+    elif aggregation == 'max':
+        return np.nanmax(ray_cloud_profile, axis=0)
+    elif aggregation == 'median':
+        return np.nanmedian(ray_cloud_profile, axis=0)
+    else:
+        raise ValueError(f"Unknown aggregation method: {aggregation}")
+
+
+def select_layers_by_threshold(ray_cloud_profile, lcc_val, mcc_val, hcc_val):
+    """
+    Select which cloud layers to analyze based on local cloud cover (first 3 indices).
+    Works from lowest layer upward with thresholds: LCC 50%, MCC 60%, HCC 20%.
+    If a layer exceeds threshold, include it and all layers above with lower thresholds.
+    
+    Parameters:
+    - ray_cloud_profile: 2D array with dims (num_timesteps, num_points)
+    - lcc_val, mcc_val, hcc_val: Local cloud cover percentages (first 3 indices average)
+    
+    Returns:
+    - selected_layers: dict with layer names as keys (e.g., {'lcc': True, 'mcc': False, 'hcc': False})
+    """
+    # New logic: always start with LCC, add MCC if LCC < 50, add HCC if MCC < 60
+    selected_layers = {'lcc': True, 'mcc': False, 'hcc': False}
+    if lcc_val < 50.0:
+        selected_layers['mcc'] = True
+        if mcc_val < 60.0:
+            selected_layers['hcc'] = True
+    logging.info(f"Selected layers: LCC={selected_layers['lcc']}, MCC={selected_layers['mcc']}, HCC={selected_layers['hcc']}")
+    return selected_layers
+
+
+def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD550, selected_layers, distances_m=None):
+    """
+    Calculate cumulative transmittance (total transmitted light) for each timestep.
+    AOD550 only applied to timesteps where ray height < MCC_HMIN.
+    
+    Parameters:
+    - ray_heights: 2D array (num_timesteps, num_points) - ray heights at each point
+    - ray_cloud_profile: 2D array (num_timesteps, num_points) - cloud cover (0-100)
+    - totalAOD550: Scalar AOD value
+    - selected_layers: dict indicating which layers are selected
+    
+    Returns:
+    - total_transmitted_light: 1D array (num_timesteps,) - cumulative transmittance
+    """
+    # Ensure inputs are numpy arrays to avoid xarray truthiness issues
+    # Coerce to float numpy arrays to avoid ambiguous truth-value and object-dtype issues
+    ray_heights = np.asarray(ray_heights, dtype=float)
+    ray_cloud_profile = np.asarray(ray_cloud_profile, dtype=float)
+    if distances_m is not None:
+        distances_m = np.asarray(distances_m, dtype=float)
+
+    num_timesteps = int(ray_cloud_profile.shape[0])
+    # Force sampling to the ECMWF AIFS support (~0.25 deg -> 25 support index)
+    desired_num_points = 25
+    orig_num_points = int(ray_cloud_profile.shape[1])
+    total_transmitted_light = np.ones(num_timesteps)
+    aerosol_trans_array = np.ones(num_timesteps)
+
+    # Compute Euclidean segment lengths along the ray (accounting for vertical curvature).
+    # distances_m are point positions along the ray in meters. Use ray_heights to compute dy.
+    if distances_m is None:
+        # fallback: assume 1 km uniform segments
+        ds_km = np.ones(max(1, num_points - 1)) * 1.0
+    else:
+        d = np.asarray(distances_m)
+        # Ensure ray_heights is available per timestep (we'll compute per-timestep ds)
+        # For segment-based integration we'll compute dx, dy between consecutive points
+        if d.size < 2:
+            ds_km = np.ones(1) * (float(d[0]) / 1000.0 if d.size == 1 else 1.0)
+        else:
+            dx = np.diff(d)  # length num_points-1
+            # ds per segment will be computed per-timestep using dy from ray_heights
+            # create placeholder; actual ds_km used per-timestep below
+            ds_km = None
+
+    # Effective optical depths per layer (lcc, mcc, hcc) as provided
+    # Effective optical depths per layer (lcc, mcc, hcc)
+    tau_eff_map = {'lcc': 2.0, 'mcc': 1.0, 'hcc': 0.3}
+
+    # For each timestep, calculate path transmittance using per-grid-box cloud cover
+    # Resample (interpolate) ray heights and cloud profile to `desired_num_points` along the ray
+    for ts in range(num_timesteps):
+        ray_h_full = ray_heights[ts, :]
+        cloud_profile_full = ray_cloud_profile[ts, :]
+
+        # determine interpolation x-axis
+        if distances_m is not None:
+            x = np.asarray(distances_m, dtype=float)
+            if x.size != orig_num_points:
+                # If distances length mismatches, create index-based x
+                x = np.linspace(0.0, float(orig_num_points - 1), orig_num_points)
+            x_new = np.linspace(x[0], x[-1], desired_num_points)
+        else:
+            x = np.linspace(0.0, float(orig_num_points - 1), orig_num_points)
+            x_new = np.linspace(x[0], x[-1], desired_num_points)
+
+        # Interpolate heights and cloud cover to new support points
+        try:
+            heights_interp = np.interp(x_new, x, np.asarray(ray_h_full, dtype=float))
+            cloud_interp = np.interp(x_new, x, np.asarray(cloud_profile_full, dtype=float))
+        except Exception:
+            heights_interp = np.repeat(np.nan, desired_num_points)
+            cloud_interp = np.repeat(0.0, desired_num_points)
+
+        # Validate ray: if there are fewer than 2 valid (positive) height samples, mark as invalid
+        valid_height_mask = (~np.isnan(heights_interp)) & (heights_interp > 0.0)
+        if np.sum(valid_height_mask) < 2:
+            logging.debug(f"ts={ts}: invalid ray (insufficient valid height samples: {np.sum(valid_height_mask)}) -> marking NaN")
+            total_transmitted_light[ts] = np.nan
+            continue
+
+        # Initialize transmittance for this timestep
+        T = 1.0
+        cloud_points = 0
+        min_factor = 1.0
+
+        for pi in range(desired_num_points):
+            h = heights_interp[pi]
+            c = float(cloud_interp[pi]) / 100.0  # convert percent -> fraction
+            if np.isnan(h) or np.isnan(c):
+                continue
+
+            # determine which layer this point falls into
+            if (LCC_HMIN <= h) and (h <= LCC_HMAX):
+                level = 'lcc'
+            elif (MCC_HMIN <= h) and (h <= MCC_HMAX):
+                level = 'mcc'
+            elif (HCC_HMIN <= h) and (h <= HCC_HMAX):
+                level = 'hcc'
+            else:
+                # point outside cloud layers contributes factor 1
+                continue
+
+            tau_eff = float(tau_eff_map.get(level, 0.0))
+            # per-user formula: T *= (1 - c * (1 - exp(-tau_eff)))
+            factor = 1.0 - c * (1.0 - np.exp(-tau_eff))
+            # numerical safety: clamp factor to [0,1]
+            factor = float(np.clip(factor, 0.0, 1.0))
+            if factor < min_factor:
+                min_factor = factor
+            if c > 0.0:
+                cloud_points += 1
+            T *= factor
+
+        # Debugging info per timestep
+        logging.debug(f"ts={ts}: cloud_points={cloud_points}, min_factor={min_factor:.6f}, T_cloud={T:.6e}")
+
+        # --- Aerosol along-path transmittance limited to aerosol layer height ---
+        # Assume aerosol layer top (km). Use 3 km default unless overridden elsewhere.
+        H_aero_km = 3
+        H_aero_m = H_aero_km * 1000.0
+        T_aero = 1.0
+        try:
+            aod_val = float(totalAOD550)
+        except Exception:
+            aod_val = 0.0
+
+        # Compute aerosol slant-path length only where ray midpoint height < H_aero_m
+        L_aero_km = 0.0
+        if desired_num_points >= 2:
+            # x_new is in same units as distances_m (meters) if distances_m provided, else index space
+            # compute segment lengths and midpoint heights
+            dx_seg = np.diff(x_new)  # meters
+            dy_seg = np.diff(heights_interp)  # meters
+            seg_ds_m = np.sqrt(dx_seg**2 + dy_seg**2)
+            h_mid = 0.5 * (heights_interp[:-1] + heights_interp[1:])
+            mask_aero = h_mid < H_aero_m
+            L_aero_km = float(np.sum(seg_ds_m[mask_aero]) / 1000.0)
+            if L_aero_km > 0.0 and aod_val > 0.0:
+                # k_aero is AOD per km of well-mixed layer
+                k_aero = aod_val / H_aero_km
+                tau_aero = k_aero * L_aero_km
+                T_aero = float(np.exp(-tau_aero))
+            else:
+                T_aero = 1.0
+        else:
+            # not enough samples to estimate aerosol slant length; fallback to column AOD as approximation
+            try:
+                T_aero = float(np.exp(-aod_val))
+            except Exception:
+                T_aero = 1.0
+
+        logging.debug(f"ts={ts}: L_aero_km={L_aero_km:.4f}, tau_aero={( -np.log(T_aero) ):.4f}, T_aero={T_aero:.6e}")
+
+        # Final transmitted light: cloud * aerosol (aerosol only along slant below H_aero)
+        # If user requested, dump detailed per-point diagnostics for a particular timestep
+        debug_ts = 14
+        if ts == debug_ts:
+            per_point_lines = []
+            for pi in range(len(heights_interp)):
+                h_pi = heights_interp[pi]
+                c_pi = cloud_interp[pi]
+                if np.isnan(h_pi):
+                    lev = 'nan'
+                    tau_pi = 0.0
+                    factor_pi = np.nan
+                else:
+                    if (LCC_HMIN <= h_pi) and (h_pi <= LCC_HMAX):
+                        lev = 'lcc'
+                    elif (MCC_HMIN <= h_pi) and (h_pi <= MCC_HMAX):
+                        lev = 'mcc'
+                    elif (HCC_HMIN <= h_pi) and (h_pi <= HCC_HMAX):
+                        lev = 'hcc'
+                    else:
+                        lev = 'out'
+                    tau_pi = float(tau_eff_map.get(lev, 0.0))
+                    if lev == 'out':
+                        factor_pi = 1.0
+                    else:
+                        factor_pi = 1.0 - (float(c_pi) / 100.0) * (1.0 - np.exp(-tau_pi))
+                per_point_lines.append(f"{pi}: x={x_new[pi]:.2f}, h={h_pi:.1f}, c={c_pi:.1f}%, lev={lev}, tau={tau_pi:.3f}, factor={factor_pi:.6f}")
+            logging.info("TS_DEBUG per-point for ts=%d:\n%s" % (debug_ts, "\n".join(per_point_lines)))
+            logging.info(f"TS_DEBUG summary ts={debug_ts}: T_cloud={T:.6e}, L_aero_km={L_aero_km:.4f}, T_aero={T_aero:.6e}, final_T={T*T_aero:.6e}")
+
+        total_transmitted_light[ts] = T * T_aero
+        aerosol_trans_array[ts] = T_aero
+
+    # Debug: try to fetch caller's `fcst_hr` if available so we know which forecast hour
+    try:
+        caller = inspect.currentframe().f_back
+        fcst_hr_val = None
+        if caller is not None:
+            fcst_hr_val = caller.f_locals.get('fcst_hr', caller.f_globals.get('fcst_hr', None))
+    except Exception:
+        fcst_hr_val = None
+
+    logging.info(
+        f"Entering pdb in calculate_cumulative_transmittance; caller fcst_hr={fcst_hr_val}, "
+        f"ray_heights.shape={getattr(ray_heights, 'shape', None)}, "
+        f"ray_cloud_profile.shape={getattr(ray_cloud_profile, 'shape', None)}, "
+        f"distances_m_shape={getattr(distances_m, 'shape', None)}"
+    )
+    # import pdb; pdb.set_trace()
+    return total_transmitted_light, aerosol_trans_array
+
+
+def calculate_event_score(total_transmitted_light, normalize_max=1.0, I_ray_threshold=0.1):
+    """
+    Calculate event score based on maximum I_ray (transmitted light).
+    parameter normalize_max refers to the normalization of the I_ray_max (the maximum transmitted light), not the final event score. 
+    It is used to scale I_ray_max before mapping it to a 0–100 score.
+    I_ray is normalized to 0.8 max, and score ranges 0-100.
+    If I_ray < threshold, score is capped to 0.
+    
+    Parameters:
+    - total_transmitted_light: 1D array (num_timesteps,) - transmittance values
+    - normalize_max: Maximum value to normalize I_ray to (default 0.8)
+    - I_ray_threshold: Minimum I_ray to generate non-zero score (default 0.05)
+    
+    Returns:
+    - I_ray_max: Maximum transmitted light value across all timesteps
+    - event_score: Score from 0-100, or 0 if I_ray < threshold
+    """
+    I_ray_max = np.nanmax(total_transmitted_light)
+    
+    if I_ray_max < I_ray_threshold:
+        event_score = 0
+        logging.info(f"I_ray={I_ray_max:.4f} below threshold {I_ray_threshold}, score capped to 0")
+    else:
+        # Normalize I_ray to [0, normalize_max]
+        normalized_I_ray = (I_ray_max / 1.0) * normalize_max  # Assuming max transmittance is 1.0
+        # Map normalized value to 0-100 score
+        event_score = int(round((normalized_I_ray / normalize_max) * 100))
+        event_score = np.clip(event_score, 0, 100)
+    
+    return I_ray_max, event_score
+
+
+def calculate_afterglow_time_from_ray_tracing(total_transmitted_light, I_ray_threshold=0.05):
+    """
+    Calculate afterglow time based on number of timesteps where I_ray > threshold.
+    Each timestep represents 60 seconds.
+    
+    Parameters:
+    - total_transmitted_light: 1D array (num_timesteps,) - transmittance values
+    - I_ray_threshold: Minimum I_ray for afterglow occurrence (default 0.05)
+    
+    Returns:
+    - afterglow_time_seconds: Time in seconds (int)
+    - num_above_threshold: Number of timesteps above threshold
+    """
+    if total_transmitted_light is None or len(total_transmitted_light) == 0:
+        import pdb; pdb.set_trace()
+    
+    # Filter out NaN values before comparison
+    valid_transmittance = total_transmitted_light[~np.isnan(total_transmitted_light)]
+    if len(valid_transmittance) == 0:
+        import pdb; pdb.set_trace()
+    
+    timesteps_above_threshold = np.sum(valid_transmittance > I_ray_threshold)
+    afterglow_time_seconds = int(timesteps_above_threshold * 60)  # Each timestep is 60 seconds
+    
+    logging.info(f"Timesteps above I_ray threshold: {timesteps_above_threshold}, afterglow time: {afterglow_time_seconds}s")
+    return afterglow_time_seconds, int(timesteps_above_threshold)
+
+
+def get_possible_colors_by_layer_threshold(selected_layers, totalAOD550):
+    """
+    Determine possible afterglow colors based on which cloud layers meet thresholds.
+    LCC: orange-yellow
+    MCC: orange-red, rak-red, crimson
+    HCC: magenta, coral
+    Only colors for layers with selected=True are included.
+    
+    Parameters:
+    - selected_layers: dict with keys 'lcc', 'mcc', 'hcc' and bool values
+    - totalAOD550: AOD value (for reference, not used in color selection)
+    
+    Returns:
+    - colors: Tuple of color names for this event
+    """
+    colors = []
+    
+    if selected_layers.get('lcc', False):
+        colors.append('orange-yellow')
+    
+    if selected_layers.get('mcc', False):
+        colors.extend(['orange-red', 'rak-red', 'crimson'])
+    
+    if selected_layers.get('hcc', False):
+        colors.extend(['magenta', 'coral'])
+    
+    if not colors:
+        colors = ['none']
+    
+    return tuple(colors)
+
+
+def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, distance_km=700, num_points=25, event_type='event', city_name='forecast', fcst_hr=0, run='00', run_date_str='20260321'):
+    """
+    Process a sunset/sunrise event using ray tracing to calculate transmittance and event score.
+    
+    Parameters:
+    - cloud_vars: dict with combined cloud layers
+    - lat, lon: Observer location
+    - azimuth: Sun azimuth angle
+    - totalAOD550: Total AOD value
+    - distance_km: Distance along azimuth line
+    - num_points: Number of points for ray tracing
+    
+    Returns:
+    - event_score: Score 0-100 (0 if no afterglow)
+    - afterglow_time_seconds: Afterglow duration
+    - possible_colors: Tuple of possible colors
+    - selected_layers: Dict of which layers were selected
+    - transmittance_array: 1D array of transmittance values (one per timestep)
+    """
+    try:
+        # Get combined cloud layers
+        cloud_layers_da = cloud_vars.get("cloud_layers")
+        if cloud_layers_da is None:
+            logging.warning("No combined cloud layers available for ray tracing")
+            return 0, 0, ('none',), {'lcc': False, 'mcc': False, 'hcc': False}, np.array([])
+        
+        # Get individual layers for local cloud cover extraction
+        lcc = cloud_vars.get("lcc")
+        mcc = cloud_vars.get("mcc")
+        hcc = cloud_vars.get("hcc")
+        
+        # Extract distances and coordinates for ray tracing
+        lons, lats = azimuth_line_points(lon, lat, azimuth, distance_km=distance_km, num_points=num_points)
+        distances_m = np.linspace(0, distance_km * 1000, num_points)
+        
+        # Get local cloud cover (first 3 points) for layer selection BEFORE ray tracing
+        if lcc is not None and lcc.size > 0:
+            lcc_profile = extract_cloud_cover_along_azimuth(lcc, lon, lat, azimuth, distance_km, num_points)
+            lcc_local = float(np.nanmean(lcc_profile[:3])) if len(lcc_profile) >= 3 else 0
+        else:
+            lcc_profile = np.zeros(num_points)
+            lcc_local = 0
+            
+        if mcc is not None and mcc.size > 0:
+            mcc_profile = extract_cloud_cover_along_azimuth(mcc, lon, lat, azimuth, distance_km, num_points)
+            mcc_local = float(np.nanmean(mcc_profile[:3])) if len(mcc_profile) >= 3 else 0
+        else:
+            mcc_profile = np.zeros(num_points)
+            mcc_local = 0
+            
+        if hcc is not None and hcc.size > 0:
+            hcc_profile = extract_cloud_cover_along_azimuth(hcc, lon, lat, azimuth, distance_km, num_points)
+            hcc_local = float(np.nanmean(hcc_profile[:3])) if len(hcc_profile) >= 3 else 0
+        else:
+            hcc_profile = np.zeros(num_points)
+            hcc_local = 0
+        
+        # Select layers based on thresholds (this determines which cloud layer(s) to analyze)
+        # Use a dummy ray profile for this call - we just need the layer selection
+        dummy_profile = np.zeros((60, num_points))  # 60 timesteps, num_points
+        selected_layers = select_layers_by_threshold(dummy_profile, lcc_local, mcc_local, hcc_local)
+        
+        # Determine cloud_base_lvl from selected layers (use HIGHEST selected layer)
+        # Use presumed cloud heights for ray tracing base
+        if selected_layers.get('hcc', False):
+            cloud_base_lvl = HCC_HEIGHT  # 9km presumed center
+        elif selected_layers.get('mcc', False):
+            cloud_base_lvl = MCC_HEIGHT  # 4km presumed center
+        elif selected_layers.get('lcc', False):
+            cloud_base_lvl = LCC_HEIGHT  # 1km presumed center
+        else:
+            cloud_base_lvl = MCC_HEIGHT  # Default fallback (4km)
+        
+        logging.info(f"Selected cloud_base_lvl: {cloud_base_lvl}m based on selected layers: {selected_layers}")
+        
+        # Initialize in case of early failure so variable exists for error handling
+        total_transmitted_light_array = np.array([])
+
+        # NOW perform ray tracing with the determined cloud base level
+        ray_cloud_profile, ray_heights = extract_cloud_cover_with_ray_tracing(
+            cloud_layers_da, lons, lats, distances_m, cloud_base_lvl=cloud_base_lvl
+        )
+        
+        # Use the local cloud cover of the highest selected cloud layer (lcc < mcc < hcc)
+        if selected_layers.get('hcc', False):
+            highest_local = hcc_local
+        elif selected_layers.get('mcc', False):
+            highest_local = mcc_local
+        elif selected_layers.get('lcc', False):
+            highest_local = lcc_local
+        else:
+            highest_local = 0
+
+        # Calculate transmittance
+        # Use average AOD over the path (totalAOD550 is already the mean over the path)
+        avg_aod = float(totalAOD550) if hasattr(totalAOD550, '__len__') and len(totalAOD550) == 1 else float(np.nanmean(totalAOD550))
+        aerosol_trans = np.exp(-avg_aod) if avg_aod is not None else 1.0
+
+        # Debug: log shapes and types to help diagnose ambiguous-array boolean errors
+        logging.debug(f"ray_heights: type={type(ray_heights)}, shape={getattr(ray_heights,'shape',None)}")
+        logging.debug(f"ray_cloud_profile: type={type(ray_cloud_profile)}, shape={getattr(ray_cloud_profile,'shape',None)}")
+        logging.debug(f"distances_m: type={type(distances_m)}, shape={getattr(distances_m,'shape',None)}")
+        total_transmitted_light_array, aerosol_trans_array = calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, avg_aod, selected_layers, distances_m=distances_m)
+
+        # Calculate event score: choose I_ray among candidate timesteps only
+        I_ray_max = 0.0
+        try:
+            if total_transmitted_light_array is None or len(total_transmitted_light_array) == 0:
+                I_ray_max = 0.0
+            else:
+                # Choose start index based on cloud level used. Use 0-based indices where
+                # LCC -> start at index 2 (3rd sample), MCC -> 3, HCC -> 4 to match selection policy
+                start_idx_map = {'lcc': 2, 'mcc': 3, 'hcc': 4}
+                start_idx = start_idx_map.get(cloud_lvl_used, 0)
+                if start_idx < len(total_transmitted_light_array):
+                    candidates = np.arange(start_idx, len(total_transmitted_light_array))
+                    cand_vals = total_transmitted_light_array[candidates]
+                    # filter out NaNs (invalid rays)
+                    valid_mask = ~np.isnan(cand_vals)
+                    if np.any(valid_mask):
+                        # pick the maximum transmittance among valid candidates
+                        I_ray_max = float(np.nanmax(cand_vals[valid_mask]))
+                    else:
+                        # fallback to global max (ignore NaNs)
+                        I_ray_max = float(np.nanmax(total_transmitted_light_array))
+                else:
+                    I_ray_max = float(np.nanmax(total_transmitted_light_array))
+        except Exception:
+            I_ray_max = float(np.nanmax(total_transmitted_light_array)) if len(total_transmitted_light_array) > 0 else 0.0
+
+        # Compute score using the bell-curve weight for local cloud cover
+        event_score = I_ray_max * bell_curve_cloud_cover_weight(highest_local / 100) * 100
+        event_score = int(round(np.clip(event_score, 0, 100)))
+        
+        # Calculate afterglow time
+        afterglow_time_seconds, _ = calculate_afterglow_time_from_ray_tracing(total_transmitted_light_array)
+        
+        # Get colors based on selected layers
+        possible_colors = get_possible_colors_by_layer_threshold(selected_layers, totalAOD550)
+        
+        logging.info(f"Ray tracing event score: {event_score}, afterglow time: {afterglow_time_seconds}s")
+        logging.info(f"Selected layers: {selected_layers}, colors: {possible_colors}")
+        
+        # Determine which cloud level was used for analysis (highest selected)
+        if selected_layers.get('hcc', False):
+            cloud_lvl_used = 'hcc'
+        elif selected_layers.get('mcc', False):
+            cloud_lvl_used = 'mcc'
+        elif selected_layers.get('lcc', False):
+            cloud_lvl_used = 'lcc'
+        else:
+            cloud_lvl_used = 'tcc'
+
+        # Plot the ray path with cloud profiles, passing avg_aod, aerosol_trans and cloud level
+        try:
+            plot_ray_path_with_cloud_profiles(
+                ray_heights, ray_cloud_profile, lcc_profile, mcc_profile, hcc_profile,
+                distances_m, azimuth, distance_km, event_score,
+                city_name, run_date_str, run, str(fcst_hr),
+                transmittance_array=total_transmitted_light_array,
+                event_type=event_type,
+                aod_val=avg_aod,
+                aerosol_trans=aerosol_trans,
+                cloud_level=cloud_lvl_used
+            )
+        except Exception as e:
+            logging.warning(f"Failed to plot ray path: {e}")
+        
+        return event_score, afterglow_time_seconds, possible_colors, selected_layers, total_transmitted_light_array
+        
+    except Exception as e:
+        logging.exception("Ray tracing processing failed")
+        import pdb; pdb.set_trace()
+        return 0, 0, ('none',), {'lcc': False, 'mcc': False, 'hcc': False}, np.array([])
 
 
 def _serialize_series(values):
@@ -432,6 +1094,248 @@ def plot_cloud_cover_along_azimuth(cloud_cover_data, azimuth, distance_km, fcst_
         plt.savefig(save_path + f"/{run_date_str}{run}0000_{fcst_hr}h_AIFS_cloud_cover_azimuth_{city.name}.png")
         plt.close()
     return distance_below_threshold, avg_first_three, avg_path
+
+
+def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profile, mcc_profile, hcc_profile, 
+                                       distances_m, azimuth, distance_km, event_score, city_name, run_date_str, 
+                                       run, fcst_hr, transmittance_array=None, event_type='event', save_path=output_path, aod_val=None, aerosol_trans=None, aerosol_t_array=None, cloud_level=None):
+    """
+    Plot height vs distance along the ray path with cloud profiles in grayscale.
+    
+    Parameters:
+    - ray_heights: 2D array of ray heights (num_timesteps, num_points)
+    - ray_cloud_profile: 2D array of cloud cover along ray (num_timesteps, num_points)
+    - lcc_profile, mcc_profile, hcc_profile: 1D arrays of cloud cover for each layer
+    - distances_m: 1D array of distances in meters
+    - azimuth: Azimuth angle in degrees
+    - distance_km: Total distance in km
+    - event_score: Score for this event
+    - city: City object with name
+    - run_date_str, run, fcst_hr: For plot title
+    - transmittance_array: 1D array of transmittance values (one per timestep) to identify best path
+    - save_path: Path to save the plot
+    """
+    fig, ax = plt.subplots(figsize=(15, 8))
+    
+    distances_km = distances_m / 1000.0  # Convert to km
+    num_points = len(distances_km)
+    
+    # Interpolate cloud profiles for smooth visualization
+    distances_km_interp = np.linspace(0, distance_km, num_points * 4)  # 4x finer grid
+    
+    # Use numpy's interp for smooth interpolation
+    lcc_smooth = np.interp(distances_km_interp, distances_km, lcc_profile)
+    mcc_smooth = np.interp(distances_km_interp, distances_km, mcc_profile)
+    hcc_smooth = np.interp(distances_km_interp, distances_km, hcc_profile)
+    
+    # Use inverted grayscale colormap so 100% cloud cover -> white, 0% -> black
+    cmap_clouds = plt.cm.get_cmap('Greys_r')
+    # Set plot background to black so non-cloud areas appear black
+    ax.set_facecolor('black')
+    
+    # Plot cloud layer background regions
+    ax.axhspan(LCC_HMIN, LCC_HMAX, alpha=0.05, color='gray', label='LCC (0-1km)')
+    ax.axhspan(MCC_HMIN, MCC_HMAX, alpha=0.05, color='gray', label='MCC (1-4km)')
+    ax.axhspan(HCC_HMIN, HCC_HMAX, alpha=0.05, color='gray', label='HCC (4-9km)')
+    
+    # Plot smooth cloud profiles as continuous fills
+    bar_width = (distances_km_interp[-1] - distances_km_interp[0]) / (len(distances_km_interp) * 0.8)
+    for idx, (dist, lcc_val, mcc_val, hcc_val) in enumerate(zip(distances_km_interp, lcc_smooth, mcc_smooth, hcc_smooth)):
+        # LCC - grayscale based on cloud cover %
+        if lcc_val > 0:
+            gray_shade = cmap_clouds(lcc_val / 100.0)
+            ax.barh(np.mean([LCC_HMIN, LCC_HMAX]), bar_width, left=dist, height=LCC_HMAX - LCC_HMIN,
+                   color=gray_shade, edgecolor='none')
+        
+        # MCC - grayscale based on cloud cover %
+        if mcc_val > 0:
+            gray_shade = cmap_clouds(mcc_val / 100.0)
+            ax.barh(np.mean([MCC_HMIN, MCC_HMAX]), bar_width, left=dist, height=MCC_HMAX - MCC_HMIN,
+                   color=gray_shade, edgecolor='none')
+        
+        # HCC - grayscale based on cloud cover %
+        if hcc_val > 0:
+            gray_shade = cmap_clouds(hcc_val / 100.0)
+            ax.barh(np.mean([HCC_HMIN, HCC_HMAX]), bar_width, left=dist, height=HCC_HMAX - HCC_HMIN,
+                   color=gray_shade, edgecolor='none')
+    
+    # Plot layer boundaries as dotted lines
+    ax.axhline(y=LCC_HMIN, color='black', linestyle=':', linewidth=1, alpha=0.3)
+    ax.axhline(y=LCC_HMAX, color='black', linestyle=':', linewidth=1, alpha=0.3)
+    ax.axhline(y=MCC_HMIN, color='black', linestyle=':', linewidth=1, alpha=0.3)
+    ax.axhline(y=MCC_HMAX, color='black', linestyle=':', linewidth=1, alpha=0.3)
+    ax.axhline(y=HCC_HMIN, color='black', linestyle=':', linewidth=1, alpha=0.3)
+    ax.axhline(y=HCC_HMAX, color='black', linestyle=':', linewidth=1, alpha=0.3)
+    
+    # Identify the best ray path (timestep with maximum transmittance)
+    best_timestep = 0
+    if transmittance_array is not None and len(transmittance_array) > 0:
+        valid_trans = ~np.isnan(transmittance_array)
+        if np.any(valid_trans):
+            # Choose start index based on cloud_level: LCC -> 4th (idx 3), MCC -> 5th (idx 4), HCC -> 6th (idx 5)
+            start_idx_map = {'lcc': 3, 'mcc': 4, 'hcc': 5}
+            start_idx = start_idx_map.get(cloud_level, 0)
+            # Build candidate indices from start_idx onward, filter valid
+            if start_idx < len(transmittance_array):
+                candidates = np.arange(start_idx, len(transmittance_array))
+                valid_candidates = candidates[valid_trans[candidates]] if candidates.size > 0 else np.array([], dtype=int)
+            else:
+                valid_candidates = np.array([], dtype=int)
+
+            if valid_candidates.size > 0:
+                # Define two indices:
+                # - reddening_boundary_idx: earliest valid candidate (visual boundary),
+                # - best_timestep: candidate with maximum transmittance among valid candidates
+                reddening_boundary_idx = int(valid_candidates[0])
+                rel = np.nanargmax(transmittance_array[valid_candidates])
+                best_timestep = int(valid_candidates[rel])
+            else:
+                # fallback to global maximum and set reddening boundary equal to it
+                best_timestep = int(np.nanargmax(transmittance_array))
+                reddening_boundary_idx = best_timestep
+        else:
+            reddening_boundary_idx = 0
+    
+    # Plot all ray paths
+    num_timesteps = ray_heights.shape[0]
+    timesteps_to_plot = np.linspace(0, num_timesteps - 1, min(12, num_timesteps), dtype=int)
+    
+    # Plot and label every second ray path with its I_ray value
+    # Spread out I_ray labels horizontally along the ray path
+    label_positions = np.linspace(0.2, 0.8, num_timesteps)  # Fractional positions along the path
+    for t_idx in range(num_timesteps):
+        ray_path = ray_heights[t_idx, :]
+        valid_mask = ~np.isnan(ray_path)
+        if np.sum(valid_mask) < 2:
+            continue
+
+        I_ray_val = None
+        if transmittance_array is not None and t_idx < len(transmittance_array):
+            I_ray_val = transmittance_array[t_idx]
+
+        # Highlight the selected ray path (best_timestep) in orange and
+        # mark the reddening boundary (reddening_boundary_idx) in red (thin)
+        if t_idx == reddening_boundary_idx:
+            # reddening boundary: red, same width as other paths
+            ax.plot(distances_km[valid_mask], ray_path[valid_mask], 
+                color='red', linewidth=0.8, alpha=0.95, zorder=5)
+
+        if t_idx == best_timestep:
+            label_color = 'C1'
+            label_fontweight = 'normal'
+            label_fontsize = 10
+            label_zorder = 20
+            ax.plot(distances_km[valid_mask], ray_path[valid_mask], 
+                color='C1', linewidth=1.8, alpha=0.95, zorder=10)
+            # Always label the selected (best) path
+            if I_ray_val is not None:
+                # Place label at a spread-out position along the path
+                pos_frac = label_positions[t_idx]
+                idx = int(pos_frac * (np.sum(valid_mask) - 1))
+                x_label = distances_km[valid_mask][idx]
+                y_label = ray_path[valid_mask][idx]
+                ax.text(
+                    x_label, y_label, f"I_ray={I_ray_val:.2f}",
+                    color='white', fontsize=label_fontsize, fontweight=label_fontweight, zorder=label_zorder,
+                    path_effects=[patheffects.withStroke(linewidth=1.5, foreground='black')],
+                    clip_on=True
+                )
+        else:
+            ax.plot(distances_km[valid_mask], ray_path[valid_mask], 
+                   color='C0', linewidth=0.8, alpha=0.4, zorder=1)
+            label_color = 'gray'
+            label_fontweight = 'normal'
+            label_fontsize = 9
+            label_zorder = 10
+            # Only label every second (even-indexed) path to reduce congestion
+            if t_idx % 2 == 0 and I_ray_val is not None:
+                pos_frac = label_positions[t_idx]
+                idx = int(pos_frac * (np.sum(valid_mask) - 1))
+                x_label = distances_km[valid_mask][idx]
+                y_label = ray_path[valid_mask][idx]
+                ax.text(
+                    x_label, y_label, f"I_ray={I_ray_val:.2f}",
+                    color='white', fontsize=label_fontsize, fontweight=label_fontweight, zorder=label_zorder,
+                    path_effects=[patheffects.withStroke(linewidth=1.2, foreground='black')],
+                    clip_on=True
+                )
+    
+    # Create colorbar for cloud cover percentage
+    from matplotlib.colors import Normalize
+    sm = plt.cm.ScalarMappable(cmap=cmap_clouds, norm=Normalize(vmin=0, vmax=100))
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, pad=0.02)
+    cbar.set_label('Cloud Cover (%)', fontsize=11, fontweight='bold')
+    cbar.ax.set_yticks([0, 25, 50, 75, 100])
+    
+    # Formatting
+    ax.set_xlabel('Distance along Azimuth (km)', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Height (m)', fontsize=12, fontweight='bold')
+    ax.set_ylim(0, 10000)
+    ax.set_xlim(0, distance_km)
+    
+    # Cap azimuth to integer for display
+    azimuth_int = int(round(azimuth))
+
+    # Get AOD and local cloud cover for the title
+    # Try to get AOD from function arguments (passed in process_event_with_ray_tracing)
+    # aod_val and aerosol_trans are now passed as arguments
+
+    # Compute local cloud cover for all layers (first 3 points average)
+    local_lcc = float(np.nanmean(lcc_profile[:3])) if lcc_profile is not None and len(lcc_profile) >= 3 else None
+    local_mcc = float(np.nanmean(mcc_profile[:3])) if mcc_profile is not None and len(mcc_profile) >= 3 else None
+    local_hcc = float(np.nanmean(hcc_profile[:3])) if hcc_profile is not None and len(hcc_profile) >= 3 else None
+
+    # Compose title with run datetime and fcst_hr
+    run_dt_str = run_date_str if 'run_date_str' in locals() and run_date_str is not None else ''
+    run_hr_str = run if 'run' in locals() and run is not None else ''
+    fcst_hr_str = fcst_hr if 'fcst_hr' in locals() and fcst_hr is not None else ''
+
+    # Compose title
+    title = f'Ray Path & Cloud Profiles (Azimuth {azimuth_int}°, Score: {event_score})'
+    title += f"\nRun: {run_dt_str} {run_hr_str}z, fcst_hr: +{fcst_hr_str}h"
+    extra = []
+    # Always show AOD and aerosol transmittance; prefer per-timestep aerosol trans if provided
+    if aod_val is not None:
+        extra.append(f"AOD={aod_val:.3f}")
+    else:
+        extra.append("AOD=0.000")
+    # Use aerosol_t_array at best_timestep if available
+    display_aero = None
+    if aerosol_t_array is not None and best_timestep is not None and best_timestep < len(aerosol_t_array):
+        display_aero = float(aerosol_t_array[best_timestep])
+    elif aerosol_trans is not None:
+        display_aero = float(aerosol_trans)
+    if display_aero is not None:
+        extra.append(f"Aerosol Trans={display_aero:.3f}")
+    else:
+        extra.append("Aerosol Trans=1.000")
+    # Show all local cloud covers if available
+    if local_lcc is not None:
+        extra.append(f"LCC={local_lcc:.1f}%")
+    if local_mcc is not None:
+        extra.append(f"MCC={local_mcc:.1f}%")
+    if local_hcc is not None:
+        extra.append(f"HCC={local_hcc:.1f}%")
+    if extra:
+        title += "\n" + ", ".join(extra)
+    ax.set_title(title, fontsize=14, fontweight='bold')
+    
+    # Add legend in lower-right including reddening boundary
+    from matplotlib.lines import Line2D
+    legend_lines = [
+        Line2D([0], [0], color='red', lw=0.8, label='reddening boundary'),
+    ]
+    ax.legend(handles=legend_lines, loc='lower right', fontsize=11, framealpha=0.95, prop={'weight':'normal'})
+    
+    ax.grid(True, alpha=0.2, linestyle='--')
+    
+    plt.tight_layout()
+    plot_filename = f"{save_path}/{run_date_str}{run}0000-{fcst_hr}h-{event_type}-AIFS_cloud_cover_ray_path_{city_name}.png"
+    plt.savefig(plot_filename, dpi=200, bbox_inches='tight')
+    plt.close()
+    
+    logging.info(f"Saved ray path plot: {plot_filename}")
 
 
 def get_cloud_extent(data_dict, city, lon, lat, azimuth, cloud_base_lvl: float, fcst_hr, plot_graph_flag, today_str, run, distance_km = 500, num_points=25, threshold=60.0):
@@ -839,179 +1743,14 @@ def create_dashboard(today, run_date_str, run, index_today, index_tomorrow, city
     plt.savefig(f'{output_path}/{run_date_str}{run}0000_afterglow_dashboard_{city.name}.png', dpi=400)
 
 # Weighted likelihod index
-def weighted_likelihood_index(geom_condition, aod, dust_aod_ratio, cloud_base_lvl, lcl_lvl, theta, avg_first_three, avg_path):
-    """
-    Calculate the weighted likelihood index based on AOD, afterglow time, cloud base level, geometric condition, and cloud extent.
-    
-    Parameters:
-    - geom_condition: Geometric condition for afterglow (True/False)
-    - aod: AOD value
-    - cloud_base_lvl: Cloud base level (m)
-    - max_RH: Maximum relative humidity (%)
-    - theta: Elevation angle (radians)
-    
-    Returns:
-    - likelihood_index: Weighted likelihood index for afterglow
-    """
-    #Initialize scores
-    cloud_cover_score, cloud_base_score, aod_score, dust_ratio_score, theta_score = np.nan, np.nan, np.nan, np.nan, np.nan
-
-    if np.isnan(cloud_base_lvl) or cloud_base_lvl <= 0:
-        cloud_base_lvl = lcl_lvl
-        logging.info("Used LCL level for computation")
-        max_lvl = 6000.0
-        norm_lvl = min(cloud_base_lvl, max_lvl) / max_lvl
-        cloud_base_score = (norm_lvl)
-        logging.info(f"cloud base score using LCL: {cloud_base_score}")
-    else:
-        max_lvl = 6000.0
-        norm_lvl = min(cloud_base_lvl, max_lvl) / max_lvl
-        cloud_base_score = (norm_lvl)
-    
-    if aod >= 0 and aod <= 0.2:
-        aod_score = 1
-    elif aod > 0.2 and aod <= 0.5:
-        aod_score = 0.8
-    elif aod > 0.5 and aod <= 0.7:
-        aod_score = 0.2
-    elif aod > 0.7:
-        aod_score = -0.5
-    
-    if dust_aod_ratio >= 0 and dust_aod_ratio <= 0.2:
-        dust_ratio_score = 0.2
-    elif dust_aod_ratio > 0.2 and dust_aod_ratio <= 0.4:
-        dust_ratio_score = 0.8
-    elif dust_aod_ratio > 0.4:
-        dust_ratio_score = 1
-        
-    if theta >= 0 and theta <= np.deg2rad(5):
-        theta_score = 0.4
-    elif theta > np.deg2rad(5):
-        theta_score = 1
-    elif theta < 0 and theta > np.deg2rad(-0.5):
-        theta_score = -0.8
-    elif theta <= np.deg2rad(-0.5):
-        theta_score = -1
-    elif np.isnan(theta):
-        theta_score = 0 
-    
-    if np.isnan(cloud_base_lvl):
-        cloud_base_lvl = lcl_lvl
-
-    if (cloud_base_lvl < 2000 and cloud_base_lvl > 0 ):
-        avg_first_three = min(avg_first_three, 100)
-        avg_path = min(avg_path, 100)
-
-        x = avg_first_three / 100.0  # normalised
-        y = avg_path / 100.0         # normalised
-
-        local_weight = 0.3
-        local_thr = 0.3
-        local_component = local_weight * (x - local_thr) / (1 - local_thr)
-        
-        k = 8 # Steepness
-        t = 0.4 # Threshold
-        cloud_cover_score = (1-local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
-    
-    if cloud_base_lvl < 4000 and cloud_base_lvl >= 2000:
-        avg_first_three = min(avg_first_three, 100)
-        avg_path = min(avg_path, 100)
-
-        x = avg_first_three / 100.0  # normalised
-        y = avg_path / 100.0         # normalised
-
-        local_weight = 0.3
-        local_thr = 0.3
-
-        local_component = local_weight * (x - local_thr) / (1 - local_thr)
-        
-        k = 8 # Steepness
-        t = 0.4 # Threshold
-        cloud_cover_score = (1-local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
-        
-    if cloud_base_lvl >= 4000:
-        avg_first_three = min(avg_first_three, 100)
-        avg_path = min(avg_path, 100)
-
-        x = avg_first_three / 100.0  # normalised
-        y = avg_path / 100.0         # normalised
-
-        local_weight = 0.3
-        local_thr = 0.3
-
-        local_component = local_weight * (x - local_thr) / (1 - local_thr)
-
-        logging.info(f"x_score: {x}, y_score: {y}")
-        
-        k = 8 # Steepness
-        t = 0.5 # Threshold
-        cloud_cover_score = (1- local_weight) *((2/(1+np.exp(k*(y-t))))-1) + local_component
-    
-    # Handle NaN in cloud_cover_score - set to 0 if NaN
-    if np.isnan(cloud_cover_score):
-        logging.warning("cloud_cover_score is NaN, setting to 0")
-        cloud_cover_score = 0
-    
-    logging.info(f"Cloud cover score: {cloud_cover_score}")
-
-    # import pdb; pdb.set_trace()  # Debugging point to inspect variables
-    
-    if geom_condition == True:
-        # Constants
-        geom_condition_weight = 0.1
-        aod_weight = 0.25
-        dust_aod_ratio_weight = 0.05
-        cloud_cover_weight = 0.4
-        cloud_base_lvl_weight = 0.15
-        theta_weight = 0.05   
-    else:
-        # Constants
-        geom_condition_weight = 0.6
-        aod_weight = 0
-        dust_aod_ratio_weight = 0
-        cloud_cover_weight = 0.3
-        cloud_base_lvl_weight = 0.1
-        theta_weight = 0.0
-
-    # Binary flag for geom_condition
-    geom_flag = 1 if geom_condition else 0
-
-    # Build components and only include non-NaN scores. If a component (e.g. AOD)
-    # is NaN, its weight is ignored and remaining weights are renormalized.
-    components = [
-        ("geom", geom_flag, 1, geom_condition_weight),
-        ("aod", aod_score, 2, aod_weight),
-        ("dust_ratio", dust_ratio_score, 3, dust_aod_ratio_weight),
-        ("cloud_cover", cloud_cover_score, 1, cloud_cover_weight),
-        ("cloud_base", cloud_base_score, 2, cloud_base_lvl_weight),
-        ("theta", theta_score, 2, theta_weight),
-    ]
-
-    numerator = 0.0
-    weight_sum = 0.0
-    for name, score, power, weight in components:
-        if score is None or (isinstance(score, float) and np.isnan(score)):
-            logging.info(f"Skipping {name} contribution due to NaN or missing score")
-            continue
-        contrib = signed_power(score, power) * weight
-        logging.info(f"{name}: score={score}, power={power}, weight={weight}, contrib={contrib}")
-        numerator += contrib
-        weight_sum += weight
-
-    if weight_sum == 0:
-        logging.warning("All component scores are missing; setting likelihood to 0")
-        likelihood_index = 0
-    else:
-        likelihood_index = numerator / weight_sum
-        likelihood_index = np.clip(likelihood_index, 0, 1)  # Ensure it's between 0 and 1
-        if np.isnan(likelihood_index):
-            logging.warning("likelihood_index is NaN after calculation, setting to 0")
-            likelihood_index = 0
-        else:
-            likelihood_index = int(round(likelihood_index * 100))
-
-    return likelihood_index
-
+def bell_curve_cloud_cover_weight(cloud_cover, peak=0.6, width=0.15):
+    # cloud_cover: 0-1
+    import numpy as np
+    try: 
+        return np.exp(-((cloud_cover - peak) ** 2) / (2 * width ** 2))
+    except Exception as e:
+        logging.error(f"Error calculating bell curve weight: {e}")
+        return 1.0
 
 def load_2m_fields(grib_path: str) -> xr.Dataset:
     """
@@ -1074,8 +1813,8 @@ def load_2m_fields(grib_path: str) -> xr.Dataset:
 
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, run_date_str, input_path, output_path, create_dashboard_flag: bool):
     tz = pytz.timezone(timezone_str)
-    current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
-    #current_utc = datetime.datetime(2025, 11, 20, 10, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    #current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
+    current_utc = datetime.datetime(2026, 3, 20, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
     local_today = current_utc.astimezone(tz).date()
 
     tomorrow = today + datetime.timedelta(days=1)
@@ -1125,8 +1864,15 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
     if sunset_day_after is not None:
         sunset_azimuth_day_after = get__sunset_azimuth(city, today + datetime.timedelta(days=2))
 
-    run_dt = latest_forecast_hours_run_to_download()
-    #run_dt = datetime.datetime(2025, 11, 20, 0, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    #run_dt = latest_forecast_hours_run_to_download()
+    run_dt = datetime.datetime(2026, 3, 20, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+        # Use the provided run argument to set run_dt correctly (00 or 12 UTC)
+    if run is not None:
+        run_hour = int(run)
+        run_dt = datetime.datetime.combine(today, datetime.time(run_hour, 0), tzinfo=datetime.timezone.utc)
+    else:
+        run_dt = latest_forecast_hours_run_to_download()
+    logging.info(f"process_city: Using run_dt={run_dt.isoformat()} (run={run})")
     picks = determine_city_forecast_hours_time_to_use(city, sunrise_tdy, sunset_tdy, run_dt)
     print("run_dt:", run_dt)
     print("picks:", picks)
@@ -1211,31 +1957,31 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         ds_tdy_2m = open_2m_cached(grib_tdy)
         ds_tmr_2m = open_2m_cached(grib_tmr)
 
+        # Load combined cloud layers (lcc, mcc, hcc) with lvl dimension
+        ds_tdy_cloud_layers = combine_cloud_layers(grib_tdy)  # dims: (lvl, latitude, longitude)
+        ds_tmr_cloud_layers = combine_cloud_layers(grib_tmr)
+        
+        # Also load tcc separately for backward compatibility
         ds_tdy_tcc = open_cloud_da(grib_tdy, 'tcc')
-        ds_tdy_lcc = open_cloud_da(grib_tdy, 'lcc')
-        ds_tdy_mcc = open_cloud_da(grib_tdy, 'mcc')
-        ds_tdy_hcc = open_cloud_da(grib_tdy, 'hcc')
-
         ds_tmr_tcc = open_cloud_da(grib_tmr, 'tcc')
-        ds_tmr_lcc = open_cloud_da(grib_tmr, 'lcc')
-        ds_tmr_mcc = open_cloud_da(grib_tmr, 'mcc')
-        ds_tmr_hcc = open_cloud_da(grib_tmr, 'hcc')
 
         cloud_vars_tdy = {
             "tcc": ds_tdy_tcc,
-            "lcc": ds_tdy_lcc,
-            "mcc": ds_tdy_mcc,
-            "hcc": ds_tdy_hcc
+            "lcc": ds_tdy_cloud_layers.sel(lvl='lcc'),
+            "mcc": ds_tdy_cloud_layers.sel(lvl='mcc'),
+            "hcc": ds_tdy_cloud_layers.sel(lvl='hcc'),
+            "cloud_layers": ds_tdy_cloud_layers  # combined with lvl dimension
         }
 
         cloud_vars_tmr = {
             "tcc": ds_tmr_tcc,
-            "lcc": ds_tmr_lcc,
-            "mcc": ds_tmr_mcc,
-            "hcc": ds_tmr_hcc
+            "lcc": ds_tmr_cloud_layers.sel(lvl='lcc'),
+            "mcc": ds_tmr_cloud_layers.sel(lvl='mcc'),
+            "hcc": ds_tmr_cloud_layers.sel(lvl='hcc'),
+            "cloud_layers": ds_tmr_cloud_layers  # combined with lvl dimension
         }
-        cloud_vars_tdy = reduce_clouds_to_roi(cloud_vars_tdy, lon, lat, sunset_azimuth, distance_km=500, pad_km=80)
-        cloud_vars_tmr = reduce_clouds_to_roi(cloud_vars_tmr, lon, lat, sunset_azimuth_tmr, distance_km=500, pad_km=80)
+        cloud_vars_tdy = reduce_clouds_to_roi(cloud_vars_tdy, lon, lat, sunset_azimuth, distance_km=700, pad_km=80)
+        cloud_vars_tmr = reduce_clouds_to_roi(cloud_vars_tmr, lon, lat, sunset_azimuth_tmr, distance_km=700, pad_km=80)
 
         if create_dashboard_flag:
             plot_cloud_cover_map(cloud_vars_tdy, city, lon, lat, run_date_str, run,
@@ -1305,22 +2051,30 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         actual_afterglow_time_tdy = get_afterglow_time(lat, today, distance_below_threshold_tdy, lf_ma_tdy, cloud_base_lvl_tdy, z_lcl_tdy)
         actual_afterglow_time_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_tmr, lf_ma_tmr, cloud_base_lvl_tmr, z_lcl_tmr)
 
-        # One method is to use Equivalent cloud heigh  = cloud base level - equivalent surface height as highlighted in the paper
-        # But uncertainty is high and the exact mechanism is not clear
-        # Here we use a simplier and quicker method, but yet to be verified
-        # The AOD value directly controls the value of the afterglow liklihood index in the weighted equation
-
-        # Incorporate AOD
-        lats, lons = azimuth_line_points(lat, lon, sunset_azimuth, distance_km = 500, num_points=50)
+        # Incorporate AOD and use ray tracing for scoring
+        lats, lons = azimuth_line_points(lat, lon, sunset_azimuth, distance_km = 700, num_points=25)
         dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path, lats, lons) #Array of shape (2,) first is 18h , second is 42h
 
-        likelihood_index_tdy = weighted_likelihood_index(geom_cond_tdy, total_aod550[0], dust_aod550_ratio[0], cloud_base_lvl_tdy, z_lcl_tdy, theta_tdy, avg_first_three_tdy, avg_path_tdy)
-        likelihood_index_tmr = weighted_likelihood_index(geom_cond_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], dust_aod550_ratio[1] if dust_aod550_ratio.size>1 else dust_aod550_ratio[0], cloud_base_lvl_tmr, z_lcl_tmr, theta_tmr, avg_first_three_tmr, avg_path_tmr)
+        #import pdb; pdb.set_trace()
+        
+        # Use ray tracing-based scoring and colors
+        likelihood_index_tdy, actual_afterglow_time_tdy, possible_colors_tdy, _, _ = process_event_with_ray_tracing(
+            cloud_vars_tdy, lat, lon, sunset_azimuth, total_aod550[0], distance_km=700, num_points=25, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tdy, run=run, run_date_str=run_date_str
+        )
+        likelihood_index_tmr, actual_afterglow_time_tmr_ray, possible_colors_tmr, _, _ = process_event_with_ray_tracing(
+            cloud_vars_tmr, lat, lon, sunset_azimuth_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], distance_km=700, num_points=25, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tmr, run=run, run_date_str=run_date_str
+        )
+        
+        # Use ray tracing afterglow time if available, otherwise fall back to geometric calculation
+        if actual_afterglow_time_tdy == 0:
+            actual_afterglow_time_tdy = get_afterglow_time(lat, today, distance_below_threshold_tdy, lf_ma_tdy, cloud_base_lvl_tdy, z_lcl_tdy)
+        if actual_afterglow_time_tmr_ray > 0:
+            actual_afterglow_time_tmr = actual_afterglow_time_tmr_ray
+        else:
+            actual_afterglow_time_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_tmr, lf_ma_tmr, cloud_base_lvl_tmr, z_lcl_tmr)
+        
         logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
         logging.info(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
-
-        possible_colors_tdy = possible_colours(cloud_base_lvl_tdy, z_lcl_tdy, total_aod550[0], key_tdy)
-        possible_colors_tmr = possible_colours(cloud_base_lvl_tmr, z_lcl_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], key_tmr)
 
         if create_dashboard_flag:
             create_dashboard(
@@ -1421,33 +2175,33 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         ds_sunrise_tdy_2m = open_2m_cached(grib_sunrise_tdy)
         ds_sunrise_tmr_2m = open_2m_cached(grib_sunrise_tmr)
 
+        # Load combined cloud layers (lcc, mcc, hcc) with lvl dimension
+        sunrise_tdy_cloud_layers = combine_cloud_layers(grib_sunrise_tdy)
+        sunrise_tmr_cloud_layers = combine_cloud_layers(grib_sunrise_tmr)
+        
+        # Also load tcc separately for backward compatibility
         sunrise_tdy_tcc = open_cloud_da(grib_sunrise_tdy, 'tcc')
-        sunrise_tdy_lcc = open_cloud_da(grib_sunrise_tdy, 'lcc')
-        sunrise_tdy_mcc = open_cloud_da(grib_sunrise_tdy, 'mcc')
-        sunrise_tdy_hcc = open_cloud_da(grib_sunrise_tdy, 'hcc')
-
         sunrise_tmr_tcc = open_cloud_da(grib_sunrise_tmr, 'tcc')
-        sunrise_tmr_lcc = open_cloud_da(grib_sunrise_tmr, 'lcc')
-        sunrise_tmr_mcc = open_cloud_da(grib_sunrise_tmr, 'mcc')
-        sunrise_tmr_hcc = open_cloud_da(grib_sunrise_tmr, 'hcc')
 
         cloud_vars_sunrise_tdy = {
             "tcc": sunrise_tdy_tcc,
-            "lcc": sunrise_tdy_lcc,
-            "mcc": sunrise_tdy_mcc,
-            "hcc": sunrise_tdy_hcc
+            "lcc": sunrise_tdy_cloud_layers.sel(lvl='lcc'),
+            "mcc": sunrise_tdy_cloud_layers.sel(lvl='mcc'),
+            "hcc": sunrise_tdy_cloud_layers.sel(lvl='hcc'),
+            "cloud_layers": sunrise_tdy_cloud_layers  # combined with lvl dimension
         }
 
         cloud_vars_sunrise_tmr = {
             "tcc": sunrise_tmr_tcc,
-            "lcc": sunrise_tmr_lcc,
-            "mcc": sunrise_tmr_mcc,
-            "hcc": sunrise_tmr_hcc
+            "lcc": sunrise_tmr_cloud_layers.sel(lvl='lcc'),
+            "mcc": sunrise_tmr_cloud_layers.sel(lvl='mcc'),
+            "hcc": sunrise_tmr_cloud_layers.sel(lvl='hcc'),
+            "cloud_layers": sunrise_tmr_cloud_layers  # combined with lvl dimension
         }
 
         # Slice to ROI around sunrise azimuth
-        cloud_vars_sunrise_tdy = reduce_clouds_to_roi(cloud_vars_sunrise_tdy, lon, lat, sunrise_azimuth, distance_km=500, pad_km=80)
-        cloud_vars_sunrise_tmr = reduce_clouds_to_roi(cloud_vars_sunrise_tmr, lon, lat, sunrise_azimuth_tmr, distance_km=500, pad_km=80)
+        cloud_vars_sunrise_tdy = reduce_clouds_to_roi(cloud_vars_sunrise_tdy, lon, lat, sunrise_azimuth, distance_km=700, pad_km=80)
+        cloud_vars_sunrise_tmr = reduce_clouds_to_roi(cloud_vars_sunrise_tmr, lon, lat, sunrise_azimuth_tmr, distance_km=700, pad_km=80)
 
         if create_dashboard_flag:
             plot_cloud_cover_map(cloud_vars_sunrise_tdy, city, lon, lat, run_date_str, run,
@@ -1523,17 +2277,27 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         actual_afterglow_time_sunrise_tdy = get_afterglow_time(lat, today, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy)
         actual_afterglow_time_sunrise_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr)
 
-        lats, lons = azimuth_line_points(lat, lon, sunrise_azimuth, distance_km = 500, num_points=50)
+        lats, lons = azimuth_line_points(lat, lon, sunrise_azimuth, distance_km = 700, num_points=25)
         dust_aod550, total_aod550, dust_aod550_ratio = calc_aod(run, today_str, input_path, lats, lons)
 
-        likelihood_index_sunrise_tdy = weighted_likelihood_index(geom_cond_sunrise_tdy, total_aod550, dust_aod550_ratio, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, theta_sunrise_tdy, avg_first_three_sunrise_tdy, avg_path_sunrise_tdy)
-        likelihood_index_sunrise_tmr = weighted_likelihood_index(geom_cond_sunrise_tmr, total_aod550, dust_aod550_ratio, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, theta_sunrise_tmr, avg_first_three_sunrise_tmr, avg_path_sunrise_tmr)
+        # Use ray tracing-based scoring and colors
+        likelihood_index_sunrise_tdy, actual_afterglow_time_sunrise_tdy, possible_colors_sunrise_tdy, _, _ = process_event_with_ray_tracing(
+            cloud_vars_sunrise_tdy, lat, lon, sunrise_azimuth, total_aod550[0] if hasattr(total_aod550, '__getitem__') else total_aod550, distance_km=700, num_points=25, event_type='sunrise', city_name=city_name, fcst_hr=sunrise_fh_tdy, run=run, run_date_str=run_date_str
+        )
+        likelihood_index_sunrise_tmr, actual_afterglow_time_sunrise_tmr_ray, possible_colors_sunrise_tmr, _, _ = process_event_with_ray_tracing(
+            cloud_vars_sunrise_tmr, lat, lon, sunrise_azimuth_tmr, total_aod550[1] if hasattr(total_aod550, '__getitem__') and total_aod550.size>1 else (total_aod550[0] if hasattr(total_aod550, '__getitem__') else total_aod550), distance_km=700, num_points=25, event_type='sunrise', city_name=city_name, fcst_hr=sunrise_fh_tmr, run=run, run_date_str=run_date_str
+        )
+        
+        # Use ray tracing afterglow time if available, otherwise fall back to geometric calculation
+        if actual_afterglow_time_sunrise_tdy == 0:
+            actual_afterglow_time_sunrise_tdy = get_afterglow_time(lat, today, distance_below_threshold_sunrise_tdy, lf_ma_sunrise_tdy, cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy)
+        if actual_afterglow_time_sunrise_tmr_ray > 0:
+            actual_afterglow_time_sunrise_tmr = actual_afterglow_time_sunrise_tmr_ray
+        else:
+            actual_afterglow_time_sunrise_tmr = get_afterglow_time(lat, tomorrow, distance_below_threshold_sunrise_tmr, lf_ma_sunrise_tmr, cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr)
         
         logging.info(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
         logging.info(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
-
-        possible_colors_sunrise_tdy = possible_colours(cloud_base_lvl_sunrise_tdy, z_lcl_sunrise_tdy, total_aod550, key_sunrise_tdy)
-        possible_colors_sunrise_tmr = possible_colours(cloud_base_lvl_sunrise_tmr, z_lcl_sunrise_tmr, total_aod550, key_sunrise_tmr)
 
         sunrise_results = {
             "sunrise_likelihood_index_tdy": likelihood_index_sunrise_tdy,
@@ -1665,6 +2429,7 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
     sunset_time_tmr = (city_sunset_time + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc)
     sunrise_time_tmr = (city_sunrise_time + datetime.timedelta(days=1)).astimezone(datetime.timezone.utc)
     threshold_time = run_datetime + datetime.timedelta(hours= time_threshold_h) # default is +15h, which is 15Z for 00Z run and +1 03Z for 12Z run. Do not change, will mess up the logic.
+    logging.info(f"determine_city_forecast_hours_time_to_use: run_dt={run_datetime.isoformat()}, threshold_time={threshold_time.isoformat()}, time_threshold_h={time_threshold_h}")
 
     # Write out the forecast_hours times from run initialization time in 6-hour increments
     offsets = list(range(0,61,6)) # 0 to 60 hours in 6-hour increments
