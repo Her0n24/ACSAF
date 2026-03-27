@@ -6,6 +6,7 @@ cities = [
 {"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": True},
 {"name": "Reading",  "country": "UK", "tz": "Europe/London",   "lat": 51.4545, "lon": -0.9781, "create_dashboard": True},
 {"name": "Oxford",   "country": "UK", "tz": "Europe/London",   "lat": 51.7520, "lon": -1.2577, "create_dashboard": True},
+{"name": "Cambridge", "country": "UK", "tz": "Europe/London",   "lat": 52.2053, "lon": 0.1218,  "create_dashboard": True},
 ]
 
 # def run_tests():
@@ -59,11 +60,11 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2026,3,21,23,0,0)  # Simulate today as selected date for testing
+    today = datetime.datetime(2026,3,27,15,3,0)  # Simulate today as selected date for testing
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)
-    run = "12".zfill(2) # Change this when simulating as well!
+    run = "00".zfill(2) # Change this when simulating as well!
     # run_dt = latest_forecast_hours_run_to_download()
     # run = str(run_dt.hour).zfill(2)
 

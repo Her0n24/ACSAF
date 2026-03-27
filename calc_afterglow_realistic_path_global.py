@@ -63,6 +63,9 @@ from CONST import (
     I_RAY_THRESHOLD_DEFAULT,
     R_EARTH_M,
     RAY_NORM_CONSANT,
+    MIN_CLOUD_COVER_THRESHOLD,
+    MAX_LCC_THRESHOLD,
+    MAX_MCC_THRESHOLD
 )
 import argparse
 from functools import lru_cache
@@ -536,7 +539,7 @@ def aggregate_ray_traced_profile(ray_cloud_profile, aggregation='mean'):
         raise ValueError(f"Unknown aggregation method: {aggregation}")
 
 
-def select_layers_by_threshold(ray_cloud_profile, lcc_val, mcc_val, hcc_val):
+def select_layers_by_threshold(ray_cloud_profile, lcc_val, mcc_val, hcc_val) -> dict:
     """
     Select which cloud layers to analyze based on local cloud cover (first 3 indices).
     Works from lowest layer upward with thresholds: LCC 50%, MCC 60%, HCC 20%.
@@ -549,17 +552,48 @@ def select_layers_by_threshold(ray_cloud_profile, lcc_val, mcc_val, hcc_val):
     Returns:
     - selected_layers: dict with layer names as keys (e.g., {'lcc': True, 'mcc': False, 'hcc': False})
     """
-    # New logic: always start with LCC, add MCC if LCC < 50, add HCC if MCC < 60
-    selected_layers = {'lcc': True, 'mcc': False, 'hcc': False}
-    if lcc_val < 50.0:
-        selected_layers['mcc'] = True
-        if mcc_val < 60.0:
-            selected_layers['hcc'] = True
+    # Enforce minimum threshold: if all layers are below threshold, return all False
+    if all(val < MIN_CLOUD_COVER_THRESHOLD for val in [lcc_val, mcc_val, hcc_val]):
+        logging.info("All cloud layers below minimum threshold; returning no cloud.")
+        return {'lcc': False, 'mcc': False, 'hcc': False}
+    
+    selected_layers = {'lcc': False, 'mcc': False, 'hcc': False}
+
+    # Step 1: If all layers are below threshold, return no cloud
+    if all(val < MIN_CLOUD_COVER_THRESHOLD for val in [lcc_val, mcc_val, hcc_val]):
+        logging.info("All cloud layers below minimum threshold; returning no cloud.")
+        return selected_layers
+    
+    # Step 2: Search from lowest upward
+    if lcc_val >= MIN_CLOUD_COVER_THRESHOLD:
+        if lcc_val >= MAX_LCC_THRESHOLD:
+            selected_layers['lcc'] = True
+        else:
+            selected_layers['lcc'] = True
+            if mcc_val >= MIN_CLOUD_COVER_THRESHOLD:
+                if mcc_val >= MAX_MCC_THRESHOLD:
+                    selected_layers['mcc'] = True
+                else:
+                    selected_layers['mcc'] = True
+                    if hcc_val >= MIN_CLOUD_COVER_THRESHOLD:
+                        selected_layers['hcc'] = True
+            # If MCC < threshold, only LCC is selected (already set)
+    elif mcc_val >= MIN_CLOUD_COVER_THRESHOLD:
+        if mcc_val >= MAX_MCC_THRESHOLD:
+            selected_layers['mcc'] = True
+        else:
+            selected_layers['mcc'] = True
+            if hcc_val >= MIN_CLOUD_COVER_THRESHOLD:
+                selected_layers['hcc'] = True
+        # If HCC < threshold, only MCC is selected (already set)
+    elif hcc_val >= MIN_CLOUD_COVER_THRESHOLD:
+        selected_layers['hcc'] = True
+
     logging.info(f"Selected layers: LCC={selected_layers['lcc']}, MCC={selected_layers['mcc']}, HCC={selected_layers['hcc']}")
     return selected_layers
 
 
-def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD550, selected_layers, distances_m=None):
+def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD550, selected_layers, distances_m=None) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate cumulative transmittance (total transmitted light) for each timestep.
     AOD550 only applied to timesteps where ray height < MCC_HMIN.
@@ -591,7 +625,7 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
     # distances_m are point positions along the ray in meters. Use ray_heights to compute dy.
     if distances_m is None:
         # fallback: assume 1 km uniform segments
-        ds_km = np.ones(max(1, num_points - 1)) * 1.0
+        ds_km = np.ones(max(1, desired_num_points - 1)) * 1.0
     else:
         d = np.asarray(distances_m)
         # Ensure ray_heights is available per timestep (we'll compute per-timestep ds)
@@ -767,7 +801,7 @@ def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, totalAOD5
 # Old scoring function removed. Scoring is now handled inline in process_event_with_ray_tracing.
 
 
-def calculate_afterglow_time_from_ray_tracing(total_transmitted_light, I_ray_threshold=I_RAY_THRESHOLD_DEFAULT):
+def calculate_afterglow_time_from_ray_tracing(total_transmitted_light, I_ray_threshold=I_RAY_THRESHOLD_DEFAULT) -> tuple[int, int]:
     """
     Calculate afterglow time based on number of timesteps where I_ray > threshold.
     Each timestep represents 60 seconds.
@@ -889,10 +923,14 @@ def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, totalAOD550, d
         dummy_profile = np.zeros((60, num_points))  # 60 timesteps, num_points
         selected_layers = select_layers_by_threshold(dummy_profile, lcc_local, mcc_local, hcc_local)
         
+        if not any(selected_layers.values()):
+            logging.warning("No cloud layers cover")
+            return 0, 0, ('none',), {'lcc': False, 'mcc': False, 'hcc': False}, np.array([])
+        
         # Determine cloud_base_lvl from selected layers (use HIGHEST selected layer)
         # Use presumed cloud heights for ray tracing base
         if selected_layers.get('hcc', False):
-            cloud_base_lvl = HCC_HEIGHT  # 9km presumed center
+            cloud_base_lvl = HCC_HEIGHT  # 7.5km presumed center
         elif selected_layers.get('mcc', False):
             cloud_base_lvl = MCC_HEIGHT  # 4km presumed center
         elif selected_layers.get('lcc', False):
@@ -1197,23 +1235,22 @@ def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profil
         if transmittance_array is not None and t_idx < len(transmittance_array):
             I_ray_val = transmittance_array[t_idx]
 
-        # Highlight the selected ray path (best_timestep) in orange and
-        # mark the reddening boundary (reddening_boundary_idx) in red (thin)
+        # Plot reddening boundary as dashed red with legend
         if t_idx == reddening_boundary_idx:
-            # reddening boundary: red, same width as other paths
-            ax.plot(distances_km[valid_mask], ray_path[valid_mask], 
-                color='red', linewidth=0.8, alpha=0.95, zorder=5)
+            ax.plot(distances_km[valid_mask], ray_path[valid_mask],
+                    color='red', linewidth=1, alpha=0.95, zorder=5,
+                    linestyle='-', label='Reddening Boundary')
 
+        # Plot selected ray as dotted orange with legend
         if t_idx == best_timestep:
-            label_color = 'C1'
+            label_color = 'orange'
             label_fontweight = 'normal'
             label_fontsize = 10
             label_zorder = 20
-            ax.plot(distances_km[valid_mask], ray_path[valid_mask], 
-                color='C1', linewidth=1.8, alpha=0.95, zorder=10)
+            ax.plot(distances_km[valid_mask], ray_path[valid_mask],
+                    color='orange', linewidth=2.5, alpha=0.95, zorder=10, linestyle=':', label='Selected Ray Path')
             # Always label the selected (best) path
             if I_ray_val is not None:
-                # Place label at a spread-out position along the path
                 pos_frac = label_positions[t_idx]
                 idx = int(pos_frac * (np.sum(valid_mask) - 1))
                 x_label = distances_km[valid_mask][idx]
@@ -1224,9 +1261,10 @@ def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profil
                     path_effects=[patheffects.withStroke(linewidth=1.5, foreground='black')],
                     clip_on=True
                 )
-        else:
-            ax.plot(distances_km[valid_mask], ray_path[valid_mask], 
-                   color='C0', linewidth=0.8, alpha=0.4, zorder=1)
+        # Plot all other rays faded for context
+        elif t_idx != reddening_boundary_idx:
+            ax.plot(distances_km[valid_mask], ray_path[valid_mask],
+                    color='C0', linewidth=0.8, alpha=0.4, zorder=1)
             label_color = 'gray'
             label_fontweight = 'normal'
             label_fontsize = 9
@@ -1239,22 +1277,29 @@ def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profil
                 y_label = ray_path[valid_mask][idx]
                 ax.text(
                     x_label, y_label, f"I_ray={I_ray_val:.2f}",
-                    color='white', fontsize=label_fontsize, fontweight=label_fontweight, zorder=label_zorder,
-                    path_effects=[patheffects.withStroke(linewidth=1.2, foreground='black')],
+                    color=label_color, fontsize=label_fontsize, fontweight=label_fontweight, zorder=label_zorder,
+                    path_effects=[patheffects.withStroke(linewidth=1.0, foreground='black')],
                     clip_on=True
                 )
+
+    # Set larger font size for axis labels and ticks
+    ax.set_xlabel(ax.get_xlabel(), fontsize=18)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=18)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    # Add legend to distinguish selected ray and reddening boundary
+    ax.legend(loc='upper right', fontsize=12)
     
     # Create colorbar for cloud cover percentage
     from matplotlib.colors import Normalize
     sm = plt.cm.ScalarMappable(cmap=cmap_clouds, norm=Normalize(vmin=0, vmax=100))
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=ax, pad=0.02)
-    cbar.set_label('Cloud Cover (%)', fontsize=11, fontweight='bold')
+    cbar.set_label('Cloud Cover (%)', fontsize=18, fontweight='bold')
     cbar.ax.set_yticks([0, 25, 50, 75, 100])
     
     # Formatting
-    ax.set_xlabel('Distance along Azimuth (km)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Height (m)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Distance along Azimuth (km)', fontsize=18, fontweight='bold')
+    ax.set_ylabel('Height (m)', fontsize=18, fontweight='bold')
     ax.set_ylim(0, 10000)
     ax.set_xlim(0, distance_km)
     
@@ -1276,7 +1321,7 @@ def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profil
     fcst_hr_str = fcst_hr if 'fcst_hr' in locals() and fcst_hr is not None else ''
 
     # Compose title
-    title = f'Ray Path & Cloud Profiles (Azimuth {azimuth_int}°, Score: {event_score})'
+    title = f'Ray Path & Cloud Profiles for {city_name} (Azimuth {azimuth_int}°, Score: {event_score})'
     title += f"\nRun: {run_dt_str} {run_hr_str}z, fcst_hr: +{fcst_hr_str}h"
     extra = []
     # Always show AOD and aerosol transmittance; prefer per-timestep aerosol trans if provided
@@ -1309,6 +1354,7 @@ def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profil
     from matplotlib.lines import Line2D
     legend_lines = [
         Line2D([0], [0], color='red', lw=0.8, label='reddening boundary'),
+        Line2D([0], [0], color='orange', lw=1.5, linestyle=':', label='selected ray path')
     ]
     ax.legend(handles=legend_lines, loc='lower right', fontsize=11, framealpha=0.95, prop={'weight':'normal'})
     
@@ -1660,7 +1706,7 @@ def load_2m_fields(grib_path: str) -> xr.Dataset:
 def process_city(city_name: str, country: str, lat: float, lon: float, timezone_str: str, today, run, today_str, run_date_str, input_path, output_path, create_dashboard_flag: bool):
     tz = pytz.timezone(timezone_str)
     current_utc = datetime.datetime.now(tz=datetime.timezone.utc)
-    #current_utc = datetime.datetime(2026, 3, 21, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    #current_utc = datetime.datetime(2026, 3, 24, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
     local_today = current_utc.astimezone(tz).date()
 
     tomorrow = today + datetime.timedelta(days=1)
@@ -1711,7 +1757,7 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         sunset_azimuth_day_after = get__sunset_azimuth(city, today + datetime.timedelta(days=2))
 
     run_dt = latest_forecast_hours_run_to_download()
-    #run_dt = datetime.datetime(2026, 3, 21, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
+    #run_dt = datetime.datetime(2026, 3, 24, 23, 0, 0, tzinfo=datetime.timezone.utc)  # Fixed date for testing
         # Use the provided run argument to set run_dt correctly (00 or 12 UTC)
     if run is not None:
         run_hour = int(run)
@@ -1900,13 +1946,11 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         likelihood_index_tdy, actual_afterglow_time_tdy, possible_colors_tdy, _, _ = process_event_with_ray_tracing(
             cloud_vars_tdy, lat, lon, sunset_azimuth, total_aod550[0], distance_km=700, num_points=25, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tdy, run=run, run_date_str=run_date_str
         )
-        likelihood_index_tmr, actual_afterglow_time_tmr_ray, possible_colors_tmr, _, _ = process_event_with_ray_tracing(
+        likelihood_index_tmr, actual_afterglow_time_tmr, possible_colors_tmr, _, _ = process_event_with_ray_tracing(
             cloud_vars_tmr, lat, lon, sunset_azimuth_tmr, total_aod550[1] if total_aod550.size>1 else total_aod550[0], distance_km=700, num_points=25, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tmr, run=run, run_date_str=run_date_str
         )
-        
+        #import pdb; pdb.set_trace()
         # Use ray-tracing afterglow time (no geometric fallback)
-        if actual_afterglow_time_tmr_ray > 0:
-            actual_afterglow_time_tmr = actual_afterglow_time_tmr_ray
         # actual_afterglow_time_tdy was already set by process_event_with_ray_tracing above
         
         logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")

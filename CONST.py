@@ -14,15 +14,21 @@ ALPHA_COEFF = -5.14e-5
 # Scoring
 RAY_NORM_CONSANT = 0.7  # Max I_ray value for normalization in scoring
 
+## Cloud layer definitions
 # Cloud layer height bins (meters)
 LCC_HMIN, LCC_HMAX = 0, 1999
 MCC_HMIN, MCC_HMAX = 2000, 5999
 HCC_HMIN, HCC_HMAX = 6000, 9000
 
+# Cloud cover thresholds (percentage)
+MIN_CLOUD_COVER_THRESHOLD = 10  # % Minimum cloud cover fraction to consider a layer as present
+MAX_LCC_THRESHOLD = 50  # % Max LCC cover to consider it "low" for scoring
+MAX_MCC_THRESHOLD = 60  # % Max MCC cover to consider it "low" for scoring
+
 # Representative layer heights (meters)
 LCC_HEIGHT = 1000
 MCC_HEIGHT = 4000
-HCC_HEIGHT = 9000
+HCC_HEIGHT = 7500
 
 # Resampling and optical depths
 DESIRED_NUM_POINTS = 25
