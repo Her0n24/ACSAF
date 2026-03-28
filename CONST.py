@@ -5,6 +5,10 @@ import numpy as np
 MAX_CLOUD_HEIGHT = 9000  # meters
 VIEW_ELEVATION_ANGLE = 5  # degrees
 R_EARTH_M = 6.371e6  # Earth radius in meters
+R_DRY = 287.05  # Specific gas constant for dry air (J/(kg*K))
+T0 = 288.15      # Sea level standard temperature (K)
+P0 = 101325.0    # Sea level standard pressure (Pa)
+L = 0.0065       # Standard lapse rate (K/m)
 
 # Ray sampling / temporal
 TIMESTEP_SECONDS = 60

@@ -46,7 +46,7 @@ cities = [
 import datetime
 from astral import LocationInfo
 from city_test import cities           # must be a module-level list as above
-from calc_afterglow_realistic_path_global import process_city, latest_forecast_hours_run_to_download
+from calc_afterglow_realistic_path_lwc_global import process_city, latest_forecast_hours_run_to_download
 from get_cds_global import get_cams_aod
 from get_aifs import download_file
 import requests

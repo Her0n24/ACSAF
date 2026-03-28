@@ -57,7 +57,7 @@ def calc_aod(run, today_str, input_path, lats, lons):
             else:
                 dust_list.append(np.nan)
         total_aod550 = np.array(total_list)
-        dust_aod550 = np.array(dust_list)
+        dust_550 = np.array(dust_list)
     else:
         total_vals = da_total.interp(latitude=xr.DataArray(lats), longitude=xr.DataArray(lons), method='nearest').values
         total_aod550 = np.array([_safe_mean(total_vals, context="total (no time)")])
