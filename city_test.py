@@ -1,12 +1,12 @@
 cities = [
-{"name": "London",   "country": "UK", "tz": "Europe/London",    "lat": 51.5074, "lon": -0.1278, "create_dashboard": False},
+# {"name": "London",   "country": "UK", "tz": "Europe/London",    "lat": 51.5074, "lon": -0.1278, "create_dashboard": False},
 # {"name": "New_York","country": "US", "tz": "America/New_York",  "lat": 40.7128, "lon": -74.0060, "create_dashboard": False},
 # {"name": "Tokyo",    "country": "JP", "tz": "Asia/Tokyo",       "lat": 35.6895, "lon": 139.6917, "create_dashboard": False},
 # {"name": "Sydney",   "country": "AU", "tz": "Australia/Sydney", "lat": -33.8688,"lon": 151.2093, "create_dashboard": False},
-{"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": True},
-{"name": "Reading",  "country": "UK", "tz": "Europe/London",   "lat": 51.4545, "lon": -0.9781, "create_dashboard": True},
-{"name": "Oxford",   "country": "UK", "tz": "Europe/London",   "lat": 51.7520, "lon": -1.2577, "create_dashboard": True},
-{"name": "Cambridge", "country": "UK", "tz": "Europe/London",   "lat": 52.2053, "lon": 0.1218,  "create_dashboard": True},
+{"name": "Hong Kong",  "country": "HK", "tz": "Asia/Hong_Kong",   "lat": 22.3193, "lon": 114.1694, "create_dashboard": False},
+{"name": "Reading",  "country": "UK", "tz": "Europe/London",   "lat": 51.4545, "lon": -0.9781, "create_dashboard": False},
+# {"name": "Oxford",   "country": "UK", "tz": "Europe/London",   "lat": 51.7520, "lon": -1.2577, "create_dashboard": False},
+{"name": "Cambridge", "country": "UK", "tz": "Europe/London",   "lat": 52.2053, "lon": 0.1218,  "create_dashboard": False},
 ]
 
 # def run_tests():
@@ -47,7 +47,7 @@ import datetime
 from astral import LocationInfo
 from city_test import cities           # must be a module-level list as above
 from calc_afterglow_realistic_path_lwc_global import process_city, latest_forecast_hours_run_to_download
-from get_cds_global import get_cams_aod
+from get_cds_global import get_cams_aod_lwc, get_cams_cloud_cover
 from get_aifs import download_file
 import requests
 import logging
@@ -60,31 +60,32 @@ def main():
 
     output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
-    today = datetime.datetime(2026,3,27,15,3,0)  # Simulate today as selected date for testing
+    today = datetime.datetime(2026,3,29,23,3,0)  # Simulate today as selected date for testing
     today_str = today.strftime("%Y%m%d")
 
     print("today_str:", today_str)
-    run = "00".zfill(2) # Change this when simulating as well!
-    # run_dt = latest_forecast_hours_run_to_download()
-    # run = str(run_dt.hour).zfill(2)
+    #run = "00".zfill(2) # Change this when simulating as well!
+    run_dt = latest_forecast_hours_run_to_download()
+    run = str(run_dt.hour).zfill(2)
 
-    failed_count = 0
-    for fcst_hour in range(0, 61, 6):
-        try:
-            if failed_count >= 5:
-                print("Too many failed downloads, aborting.")
-                quit()
-            url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
-            download_file(url, f"{input_path}/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
-        except requests.HTTPError as e:
-            logging.warning(f"HTTP error downloading hour {fcst_hour}: {e}")
-            failed_count += 1
-        except Exception as e:
-            logging.exception(f"Unexpected error downloading hour {fcst_hour}")
-            failed_count += 1
+    # failed_count = 0
+    # for fcst_hour in range(0, 61, 6):
+    #     try:
+    #         if failed_count >= 5:
+    #             print("Too many failed downloads, aborting.")
+    #             quit()
+    #         url = f"https://data.ecmwf.int/forecasts/{today_str}/{run}z/aifs-single/0p25/oper/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2"   
+    #         download_file(url, f"{input_path}/{today_str}{run}0000-{fcst_hour}h-oper-fc.grib2")
+    #     except requests.HTTPError as e:
+    #         logging.warning(f"HTTP error downloading hour {fcst_hour}: {e}")
+    #         failed_count += 1
+    #     except Exception as e:
+    #         logging.exception(f"Unexpected error downloading hour {fcst_hour}")
+    #         failed_count += 1
 
     # Need global dataset for this - convert datetime to date
-    get_cams_aod(today.date(), run, today_str, input_path) # type: ignore
+    get_cams_aod_lwc(today.date(), run, today_str, input_path) # type: ignore
+    get_cams_cloud_cover(today.date(), run, today_str, input_path)
 
     run_date_str = today_str  # For test, use today_str as run_date_str (adjust if needed)
     results = []

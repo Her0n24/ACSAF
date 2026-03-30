@@ -128,22 +128,18 @@ def extract_variable(ds, var_name, lat_min, lat_max, lon_min, lon_max, verbose=F
 ds_18_lcc = extract_variable(ds_18, "lcc", lat_min, lat_max, lon_min, lon_max)
 ds_18_mcc = extract_variable(ds_18, "mcc", lat_min, lat_max, lon_min, lon_max)
 ds_18_hcc = extract_variable(ds_18, "hcc", lat_min, lat_max, lon_min, lon_max)
-ds_18_tcc = extract_variable(ds_18, "tcc", lat_min, lat_max, lon_min, lon_max)
-
-ds_42_tcc = extract_variable(ds_42, "tcc", lat_min, lat_max, lon_min, lon_max)
+# tcc (total cloud cover) removed from processing; only use layered covers
 ds_42_lcc = extract_variable(ds_42, "lcc", lat_min, lat_max, lon_min, lon_max)
 ds_42_mcc = extract_variable(ds_42, "mcc", lat_min, lat_max, lon_min, lon_max)
 ds_42_hcc = extract_variable(ds_42, "hcc", lat_min, lat_max, lon_min, lon_max)
 
 cloud_vars_18 = {
-    "tcc": ds_18_tcc,
     "lcc": ds_18_lcc,
     "mcc": ds_18_mcc,
     "hcc": ds_18_hcc
 }
 
 cloud_vars_42 = {
-    "tcc": ds_42_tcc,
     "lcc": ds_42_lcc,
     "mcc": ds_42_mcc,
     "hcc": ds_42_hcc
@@ -152,10 +148,10 @@ cloud_vars_42 = {
 
 def plot_cloud_cover_map(data_dict, city, lon, lat, title_prefix, fcst_hr, sunset_azimuth, save_path='output', cmap='gray'):
     """
-    Plot 2x2 cloud cover maps: TCC, LCC, MCC, HCC.
+    Plot cloud cover maps: LCC, MCC, HCC.
 
     Parameters:
-    - data_dict: dict with keys "tcc", "lcc", "mcc", "hcc" and values as xarray DataArrays
+    - data_dict: dict with keys "lcc", "mcc", "hcc" and values as xarray DataArrays
     - city: LocationInfo object (from astral)
     - lon, lat: coordinates of the city
     - title_prefix: string to prefix plot titles
@@ -163,10 +159,11 @@ def plot_cloud_cover_map(data_dict, city, lon, lat, title_prefix, fcst_hr, sunse
     - cmap: colormap to use (default: 'gray')
     """
     fig, axs = plt.subplots(2, 2, figsize=(10, 8))
-    var_order = [("tcc", "Total Cloud Cover"),
-                 ("lcc", "Low Cloud Cover"),
-                 ("mcc", "Mid Cloud Cover"),
-                 ("hcc", "High Cloud Cover")]
+    var_order = [
+        ("lcc", "Low Cloud Cover"),
+        ("mcc", "Mid Cloud Cover"),
+        ("hcc", "High Cloud Cover"),
+    ]
 
     mappables = []
     for ax, (key, label) in zip(axs.flat, var_order):

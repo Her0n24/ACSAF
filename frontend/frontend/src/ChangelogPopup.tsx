@@ -2,6 +2,13 @@ import { useState } from "react";
 
 const changelogEntries = [
   {
+    date: "2026.03.30",
+    changes: [
+      "Main Script: V2 - Complete New Physical Model based on Ray Path integrated Cloud Liquid/ Ice Water Content and Aerosoft Extinction Coefficient. Computation now completely relies on ECMWF IFS instead of AIFS.",
+      "Display: New cloud cover graph and simplfied table."
+    ],
+  },
+  {
     date: "2026.03.19",
     changes: [
       "Display: Now supports Traditional Chinese.",

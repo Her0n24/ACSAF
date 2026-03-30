@@ -36,8 +36,6 @@ const METRIC_ORDER: string[] = [
   "avg_path",
   "cloud_layer_key",
   "azimuth",
-  "total_aod550",
-  "dust_aod550",
   "geom_condition",
   "geom_condition_LCL_used",
   "hcc_condition",
@@ -51,8 +49,6 @@ const METRIC_LABEL_OVERRIDES: Record<string, string> = {
   avg_path: "metric.avgPath",
   cloud_layer_key: "metric.cloudLayerReasoning",
   azimuth: "metric.azimuth",
-  total_aod550: "metric.totalAod550",
-  dust_aod550: "metric.dustAod550",
   geom_condition: "metric.geomCondition",
   hcc_condition: "metric.hccCondition",
   geom_condition_LCL_used: "metric.geomConditionLcl"
@@ -107,6 +103,7 @@ export default function Forecast() {
   const gradient = buildGradient(possibleColors);
   const modelRun = doc["run_time"] ? formatValue(doc["run_time"]) : null;
   const activeProfile = useMemo(() => getCloudProfile(doc, mode, profileDay), [doc, mode, profileDay]);
+  const activeLayerKey = useMemo(() => getCloudLayerKey(doc, mode, profileDay), [doc, mode, profileDay]);
 
   if (loading) {
     return <FullScreenMessage message={t("forecast.loadingForecast", language)} />;
@@ -208,13 +205,10 @@ export default function Forecast() {
 
           {activeProfile ? (
             <>
-              <CloudProfileChart profile={activeProfile} mode={mode} day={profileDay} language={language} />
+              <CloudProfileChart profile={activeProfile} mode={mode} day={profileDay} language={language} layerKey={activeLayerKey} />
               <p className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
                 {t("forecast.cloudInfo", language)}
                 <p>&nbsp;</p>
-                {t("forecast.geomCondition", language)}
-                <p>&nbsp;</p>
-                {t("forecast.aodInfo", language)}
               </p>
             </>
           ) : (
@@ -320,121 +314,207 @@ function DayToggle({ value, onChange, language }: { value: DayKey; onChange: (da
   );
 }
 
-function CloudProfileChart({ profile, mode, day, language }: { profile: CloudProfile; mode: Mode; day: DayKey; language: "en" | "zh" }) {
-  const width = 650;
-  const height = 280;
+function CloudProfileChart({ profile, mode, day, language, layerKey }: { profile: CloudProfile; mode: Mode; day: DayKey; language: "en" | "zh"; layerKey?: LayerKey | null }) {
+  const width = 900;
+  const height = 420;
   const padding = 40;
-  const innerShift = 16;
-  const MAX_DISTANCE = 500;
+  const innerShift = 12;
+  const MAX_DISTANCE = 700; // km
   const leftBound = padding + innerShift;
   const rightBound = width - padding;
   const usableWidth = rightBound - leftBound;
   const usableHeight = height - padding * 2;
-  const maxDistance = Math.max(MAX_DISTANCE, ...profile.distance);
-  const xScale = (distance: number) =>
-    leftBound + (maxDistance === 0 ? 0 : (Math.min(distance, MAX_DISTANCE) / maxDistance) * usableWidth);
-  const yScale = (value: number) => height - padding - (Math.min(Math.max(value, 0), 100) / 100) * usableHeight;
-  const layers: LayerKey[] = ["lcc", "mcc", "hcc", "tcc"];
-  const layerColors: Record<LayerKey, string> = {
-    lcc: "#f6a34d",
-    mcc: "#f470a6",
-    hcc: "#bf63f9",
-    tcc: "#c8c8c8ff",
-  };
 
-  const renderLine = (layer: LayerKey) => {
-    const series = profile.series[layer];
-    if (!series || series.length === 0) {
-      return null;
+  const ALT_MAX_M = 9000; // vertical axis extent in meters
+  const xScale = (distance: number) => leftBound + (Math.min(distance, MAX_DISTANCE) / MAX_DISTANCE) * usableWidth;
+  const yScaleAltToSvg = (altM: number) => padding + usableHeight * (1 - Math.min(Math.max(altM, 0), ALT_MAX_M) / ALT_MAX_M);
+
+  // sample positions for ray polylines (dense for smooth curves)
+  const RAY_SAMPLES = 200;
+  const sampleXsKm = Array.from({ length: RAY_SAMPLES }, (_, i) => (i / (RAY_SAMPLES - 1)) * MAX_DISTANCE);
+  const sampleXsM = sampleXsKm.map((d) => d * 1000);
+
+  // representative layer heights (meters)
+  const LAYER_HEIGHTS: Record<LayerKey, number> = { lcc: 1000, mcc: 4000, hcc: 7500, tcc: 9000 };
+  const N = profile.distance.length;
+  const vals_lcc = profile.series.lcc ?? new Array(N).fill(0);
+  const vals_mcc = profile.series.mcc ?? new Array(N).fill(0);
+  const vals_hcc = profile.series.hcc ?? new Array(N).fill(0);
+
+  // Vertical resolution for 'contourf' approximation
+  const V_SAMPLES = 80;
+  const alts = Array.from({ length: V_SAMPLES }, (_, i) => (i / (V_SAMPLES - 1)) * ALT_MAX_M);
+
+  // build a discrete grid [vIndex][xIndex] by interpolating layer fractions by altitude
+  const grid = useMemo(() => {
+    const g: number[][] = Array.from({ length: V_SAMPLES }, () => new Array(N).fill(0));
+    const hts = [LAYER_HEIGHTS.lcc, LAYER_HEIGHTS.mcc, LAYER_HEIGHTS.hcc];
+    for (let xi = 0; xi < N; xi++) {
+      const vvals = [vals_lcc[xi] ?? 0, vals_mcc[xi] ?? 0, vals_hcc[xi] ?? 0];
+      for (let vi = 0; vi < V_SAMPLES; vi++) {
+        const alt = alts[vi];
+        let val = 0;
+        if (alt <= hts[0]) {
+          val = vvals[0];
+        } else if (alt >= hts[2]) {
+          val = vvals[2];
+        } else {
+          for (let k = 0; k < hts.length - 1; k++) {
+            if (alt >= hts[k] && alt <= hts[k + 1]) {
+              const tt = (alt - hts[k]) / (hts[k + 1] - hts[k]);
+              val = (1 - tt) * vvals[k] + tt * vvals[k + 1];
+              break;
+            }
+          }
+        }
+        g[vi][xi] = val;
+      }
     }
-    const points = series
-      .map((value, index) => {
-        const distance = profile.distance[Math.min(index, profile.distance.length - 1)];
-        return `${xScale(distance)},${yScale(value)}`;
-      })
-      .join(" ");
-    return (
-      <polyline
-        key={layer}
-        fill="none"
-        stroke={layerColors[layer]}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={layer === "tcc" ? 0.6 : 0.9}
-        points={points}
-      />
-    );
-  };
+    return g;
+  }, [vals_lcc, vals_mcc, vals_hcc, profile.distance]);
+
+  // No interactive hover state (interaction removed per user request)
+
+  // Ray constants and generator
+  const ALPHA_COEFF = -5.14e-5;
+  const TIMESTEP_SECONDS = 60;
+  const TIMESTEP_ARRAY = Array.from({ length: Math.floor(1080 / TIMESTEP_SECONDS) + 1 }, (_, i) => i * TIMESTEP_SECONDS);
+  const R_EARTH_M = 6.371e6;
+
+  function parabolicRay(xM: number, m: number, alpha: number, r: number, H: number) {
+    return (xM - m) * Math.tan(alpha) + (0.5 * (xM - m) * (xM - m)) / r + H;
+  }
+
+  const H_for_rays = (layerKey && LAYER_HEIGHTS[layerKey]) || 0;
+  const rays = TIMESTEP_ARRAY.map((t) => {
+    const alpha = ALPHA_COEFF * t;
+    const ys = sampleXsM.map((xM) => parabolicRay(xM, 0, alpha, R_EARTH_M, H_for_rays));
+    return { t, alpha, ys };
+  });
+
+  // legend will be constructed from LAYER_BOUNDS/LAYER_COLOR below
+
+  // interaction removed: cloud sampling helper not required when hover is disabled
+
+  // Interaction removed: no mouse handlers or tooltip
 
   return (
     <div className="space-y-3">
       <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${t("forecast.cloudProfile", language)} for ${mode} ${t(DAY_LABEL[day], language)}`} className="w-full">
+        <div style={{ position: "relative" }}>
+          <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${t("forecast.cloudProfile", language)} for ${mode} ${t(DAY_LABEL[day], language)}`} className="w-full">
           <defs>
             <linearGradient id="gridFade" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+              <stop offset="0%" stopColor="rgba(255, 255, 255, 0.75)" />
+              <stop offset="100%" stopColor="rgba(255, 255, 255, 0.5)" />
             </linearGradient>
           </defs>
-          <rect x={leftBound} y={padding} width={usableWidth} height={usableHeight} fill="url(#gridFade)" opacity={0.15} />
-          {[0, 25, 50, 75, 100].map((value) => (
-            <g key={value}>
-              <line
-                x1={leftBound}
-                x2={rightBound}
-                y1={yScale(value)}
-                y2={yScale(value)}
-                stroke="rgba(255,255,255,0.08)"
-                strokeDasharray="4 6"
-              />
-              <text x={leftBound - 20} y={yScale(value) + 4} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="end">
-                {value}%
+          <rect x={leftBound} y={padding} width={usableWidth} height={usableHeight} fill="url(#gridFade)" opacity={0.12} />
+          {[0, 2000, 4000, 6000, 8000, 9000].map((alt) => (
+            <g key={alt}>
+              <line x1={leftBound} x2={rightBound} y1={yScaleAltToSvg(alt)} y2={yScaleAltToSvg(alt)} stroke="rgba(255, 255, 255, 0.51)" strokeDasharray="4 6" />
+              <text x={leftBound - 20} y={yScaleAltToSvg(alt) + 4} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="end">
+                {alt >= 1000 ? `${alt / 1000} km` : `${alt} m`}
               </text>
             </g>
           ))}
-          <text
-            x={rightBound}
-            y={height - padding + 20}
-            textAnchor="end"
-            fill="rgba(255,255,255,0.7)"
-            fontSize="11"
-          >
-            500 km
+          <text x={rightBound} y={height - padding + 20} textAnchor="end" fill="rgba(255,255,255,0.7)" fontSize="11">
+            {MAX_DISTANCE} km
           </text>
-          <line
-            x1={leftBound}
-            x2={rightBound}
-            y1={yScale(60)}
-            y2={yScale(60)}
-            stroke="rgba(255,83,112,0.6)"
-            strokeDasharray="6 6"
-          />
-          {layers.map(renderLine)}
-          <line x1={leftBound} y1={height - padding} x2={rightBound} y2={height - padding} stroke="rgba(255,255,255,0.4)" />
-          <line x1={leftBound} y1={padding} x2={leftBound} y2={height - padding} stroke="rgba(255,255,255,0.4)" />
-          <text
-            x={(leftBound + rightBound) / 2}
-            y={height - 6}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.7)"
-            fontSize="12"
-          >
+          {/* removed cloud-percent reference line; axis now displays altitude */}
+
+          {/* colorfill grid (approximate contourf) */}
+          {grid.map((col, vi) => {
+            const altTop = alts[vi + 1] ?? alts[vi];
+            const altBottom = alts[vi];
+            const yTop = yScaleAltToSvg(altTop);
+            const cellHeight = Math.max(1, yScaleAltToSvg(altBottom) - yTop);
+            return (
+              <g key={`row-${vi}`}>
+                {col.map((val, xi) => {
+                  const x0 = xScale(profile.distance[xi] ?? 0);
+                  const x1 = xScale(profile.distance[Math.min(xi + 1, profile.distance.length - 1)] ?? (profile.distance[xi] ?? 0));
+                  const w = Math.max(1, x1 - x0);
+                  // compute smooth grayscale fill per-cell based on fraction and vertical level
+                  const frac = Math.min(Math.max(val, 0), 100) / 100;
+                  const levelFactor = vi / Math.max(1, V_SAMPLES - 1);
+                  // base intensity: higher fraction => darker (smaller number)
+                  let gray = Math.round(300 - 180 * frac - 40 * levelFactor);
+                  if (frac >= 0.9) {
+                    // emphasize very high concentrations by darkening further
+                    gray = Math.max(6, Math.round(gray * 0.9));
+                  }
+                  const grayClamped = Math.max(6, Math.min(230, gray));
+                  const baseColor = `rgb(${grayClamped},${grayClamped},${grayClamped})`;
+                  const opacity = Math.min(0.92, 0.04 + frac * 0.6 + levelFactor * 0.12);
+                  return (
+                    <rect
+                      key={`cell-${vi}-${xi}`}
+                      x={x0}
+                      y={yTop}
+                      width={w}
+                      height={cellHeight}
+                      fill={baseColor}
+                      fillOpacity={opacity}
+                      strokeOpacity={0}
+                    />
+                  );
+                })}
+              </g>
+            );
+          })}
+
+          {/* parabolic rays overlay: skip any ray that goes below ground; cut off at ALT_MAX_M instead of clamping */}
+          {rays.map((ray, ri) => {
+            // skip entire ray if any point is below ground
+            if (ray.ys.some((y) => y <= 0)) return null;
+
+            // find first index where ray exceeds top altitude; draw up to (but not including) that index
+            const firstAbove = ray.ys.findIndex((y) => y > ALT_MAX_M);
+            const endIndex = firstAbove === -1 ? ray.ys.length : firstAbove;
+            if (endIndex <= 0) return null;
+
+            const pts: string[] = [];
+            for (let i = 0; i < endIndex; i++) {
+              const xKm = sampleXsKm[i];
+              const x = xScale(xKm);
+              const y = yScaleAltToSvg(ray.ys[i]);
+              pts.push(`${x},${y}`);
+            }
+
+            return (
+              <polyline
+                key={`ray-${ri}`}
+                points={pts.join(" ")}
+                fill="none"
+                stroke="rgba(168, 200, 255, 0.65)"
+                strokeWidth={1}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                pointerEvents="none"
+              />
+            );
+          })}
+
+          <line x1={leftBound} y1={height - padding} x2={rightBound} y2={height - padding} stroke="rgba(255, 255, 255, 0.51)" />
+          <line x1={leftBound} y1={padding} x2={leftBound} y2={height - padding} stroke="rgba(255, 255, 255, 0.5)" />
+          {/* x-axis ticks every 175 km */}
+          {[0, 175, 350, 525, 700].map((d) => (
+            <g key={`xtick-${d}`}>
+              <line x1={xScale(d)} x2={xScale(d)} y1={height - padding} y2={height - padding + 6} stroke="rgba(255,255,255,0.5)" />
+              <text x={xScale(d)} y={height - padding + 22} textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize="10">
+                {d}
+              </text>
+            </g>
+          ))}
+          <text x={(leftBound + rightBound) / 2} y={height - 6} textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="12">
             Distance along azimuth (km)
           </text>
-        </svg>
+          </svg>
+          {/* tooltip removed (interaction disabled) */}
+        </div>
       </div>
-      <div className="flex flex-wrap gap-3">
-        {layers.map((layer) => (
-          <span
-            key={layer}
-            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-wide text-white/80"
-          >
-            <span className="h-2 w-8 rounded-full" style={{ backgroundColor: layerColors[layer], opacity: layer === "tcc" ? 0.6 : 1 }} />
-            {layer.toUpperCase()}
-          </span>
-        ))}
-      </div>
+      {/* legend removed per user request */}
     </div>
   );
 }
@@ -571,8 +651,33 @@ function formatMetricValue(metricKey: string, value: unknown, language: "en" | "
     return formatValue(value);
   }
 
-  if (metricKey === "cloud_layer_key" && typeof value === "string") {
-    return translateColorName(value, language);
+  if (metricKey === "cloud_layer_key") {
+    // Accept either a string key (e.g. 'lcc') or an object mapping
+    // like { lcc: true, mcc: false, hcc: false } and pick the
+    // highest-priority present layer.
+    if (typeof value === "string") {
+      return translateColorName(value, language);
+    }
+    if (value && typeof value === "object") {
+      try {
+        const priority = ["hcc", "mcc", "lcc"];
+        for (const k of priority) {
+          if (Object.prototype.hasOwnProperty.call(value, k) && (value as any)[k]) {
+            return translateColorName(k, language);
+          }
+        }
+        // If values are numeric scores, pick the key with the largest value
+        const entries = Object.entries(value as Record<string, any>);
+        const numeric = entries.filter(([, v]) => typeof v === "number");
+        if (numeric.length > 0) {
+          const best = numeric.reduce((a, b) => (a[1] >= b[1] ? a : b));
+          return translateColorName(best[0], language);
+        }
+      } catch (e) {
+        /* fallthrough to default formatting */
+      }
+    }
+    return formatValue(value);
   }
 
   if (Array.isArray(value)) return value.map((v) => formatMetricValue(metricKey, v, language)).join(", ");
@@ -657,6 +762,32 @@ function getCloudPresent(doc: ForecastDoc, mode: Mode, day: DayKey): boolean | n
   }
   if (typeof value === "number") {
     return value !== 0;
+  }
+  return null;
+}
+
+function getCloudLayerKey(doc: ForecastDoc, mode: Mode, day: DayKey): LayerKey | null {
+  const key = `${mode}_cloud_layer_key_${day}`;
+  const value = doc[key];
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    if (v === "lcc" || v === "mcc" || v === "hcc" || v === "tcc") return v as LayerKey;
+    return null;
+  }
+  if (value && typeof value === "object") {
+    try {
+      const priority: LayerKey[] = ["hcc", "mcc", "lcc"];
+      for (const k of priority) {
+        if (Object.prototype.hasOwnProperty.call(value, k) && (value as any)[k]) return k;
+      }
+      const entries = Object.entries(value as Record<string, any>).filter(([, v]) => typeof v === "number");
+      if (entries.length > 0) {
+        const best = entries.reduce((a, b) => (a[1] >= b[1] ? a : b));
+        if (["lcc", "mcc", "hcc", "tcc"].includes(best[0])) return best[0] as LayerKey;
+      }
+    } catch (e) {
+      /* ignore */
+    }
   }
   return null;
 }

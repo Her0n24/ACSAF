@@ -7,7 +7,7 @@ export const translations: Record<"en" | "zh", Translations> = {
     // Home page
     "home.projectTitle": "Project ACSAF",
     "home.mainTitle": "Cloud Afterglow Forecast",
-    "home.subtitle": "Catch the next brilliant dusk/ dawn cloud glow with AI-powered NWP forecast!",
+    "home.subtitle": "Catch the next brilliant dusk/ dawn cloud glow with latest generation NWP forecast!",
     "home.searchPlaceholder": "Start typing a city…",
     "home.citiesAvailable": "cities available",
     "home.goButton": "Go",
@@ -16,10 +16,10 @@ export const translations: Record<"en" | "zh", Translations> = {
     "home.errorPrefix": "Error:",
     "home.sectionTitle": "ACSAF: The Aerosol and Cloud-Based Sunset/ Sunrise cloud Afterglow Forecaster",
     "home.sectionDesc": "ACSAF is a quick and handy reference system to landscape photographers, cloud lovers, or anyone captivated by clouds' fleeting colors around the world, leveraging AI-powered Numerical Weather Prediction (NWP) outputs. Daily cloud glow displays are rated out of 100. Save travel time and effort for the next best cloud glows!",
-    "home.feature1Title": "ECMWF AIFS data",
-    "home.feature1Desc": "Gold standard global cloud cover, temperature and humidity data for computing cloud geometry effects.",
+    "home.feature1Title": "ECMWF IFS data",
+    "home.feature1Desc": "Gold standard global cloud cover and cloud optical properties for computing cloud geometry effects.",
     "home.feature2Title": "CAMS aerosol data",
-    "home.feature2Desc": "High resolution total aerosol and dust measurements to assist in determining afterglow color and vibrancy.",
+    "home.feature2Desc": "High resolution total aerosol extinction coefficients to assist in determining afterglow color and vibrancy.",
     "home.feature3Title": "Update twice daily",
     "home.feature3Desc": "Get the latest forecast updates twice daily well ahead of sunset and sunrise times to plan for your trip.",
     "home.howItWorksTitle": "How it works",
@@ -31,7 +31,7 @@ export const translations: Record<"en" | "zh", Translations> = {
     "home.limitations": "Limitations",
     "home.limitationsDesc1": "The computed scores are valid only for stratiform cloud layer. Convective clouds exhibit vertical structure, which generally allows afterglow to appear more easily. Raw NWP ouput should be interpreted with caution as they are uncalibrated.",
     "home.limitationsDesc2": "ACSAF scores are subjective and still lacks a holistic quantitative forecast verification.",
-    "home.limitationsDesc3": "AIFS is not designed for short term or high resolution forecasting with its 6 hours temporal resolution.",
+    "home.limitationsDesc3": "Forecast resolution used is 6 hourly and 0.4 deg horizontal resolution, rough for depicting cloud fine details.",
     "home.disclaimer": "Disclaimer",
     "home.disclaimerText": "Forecast guidance is experimental and for discussion only. ACSAF assumes no responsibility for errors or omissions in the content that directly or indirectly result in any damange or loss caused or alleged to be caused by or in connection with use on the content.",
 
@@ -63,9 +63,9 @@ export const translations: Record<"en" | "zh", Translations> = {
     "forecast.flamingGlow": "Flaming glow",
     "forecast.flamboyantGlow": "Flamboyant glow",
     "forecast.noClouds": "No clouds",
-    "forecast.cloudInfo": "For the definitions of Low cloud cover (LCC), Medium cloud cover (MCC), High cloud cover (HCC), and Total cloud cover (TCC), refer to the ECMWF parameter Database. The algorithm generally uses the dashed 60% line as a threshold to determine cloud cover.",
-    "forecast.geomCondition": "Geom condition LCL - True or False. Whether the lifted condensation level (LCL) is used to infer the cloud base when the cloud cover is low or cannot be determined from the AIFS output.",
-    "forecast.aodInfo": "Total AOD550 is - Dimensionless quantity. Total Aerosol Optical Depth at 550 nm wavelength. Generally, higher means stronger extinction of sun rays leading to less vibrant cloud afterglow. This effect is especially prominent on low clouds. The calculation assumes AOD550 does not vary with distance (local vertical path is considered).",
+    "forecast.cloudInfo": "For the definitions of Low cloud cover (LCC), Medium cloud cover (MCC) and High cloud cover (HCC), refer to the ECMWF parameter Database. These are for visualisation only. The algorithm only use specific cloud liquid/ ice water content for computation.",
+    "forecast.geomCondition": "",
+    "forecast.aodInfo": "",
     "forecast.noForecast": "No forecast available.",
 
     // Metrics
@@ -151,9 +151,9 @@ export const translations: Record<"en" | "zh", Translations> = {
     "forecast.flamingGlow": "火焰餘暉",
     "forecast.flamboyantGlow": "絢麗餘暉",
     "forecast.noClouds": "沒有雲層",
-    "forecast.cloudInfo": "有關低雲量 (LCC)、中雲量 (MCC)、高雲量 (HCC) 和總雲量 (TCC) 的定義，請參閱 ECMWF 參數資料庫。此演算法通常使用虛線 60% 線作為閾值來確定雲量。",
-    "forecast.geomCondition": "幾何條件 LCL - 真或假。當雲量較低或無法從 AIFS 輸出確定時，是否使用抬升凝結高度 (LCL) 來推斷雲基。",
-    "forecast.aodInfo": "總 AOD550 - 無量綱量。在 550 nm 波長的總氣溶膠光學深度。通常，數值越高，太陽光線的消光越強，雲彩餘暉越不鮮豔。這種效果在低雲層特別明顯。計算假設 AOD550 不隨彩餘暉越是鮮豔。這種效果在低雲層特別明顯。計算假設 AOD550 不隨隨距離變化（考慮本地垂直路徑）。",
+    "forecast.cloudInfo": "有關低雲量 (LCC)、中雲量 (MCC)、高雲量 (HCC) 和總雲量 (TCC) 的定義，請參閱 ECMWF 參數資料庫。雲量僅供顯示，此演算法在運算中並沒有使用雲量資訊，而是使用了比雲液態水/冰水含量與氣溶膠消光係數。",
+    "forecast.geomCondition": "",
+    "forecast.aodInfo": "",
     "forecast.noForecast": "沒有可用的預報。",
 
     // 指标
@@ -164,11 +164,7 @@ export const translations: Record<"en" | "zh", Translations> = {
     "metric.avgPath": "路徑雲量 (%)",
     "metric.cloudLayerReasoning": "推理雲層",
     "metric.azimuth": "方位角 (度)",
-    "metric.totalAod550": "總 AOD550",
-    "metric.dustAod550": "粉塵 AOD550",
-    "metric.geomCondition": "幾何條件",
     "metric.hccCondition": "高雲層條件",
-    "metric.geomConditionLcl": "是否使用 LCL",
 
     // 顏色
     "color.orange-yellow": "橙黃",
@@ -178,6 +174,7 @@ export const translations: Record<"en" | "zh", Translations> = {
     "color.magenta": "洋紅",
     "color.sunset-gold": "夕陽金",
     "color.golden-orange": "金橙",
+    "color.coral": "珊瑚",
   },
 };
 

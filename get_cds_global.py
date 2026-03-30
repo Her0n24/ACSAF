@@ -60,7 +60,7 @@ def get_cams_aod(today, run, today_str, input_path):
         client.retrieve(dataset, request,f'{input_path}/cams_AOD550_{today_str}{run}0000.grib')
 
 def get_cams_aod_lwc(today, run, today_str, input_path):
-    if os.path.exists(f'{input_path}/cams_AOD550_{today_str}{run}0000.grib'):
+    if os.path.exists(f'{input_path}/cams_data_{today_str}{run}0000.grib'):
         logging.info("CAMS grib already exists. Skipping download.")
         return
     else:
@@ -80,8 +80,6 @@ def get_cams_aod_lwc(today, run, today_str, input_path):
                 "700", "850", "925",
                 "1000"
             ],
-            "date": ["2026-03-23/2026-03-23"],
-            "time": ["00:00"],
             "leadtime_hour": [
                 "6",
                 "12",
@@ -100,6 +98,42 @@ def get_cams_aod_lwc(today, run, today_str, input_path):
 
         client = cdsapi.Client()
         client.retrieve(dataset, request,f'{input_path}/cams_data_{today_str}{run}0000.grib')
+
+# "cloud_base_height"
+
+def get_cams_cloud_cover(today, run, today_str, input_path):
+    if os.path.exists(f'{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib'):
+        logging.info("CAMS grib already exists. Skipping download.")
+        return
+    else:
+        dataset = "cams-global-atmospheric-composition-forecasts"
+        request = {
+            "date": [f"{today}/{today}"],
+            "time": [f"{run}:00"],
+            "variable": [
+                "high_cloud_cover",
+                "low_cloud_cover",
+                "medium_cloud_cover"
+            ],
+            "leadtime_hour": [
+                "6",
+                "12",
+                "18",
+                "24",
+                "30",
+                "36",
+                "42",
+                "48",
+                "54",
+                "60"
+            ],
+            "type": ["forecast"],
+            "data_format": "grib"
+        }
+
+        client = cdsapi.Client()
+        client.retrieve(dataset, request,f'{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib')
+
 
 if __name__ == "__main__":
     pass
