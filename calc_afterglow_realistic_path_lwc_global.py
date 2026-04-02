@@ -77,6 +77,7 @@ from CONST import (
     RAY_NORM_CONSANT_LWC
 )
 import argparse
+from pathlib import Path
 from functools import lru_cache
 
 # Derived runtime values
@@ -97,6 +98,7 @@ def parse_args():
 
 output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'output'))
 input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Afterglow', 'input'))
+script_path = Path(__file__).resolve().parent
 
 logging.info(f"Input path: {input_path}")
 logging.info(f"Output path: {output_path}")
@@ -1712,7 +1714,7 @@ def plot_ray_path_with_cloud_profiles(ray_heights, ray_cloud_profile, lcc_profil
         valid_trans = ~np.isnan(combined_scores_array)
         if np.any(valid_trans):
             # Choose start index based on cloud_level
-            start_idx_map = {'lcc': 3, 'mcc': 3, 'hcc': 3}
+            start_idx_map = {'lcc': 1, 'mcc': 1, 'hcc': 3}
             start_idx = start_idx_map.get(cloud_level, 0)
             # Build candidate indices from start_idx onward, filter valid
             if start_idx < len(combined_scores_array):
@@ -2745,7 +2747,8 @@ def main():
     get_cams_cloud_cover(today, run, today_str, input_path) # type: ignore
 
     # Load city data
-    df = pd.read_csv('worldcities_info_wtimezone.csv', header=0, delimiter=',')
+    city_csv_path = os.path.join(script_path, 'worldcities_info_wtimezone.csv')
+    df = pd.read_csv(city_csv_path, header=0, delimiter=',')
 
     city_jobs = []
     for _, row in df.iterrows():
