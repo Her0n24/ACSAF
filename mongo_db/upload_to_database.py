@@ -18,6 +18,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 import json
 import datetime
+from scheduled_input_rm import rm_old_files
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 from pymongo.errors import OperationFailure
@@ -90,6 +91,10 @@ def latest_forecast_hours_run_to_download() -> datetime.datetime:
 cli_args = parse_args()
 print("Cleaning space before upload by deleting 1 oldest run.")
 cleanup_oldest_runs(limit=1, yes=True)
+
+input_dir = os.path.join(PROJECT_ROOT, "input")
+print(f"Cleaning input directory: {input_dir} (files older than 3 days)")
+rm_old_files([input_dir], age_threshold_day=3)
 
 if cli_args.date and cli_args.run:
     run_datetime = datetime.datetime.strptime(

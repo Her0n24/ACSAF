@@ -1924,6 +1924,34 @@ def _first_valid_scalar(p, default=np.nan):
             continue
     return float(default)
 
+def _infer_available_forecast_steps(grib_path: str) -> list[int]:
+    """Infer available forecast lead times in hours from a downloaded GRIB file."""
+    candidate_short_names = ('lcc', 'mcc', 'hcc', 'clwc', 'ciwc', 'aerext532')
+
+    for short_name in candidate_short_names:
+        try:
+            da = open_cloud_da(grib_path, short_name)
+        except Exception:
+            continue
+
+        if 'step' not in da.coords:
+            continue
+
+        step_coord = da['step']
+        try:
+            if np.issubdtype(step_coord.dtype, np.timedelta64):
+                step_hours = (step_coord / np.timedelta64(1, 'h')).astype(int)
+            else:
+                step_hours = np.asarray(step_coord, dtype=int)
+        except Exception:
+            continue
+
+        available = sorted({int(hour) for hour in np.asarray(step_hours).reshape(-1).tolist() if int(hour) >= 0})
+        if available:
+            return available
+
+    return []
+
 def get_cloud_extent(data_dict, lon, lat, azimuth, distance_km = DEFAULT_AZIMUTH_LINE_DISTANCE_KM, num_points=DESIRED_NUM_POINTS):
     profile_layers = ["lcc", "mcc", "hcc"]
     cloud_present = True
@@ -2200,7 +2228,13 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
         else:
             run_dt = latest_forecast_hours_run_to_download()
         logging.info(f"process_city: Using run_dt={run_dt.isoformat()} (run={run})")
-        picks = determine_city_forecast_hours_time_to_use(city, sunrise_tdy, sunset_tdy, run_dt)
+        picks = determine_city_forecast_hours_time_to_use(
+            city,
+            sunrise_tdy,
+            sunset_tdy,
+            run_dt,
+            reference_grib_path=f"{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib",
+        )
         print("run_dt:", run_dt)
         print("picks:", picks)
 
@@ -2582,10 +2616,10 @@ def latest_forecast_hours_run_to_download() -> datetime.datetime:
         # Return datetime for downloading yesterday's 12z forecast_hours
         return now_utc.replace(hour=12, minute=0, second=0, microsecond=0) - datetime.timedelta(days=1)
 
-def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_sunset_time, run_datetime, time_threshold_h = 15) -> dict:
+def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_sunset_time, run_datetime, time_threshold_h = 15, reference_grib_path: str | None = None) -> dict:
     """
-    AIFS forecast_hours are in increments of 6 hours. To determine which forecast_hours time to use for a given city with their sunset time, 
-    we need to find the nearest forecast_hours time that is less than or equal to the city sunset time.
+    The forecast-hour cadence is inferred from the downloaded GRIB file when a reference path is provided.
+    If inference fails, the function falls back to 6-hour offsets.
     
     Args:
         city: City object with name and timezone
@@ -2605,14 +2639,21 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
     threshold_time = run_datetime + datetime.timedelta(hours= time_threshold_h) # default is +15h, which is 15Z for 00Z run and +1 03Z for 12Z run. Do not change, will mess up the logic.
     logging.info(f"determine_city_forecast_hours_time_to_use: run_dt={run_datetime.isoformat()}, threshold_time={threshold_time.isoformat()}, time_threshold_h={time_threshold_h}")
 
-    # Write out the forecast_hours times from run initialization time in 6-hour increments
-    offsets = list(range(0,61,6)) # 0 to 60 hours in 6-hour increments
+    # Infer the actual lead-time spacing from the downloaded GRIB when possible.
+    offsets = _infer_available_forecast_steps(reference_grib_path) if reference_grib_path else []
+    if not offsets:
+        logging.warning("Could not infer forecast lead times from GRIB; falling back to 3-hour offsets.")
+        offsets = list(range(0, 61, 3))
+
     max_offset_hours = offsets[-1]
     forecast_hours_times = [run_datetime + datetime.timedelta(hours=i) for i in offsets]  # 0 to 60 hours
     last_ft = forecast_hours_times[-1]
 
-    def closest_forecast_hours_time(event_time):
-        return min(forecast_hours_times, key=lambda ft: abs(ft - event_time))
+    def latest_forecast_hours_time(event_time):
+        candidates = [ft for ft in forecast_hours_times if ft <= event_time]
+        if not candidates:
+            return None
+        return candidates[-1]
     
     def pick_for_event(event_time, name):
         if event_time is None:
@@ -2634,7 +2675,7 @@ def determine_city_forecast_hours_time_to_use(city, city_sunrise_time, city_suns
             logging.warning(f"{name} for {city.name} outside forecast_hours window [{run_datetime.isoformat()} - {last_ft.isoformat()}]: event={event_time.isoformat()}; returning None")
             return None
 
-        ft = closest_forecast_hours_time(event_time)
+        ft = latest_forecast_hours_time(event_time)
         if ft is None:
             logging.warning(f"No forecast_hours step <= {name} for {city.name}; returning None")
             return None
