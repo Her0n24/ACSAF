@@ -63,15 +63,17 @@ python calc_afterglow_realistic_path_lwc_global.py
 
 ## Gallery
 
-<img width="3000" height="1687" alt="afterglow1-3 (dragged)" src="https://github.com/user-attachments/assets/3b485d9a-eada-469f-98c8-97d2c28be7c3" />
+<img width="3000" height="1687" alt="afterglow1-1 (dragged)" src="https://github.com/user-attachments/assets/fbe6848b-7fce-4eca-b987-ce4adde06b8c" />
 Why such information is useful?
 
 
-<img width="3000" height="1687" alt="afterglow1-1 (dragged)" src="https://github.com/user-attachments/assets/fbe6848b-7fce-4eca-b987-ce4adde06b8c" />
+<img width="3000" height="1687" alt="afterglow1-3 (dragged)" src="https://github.com/user-attachments/assets/3b485d9a-eada-469f-98c8-97d2c28be7c3" />
 The principle of cloud afterglow forecasting
+
 
 ![20250418000000_afterglow_dashboard_Reading](https://github.com/user-attachments/assets/bb6f6f12-2cab-4159-9596-dcbc0c741ce1)
 Index and details of the events in the legacy ASCAF Dashboard 
+
 
 ![20250419000000-18h-AIFS_cloud_cover_Reading](https://github.com/user-attachments/assets/9b85c79e-5903-4509-8dce-e9cc8fe50421)
 Legacy supplementary figures displaying raw model output cloud coves for the selected region
