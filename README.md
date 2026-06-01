@@ -59,6 +59,7 @@ git clone [https://github.com/Her0n24/ACSAF.git](https://github.com/Her0n24/ACSA
 cd ACSAF
 # Install your dependencies here (e.g., environment.yml)
 python calc_afterglow_realistic_path_lwc_global.py
+```
 
 ## Gallery
 
