@@ -39,6 +39,7 @@ logging.basicConfig(
     level=logging.WARNING,
     datefmt= '%Y-%m-%d %H:%M:%S',
                     )
+logging.getLogger().setLevel(logging.WARNING)
 from calc_aod_global import calc_aod
 from CONST import (
     MAX_CLOUD_HEIGHT,
@@ -55,14 +56,10 @@ from CONST import (
     MCC_HEIGHT,
     HCC_HEIGHT,
     DESIRED_NUM_POINTS,
-    TAU_EFF_MAP,
-    H_AERO_KM_DEFAULT,
     DEFAULT_AZIMUTH_LINE_DISTANCE_KM,
     ASSUMED_DISTANCE_BELOW_THRESHOLD_KM,
-    DEBUG_TS,
     I_RAY_THRESHOLD_DEFAULT,
     R_EARTH_M,
-    RAY_NORM_CONSANT,
     MIN_CLOUD_COVER_THRESHOLD,
     MAX_LCC_THRESHOLD,
     MAX_MCC_THRESHOLD, 
@@ -74,7 +71,15 @@ from CONST import (
     R_ICECRYSTAL,
     RHO_WATER,
     RHO_ICE,
-    RAY_NORM_CONSANT_LWC
+    RAY_NORM_CONSANT_LWC,
+    LEVEL_CANDIDATE_MIN_M,
+    LEVEL_CANDIDATE_STEP_M,
+    OBSERVER_CLOUD_SLANT_ELEVATION_DEG,
+    MIN_OBSERVER_CLOUD_TRANSMITTANCE,
+    CLOUD_COVER_WEIGHT_PEAK,
+    CLOUD_COVER_WEIGHT_SIGMA_LEFT,
+    CLOUD_COVER_WEIGHT_SIGMA_RIGHT,
+    CLOUD_COVER_WEIGHT_PEAK_HEIGHT
 )
 import argparse
 from pathlib import Path
@@ -291,6 +296,20 @@ def open_cams_data_and_blend_clouds(grib_path: str, cloud_da: xr.DataArray | xr.
 def open_2m_cached(grib_path: str) -> xr.Dataset:
     # load_2m_fields already uses decode_timedelta=True
     return load_2m_fields(grib_path)
+
+
+# Lightweight cache for preparing CAMS datasets (cloud cover + vertical fields)
+# Caches by paths and forecast-hour string to avoid re-opening and re-processing
+@lru_cache(maxsize=None)
+def load_prepared_cams(cams_cloud_grib_path: str, cams_grib_path: str, fcst_hr: str):
+    """Return (cloud_layers, cams_all) prepared for a given pair of GRIB files and forecast hour.
+
+    The result is cached per-process to avoid repeated open_dataset/convert calls.
+    """
+    cloud_layers = combine_cloud_layers(cams_cloud_grib_path, fcst_hr=fcst_hr)
+    cams_all = open_cams_data_and_blend_clouds(cams_grib_path, cloud_layers, fcst_hr)
+    cams_all = convert_pressure_coordinate_to_height(cams_all)
+    return cloud_layers, cams_all
 
 
 def build_profile_payload(distance_axis, profiles):
@@ -1082,6 +1101,134 @@ def select_layers_by_threshold(ray_cloud_profile, lcc_val, mcc_val, hcc_val) -> 
     return selected_layers
 
 
+def cloud_layer_for_height(level_m: float) -> str | None:
+    if LCC_HMIN <= level_m <= LCC_HMAX:
+        return 'lcc'
+    if MCC_HMIN <= level_m <= MCC_HMAX:
+        return 'mcc'
+    if HCC_HMIN <= level_m <= HCC_HMAX:
+        return 'hcc'
+    return None
+
+
+def selected_layers_for_candidate_level(level_m: float) -> dict:
+    layer = cloud_layer_for_height(level_m)
+    return {
+        'lcc': layer == 'lcc',
+        'mcc': layer == 'mcc',
+        'hcc': layer == 'hcc',
+    }
+
+
+def local_cloud_cover_for_candidate_level(level_m: float, lcc_local: float, mcc_local: float, hcc_local: float) -> tuple[str | None, float]:
+    layer = cloud_layer_for_height(level_m)
+    if layer == 'lcc':
+        return layer, lcc_local
+    if layer == 'mcc':
+        return layer, mcc_local
+    if layer == 'hcc':
+        return layer, hcc_local
+    return None, 0.0
+
+
+def candidate_cloud_levels_m() -> np.ndarray:
+    return np.arange(LEVEL_CANDIDATE_MIN_M, MAX_CLOUD_HEIGHT + 1, LEVEL_CANDIDATE_STEP_M, dtype=float)
+
+
+# Module-level candidate level cache to avoid recomputing the array repeatedly
+CANDIDATE_LEVELS = candidate_cloud_levels_m()
+
+
+def calculate_local_cloud_slant_transmittance(
+    cams_ds: xr.Dataset,
+    lon: float,
+    lat: float,
+    candidate_levels: np.ndarray,
+    slant_elevation_deg: float = OBSERVER_CLOUD_SLANT_ELEVATION_DEG,
+    min_transmittance: float = MIN_OBSERVER_CLOUD_TRANSMITTANCE,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate observer-to-cloud transmittance for candidate levels using the local
+    vertical LWC/IWC profile and a fixed slant elevation above the horizon.
+
+    Returns:
+    - observable_levels: candidate levels retained until transmittance falls below threshold
+    - transmittance_by_level: slant transmittance for every candidate level
+    - tau_by_level: vertical optical depth for every candidate level before slant scaling
+    """
+    if candidate_levels.size == 0:
+        return candidate_levels, np.array([]), np.array([])
+
+    if 'height' not in cams_ds.coords:
+        raise ValueError("CAMS dataset must have a 'height' coordinate before vertical transmittance screening.")
+
+    lon_min = float(cams_ds.longitude.min())
+    lon_max = float(cams_ds.longitude.max())
+    lon_target = lon % 360.0 if lon_min >= 0.0 and lon_max > 180.0 else (((lon + 180.0) % 360.0) - 180.0)
+
+    heights_native = np.asarray(cams_ds.sortby('height').height.values, dtype=float)
+
+    def _local_column(var_name: str) -> np.ndarray:
+        da = cams_ds[var_name].sortby('height')
+        local = da.interp(latitude=float(lat), longitude=float(lon_target), method='nearest')
+        local = local.squeeze(drop=True)
+        vals = np.asarray(local.values, dtype=float)
+        vals = np.squeeze(vals)
+        if vals.ndim > 1:
+            height_axes = [idx for idx, size in enumerate(vals.shape) if size == heights_native.size]
+            if height_axes:
+                vals = np.moveaxis(vals, height_axes[0], 0)
+                vals = np.nanmean(vals.reshape(heights_native.size, -1), axis=1)
+            else:
+                vals = vals.reshape(-1)
+        if vals.size != heights_native.size:
+            old_idx = np.linspace(0.0, 1.0, vals.size)
+            new_idx = np.linspace(0.0, 1.0, heights_native.size)
+            vals = np.interp(new_idx, old_idx, vals.reshape(-1))
+        return np.nan_to_num(vals, nan=0.0, posinf=0.0, neginf=0.0)
+    clwc_native = _local_column('clwc')
+    ciwc_native = _local_column('ciwc')
+
+    order = np.argsort(heights_native)
+    heights_native = heights_native[order]
+    clwc_native = np.clip(clwc_native[order], 0.0, None)
+    ciwc_native = np.clip(ciwc_native[order], 0.0, None)
+
+    max_level = float(np.nanmax(candidate_levels))
+    sample_heights = np.unique(np.concatenate(([0.0], heights_native[heights_native <= max_level], candidate_levels)))
+    sample_heights = sample_heights[np.isfinite(sample_heights)]
+    sample_heights.sort()
+
+    clwc = np.interp(sample_heights, heights_native, clwc_native, left=clwc_native[0], right=clwc_native[-1])
+    ciwc = np.interp(sample_heights, heights_native, ciwc_native, left=ciwc_native[0], right=ciwc_native[-1])
+
+    temp_k = np.maximum(T0 - (L * sample_heights), 180.0)
+    pres_base = np.clip(1.0 - (L * sample_heights) / T0, 1e-6, None)
+    pres_pa = P0 * pres_base**5.2558
+    rho_air = pres_pa / (R_DRY * temp_k)
+
+    alpha_lwc = 3.0 / (2.0 * RHO_WATER * R_CLOUDDROP)
+    alpha_iwc = 3.0 / (2.0 * RHO_ICE * R_ICECRYSTAL)
+    beta_nodes = (alpha_lwc * clwc * rho_air) + (alpha_iwc * ciwc * rho_air)
+    beta_nodes = np.clip(np.nan_to_num(beta_nodes, nan=0.0, posinf=0.0, neginf=0.0), 0.0, None)
+
+    dz = np.diff(sample_heights)
+    beta_mid = 0.5 * (beta_nodes[:-1] + beta_nodes[1:])
+    tau_nodes = np.concatenate(([0.0], np.cumsum(beta_mid * dz)))
+    tau_by_level = np.interp(candidate_levels, sample_heights, tau_nodes)
+
+    sin_elev = max(np.sin(np.deg2rad(slant_elevation_deg)), 1e-6)
+    transmittance_by_level = np.exp(-(tau_by_level / sin_elev))
+
+    observable = []
+    for level, transmittance in zip(candidate_levels, transmittance_by_level):
+        if not np.isfinite(transmittance) or transmittance < min_transmittance:
+            break
+        observable.append(float(level))
+
+    return np.asarray(observable, dtype=float), transmittance_by_level, tau_by_level
+
+
 def calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, cams_dict_all, distances_km: float = DEFAULT_AZIMUTH_LINE_DISTANCE_KM/DESIRED_NUM_POINTS) -> np.ndarray:
     """
     Calculate cumulative transmittance (total transmitted light) for each timestep.
@@ -1311,112 +1458,130 @@ def process_event_with_ray_tracing(cloud_vars, lat, lon, azimuth, cams_ds, dista
             hcc_profile = np.zeros(num_points)
             hcc_local = 0
         
-        # Select layers based on thresholds (this determines which cloud layer(s) to analyze)
-        # Use a dummy ray profile for this call - we just need the layer selection
-        dummy_profile = np.zeros((60, num_points))  # 60 timesteps, num_points
-        
-        selected_layers = select_layers_by_threshold(dummy_profile, lcc_local, mcc_local, hcc_local)
-        
-        if not any(selected_layers.values()):
-            logging.warning("No cloud layers cover; continuing to run ray tracing and plotting for diagnostics")
-        
-        # Determine cloud_base_lvl from selected layers (use HIGHEST selected layer)
-        # Use presumed cloud heights for ray tracing base
-        if selected_layers.get('hcc', False):
-            cloud_base_lvl = HCC_HEIGHT  # 7.5km presumed center
-        elif selected_layers.get('mcc', False):
-            cloud_base_lvl = MCC_HEIGHT  # 4km presumed center
-        elif selected_layers.get('lcc', False):
-            cloud_base_lvl = LCC_HEIGHT  # 1km presumed center
-        else:
-            cloud_base_lvl = MCC_HEIGHT  # Default fallback (4km)
-        
-        logging.info(f"Selected cloud_base_lvl: {cloud_base_lvl}m based on selected layers: {selected_layers}")
-        
-        # Initialize in case of early failure so variable exists for error handling
-        total_transmitted_light_array = np.array([])
-
-        # NOW perform ray tracing with the determined cloud base level
-        ray_cloud_profile, ray_heights = extract_cloud_cover_with_ray_tracing(
-            cloud_layers_da, lons, lats, distances_m, cloud_base_lvl=cloud_base_lvl, fcst_hr=fcst_hr
+        candidate_levels = candidate_cloud_levels_m()
+        observable_levels, observer_transmittance, observer_tau = calculate_local_cloud_slant_transmittance(
+            cams_ds,
+            lon,
+            lat,
+            candidate_levels,
+            slant_elevation_deg=OBSERVER_CLOUD_SLANT_ELEVATION_DEG,
+            min_transmittance=MIN_OBSERVER_CLOUD_TRANSMITTANCE,
         )
-        
-        cams_dict = extract_cams_variable_along_ray(cams_ds, lons, lats, ray_heights)
-        
-        # Use the local cloud cover of the highest selected cloud layer (lcc < mcc < hcc)
-        # Determine which cloud level was used for analysis (highest selected)
-        if selected_layers.get('hcc', False):
-            highest_local = hcc_local
-            cloud_lvl_used = 'hcc'
-        elif selected_layers.get('mcc', False):
-            highest_local = mcc_local
-            cloud_lvl_used = 'mcc'
-        elif selected_layers.get('lcc', False):
-            highest_local = lcc_local
-            cloud_lvl_used = 'lcc'
-        else:
-            highest_local = 0
-            cloud_lvl_used = 'mcc'
-            
 
-        # Debug: log shapes and types to help diagnose ambiguous-array boolean errors
-        logging.debug(f"ray_heights: type={type(ray_heights)}, shape={getattr(ray_heights,'shape',None)}")
-        logging.debug(f"ray_cloud_profile: type={type(ray_cloud_profile)}, shape={getattr(ray_cloud_profile,'shape',None)}")
-        logging.debug(f"distances_m: type={type(distances_m)}, shape={getattr(distances_m,'shape',None)}")
-        
-        total_transmitted_light_array = calculate_cumulative_transmittance(ray_heights, ray_cloud_profile, cams_dict)
-        
+        if observable_levels.size == 0:
+            logging.info(
+                f"No candidate cloud level is visible from ground: "
+                f"minimum transmittance={MIN_OBSERVER_CLOUD_TRANSMITTANCE}, "
+                f"slant_elevation={OBSERVER_CLOUD_SLANT_ELEVATION_DEG} deg"
+            )
+            return 0, 0, ('none',), {'lcc': False, 'mcc': False, 'hcc': False}, np.array([]), np.nan
 
-        # --- NEW: Calculate the Reddened Transmittance (Combined Score) Globally ---
-        t0_map = {'lcc': 3.0, 'mcc': 3.0, 'hcc': 3.0}
-        t0 = t0_map.get(cloud_lvl_used, 4.0)
-        k = 1.0 
-        
-        timesteps = np.arange(len(total_transmitted_light_array))
-        # Sigmoid reddening curve
-        reddening_weights = 1.0 / (1.0 + np.exp(-k * (timesteps - t0)))
-        
-        # This is the TRUE "Afterglow Intensity" that drives the score
-        combined_scores = total_transmitted_light_array * reddening_weights
-        
-        # Calculate event score
-        I_ray_max = 0.0
-        try:
-            valid_mask = ~np.isnan(combined_scores)
-            valid_timesteps = timesteps[valid_mask]
-            valid_combined = combined_scores[valid_mask]
-            
-            if valid_timesteps.size > 0:
-                # Find the timestep that maximizes the combination of redness and intensity
-                max_idx = np.argmax(valid_combined)
-                
-                I_ray_max = float(valid_combined[max_idx])
-                selected_ts = int(valid_timesteps[max_idx])
-                
-                logging.info(f"Selected candidate ts: {selected_ts}, Combined Max={I_ray_max:.6f}")
-            else:
-                I_ray_max = 0.0
-        except Exception as e:
-            logging.warning(f"Error in continuous scoring: {e}")
-            I_ray_max = float(np.nanmax(combined_scores)) if len(combined_scores) > 0 else 0.0
-        
-        # Normalise I_ray_max to 0-0.15 range for scoring
-        # (Assuming your constant is tuned for the post-sigmoid values)
-        I_ray_max_norm = np.clip(I_ray_max, 0.0, RAY_NORM_CONSANT_LWC) / RAY_NORM_CONSANT_LWC
-        
-        # Compute score using the bell-curve weight for local cloud cover
-        weight = bell_curve_cloud_cover_weight(highest_local / 100)
-        event_score = I_ray_max_norm * weight * 100
-        event_score = int(round(np.clip(event_score, 0, 100)))
-        
+        observer_t_by_level = {float(level): float(trans) for level, trans in zip(candidate_levels, observer_transmittance)}
+        observer_tau_by_level = {float(level): float(tau) for level, tau in zip(candidate_levels, observer_tau)}
+        candidate_results = []
+        segment_distance_km = distance_km / max(1, num_points - 1)
 
-        # Calculate afterglow time (Now using the corrected curve!)
-        afterglow_time_seconds, _ = calculate_afterglow_time_from_ray_tracing(combined_scores)
-        
-        # Get colors based on selected layers
-        possible_colors = get_possible_colors_by_layer_threshold(selected_layers)
-        
-        logging.info(f"Ray tracing event score: {event_score}, afterglow time: {afterglow_time_seconds}s")
+        for cloud_base_lvl in observable_levels:
+            cloud_lvl_used, local_cover = local_cloud_cover_for_candidate_level(cloud_base_lvl, lcc_local, mcc_local, hcc_local)
+            if cloud_lvl_used is None:
+                continue
+            if not np.isfinite(local_cover) or local_cover < MIN_CLOUD_COVER_THRESHOLD:
+                logging.debug(
+                    f"Skipping candidate {cloud_base_lvl:.0f} m: intercept {cloud_lvl_used} cover "
+                    f"{local_cover:.2f}% below {MIN_CLOUD_COVER_THRESHOLD}%"
+                )
+                continue
+
+            selected_layers = selected_layers_for_candidate_level(cloud_base_lvl)
+
+            ray_cloud_profile, ray_heights = extract_cloud_cover_with_ray_tracing(
+                cloud_layers_da, lons, lats, distances_m, cloud_base_lvl=cloud_base_lvl, fcst_hr=fcst_hr
+            )
+
+            cams_dict = extract_cams_variable_along_ray(cams_ds, lons, lats, ray_heights)
+
+            logging.debug(f"ray_heights: type={type(ray_heights)}, shape={getattr(ray_heights,'shape',None)}")
+            logging.debug(f"ray_cloud_profile: type={type(ray_cloud_profile)}, shape={getattr(ray_cloud_profile,'shape',None)}")
+            logging.debug(f"distances_m: type={type(distances_m)}, shape={getattr(distances_m,'shape',None)}")
+
+            total_transmitted_light_array = calculate_cumulative_transmittance(
+                ray_heights,
+                ray_cloud_profile,
+                cams_dict,
+                distances_km=segment_distance_km,
+            )
+
+            t0_map = {'lcc': 3.0, 'mcc': 3.0, 'hcc': 3.0}
+            t0 = t0_map.get(cloud_lvl_used, 4.0)
+            k = 1.0
+
+            timesteps = np.arange(len(total_transmitted_light_array))
+            reddening_weights = 1.0 / (1.0 + np.exp(-k * (timesteps - t0)))
+            observer_trans = observer_t_by_level.get(float(cloud_base_lvl), 0.0)
+
+            # Combined observer-visible intensity for this candidate level.
+            combined_scores = total_transmitted_light_array * observer_trans * reddening_weights
+
+            I_ray_max = 0.0
+            selected_ts = None
+            try:
+                valid_mask = ~np.isnan(combined_scores)
+                valid_timesteps = timesteps[valid_mask]
+                valid_combined = combined_scores[valid_mask]
+
+                if valid_timesteps.size > 0:
+                    max_idx = np.argmax(valid_combined)
+                    I_ray_max = float(valid_combined[max_idx])
+                    selected_ts = int(valid_timesteps[max_idx])
+            except Exception as e:
+                logging.warning(f"Error in continuous scoring for candidate {cloud_base_lvl:.0f} m: {e}")
+                I_ray_max = float(np.nanmax(combined_scores)) if len(combined_scores) > 0 else 0.0
+
+            I_ray_max_norm = np.clip(I_ray_max, 0.0, RAY_NORM_CONSANT_LWC) / RAY_NORM_CONSANT_LWC
+            cloud_weight = float(np.asarray(bell_curve_cloud_cover_weight(local_cover / 100.0)).reshape(-1)[0])
+            event_score_candidate = int(round(np.clip(I_ray_max_norm * cloud_weight * 100.0, 0, 100)))
+            afterglow_time_candidate, _ = calculate_afterglow_time_from_ray_tracing(combined_scores)
+
+            candidate_results.append({
+                'score': event_score_candidate,
+                'afterglow_time_seconds': afterglow_time_candidate,
+                'possible_colors': get_possible_colors_by_layer_threshold(selected_layers),
+                'selected_layers': selected_layers,
+                'transmittance_array': total_transmitted_light_array,
+                'cloud_base_lvl': float(cloud_base_lvl),
+                'cloud_lvl_used': cloud_lvl_used,
+                'local_cover': float(local_cover),
+                'observer_transmittance': observer_trans,
+                'observer_tau': observer_tau_by_level.get(float(cloud_base_lvl), np.nan),
+                'i_ray_max': I_ray_max,
+                'selected_ts': selected_ts,
+            })
+
+            logging.info(
+                f"Candidate {cloud_base_lvl:.0f} m ({cloud_lvl_used}): "
+                f"score={event_score_candidate}, I={I_ray_max:.6f}, "
+                f"observer_T={observer_trans:.4f}, cloud_weight={cloud_weight:.3f}, "
+                f"intercept_cover={local_cover:.1f}%"
+            )
+
+        if not candidate_results:
+            logging.info("No candidate levels remained after local cloud-cover and observer-transmittance screening.")
+            return 0, 0, ('none',), {'lcc': False, 'mcc': False, 'hcc': False}, np.array([]), np.nan
+
+        best_result = max(candidate_results, key=lambda item: (item['score'], item['i_ray_max']))
+
+        event_score = best_result['score']
+        afterglow_time_seconds = best_result['afterglow_time_seconds']
+        possible_colors = best_result['possible_colors']
+        selected_layers = best_result['selected_layers']
+        total_transmitted_light_array = best_result['transmittance_array']
+        cloud_base_lvl = best_result['cloud_base_lvl']
+
+        logging.info(
+            f"Selected best candidate {cloud_base_lvl:.0f} m ({best_result['cloud_lvl_used']}): "
+            f"score={event_score}, afterglow_time={afterglow_time_seconds}s, "
+            f"observer_T={best_result['observer_transmittance']:.4f}"
+        )
         # Optional: Plot the ray path with cloud profiles, passing avg_aod, aerosol_trans and cloud level
         # try:
         #     # Plot the ray path with cloud profiles
@@ -2095,7 +2260,13 @@ def color_fill(index):
     return cmap(norm(index))
 
 # Weighted likelihod index
-def bell_curve_cloud_cover_weight(cloud_cover, peak=0.6, sigma_left=0.3, sigma_right=0.8, peak_height=1.0):
+def bell_curve_cloud_cover_weight(
+    cloud_cover,
+    peak=CLOUD_COVER_WEIGHT_PEAK,
+    sigma_left=CLOUD_COVER_WEIGHT_SIGMA_LEFT,
+    sigma_right=CLOUD_COVER_WEIGHT_SIGMA_RIGHT,
+    peak_height=CLOUD_COVER_WEIGHT_PEAK_HEIGHT,
+):
     # cloud_cover: 0-1
     try: 
         c = np.clip(np.asarray(cloud_cover, dtype=float), 0.0, 1.0)
@@ -2235,8 +2406,6 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             run_dt,
             reference_grib_path=f"{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib",
         )
-        print("run_dt:", run_dt)
-        print("picks:", picks)
 
         # Extract date strings from actual sunrise/sunset times in UTC to match picks dictionary keys
         sunrise_tdy_date_str = sunrise_tdy.astimezone(datetime.timezone.utc).date().strftime('%Y%m%d') if sunrise_tdy else None
@@ -2300,282 +2469,141 @@ def process_city(city_name: str, country: str, lat: float, lon: float, timezone_
             logging.warning(f"No forecast-hour files available for {city.name} (today); skipping city.")
             return {"city": city.name, "error": "missing forecast-hour files"}
 
-        # Process sunset (existing logic)
-        sunset_results = {}
-        sunset_profile_payload_tdy = build_profile_payload([], {})
-        sunset_profile_payload_tmr = build_profile_payload([], {})
-        if sunset_fh_tdy is not None and sunset_fh_tmr is not None:
-            logging.info(f"Processing sunset for {city.name}")
-            
-            cams_cloud_tdy = f"{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib"
-            cams_cloud_tmr = f"{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib"
-
-            # Load combined cloud layers (lcc, mcc, hcc) with lvl dimension
-            ds_tdy_cloud_layers = combine_cloud_layers(cams_cloud_tdy, sunset_fh_tdy)  # dims: (lvl, latitude, longitude)
-            ds_tmr_cloud_layers = combine_cloud_layers(cams_cloud_tmr, sunset_fh_tmr)
-            
-            cams_grib = f'{input_path}/cams_data_{run_date_str}{run}0000.grib'
-            
-            ds_cams_all_tdy = open_cams_data_and_blend_clouds(cams_grib, ds_tdy_cloud_layers, sunset_fh_tdy)
-            ds_cams_all_tmr = open_cams_data_and_blend_clouds(cams_grib, ds_tmr_cloud_layers, sunset_fh_tmr)
-            
-            ds_cams_all_tdy = convert_pressure_coordinate_to_height(ds_cams_all_tdy)
-            ds_cams_all_tmr = convert_pressure_coordinate_to_height(ds_cams_all_tmr)
-            
-            cloud_vars_tdy = {
-                "lcc": ds_tdy_cloud_layers['lcc'],
-                "mcc": ds_tdy_cloud_layers['mcc'],
-                "hcc": ds_tdy_cloud_layers['hcc'],
-                "cloud_layers": ds_tdy_cloud_layers  # combined with lvl dimension (Dataset)
-            }
-
-            cloud_vars_tmr = {
-                "lcc": ds_tmr_cloud_layers['lcc'],
-                "mcc": ds_tmr_cloud_layers['mcc'],
-                "hcc": ds_tmr_cloud_layers['hcc'],
-                "cloud_layers": ds_tmr_cloud_layers  # combined with lvl dimension (Dataset)
-            }
-            cloud_vars_tdy = reduce_clouds_to_roi(cloud_vars_tdy, lon, lat, sunset_azimuth, distance_km=700, pad_km=80)
-            cloud_vars_tmr = reduce_clouds_to_roi(cloud_vars_tmr, lon, lat, sunset_azimuth_tmr, distance_km=700, pad_km=80)
-
-            if create_dashboard_flag:
-                pass
-            
-            (
-                avg_first_three_tdy,
-                cloud_present_tdy,
-                cloud_profiles_tdy,
-                distance_axis_tdy) = get_cloud_extent(
-                cloud_vars_tdy, lon, lat, sunset_azimuth)
-            
-            (
-                avg_first_three_tmr,
-                cloud_present_tmr,
-                cloud_profiles_tmr,
-                distance_axis_tmr,) = get_cloud_extent(
-                cloud_vars_tmr, lon, lat, sunset_azimuth_tmr)
-
-            sunset_profile_payload_tdy = build_profile_payload(distance_axis_tdy, cloud_profiles_tdy)
-            sunset_profile_payload_tmr = build_profile_payload(distance_axis_tmr, cloud_profiles_tmr)
-            
-            #import pdb; pdb.set_trace()
-            
-            # Use ray tracing-based scoring and colors
-            likelihood_index_tdy, actual_afterglow_time_tdy, possible_colors_tdy, selected_layers_tdy, trans_array_tdy, cb_from_ray_tdy = process_event_with_ray_tracing(
-                cloud_vars_tdy, lat, lon, sunset_azimuth, ds_cams_all_tdy, distance_km=700, num_points=DESIRED_NUM_POINTS, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tdy, run=run, run_date_str=run_date_str
-            )
-            likelihood_index_tmr, actual_afterglow_time_tmr, possible_colors_tmr, selected_layers_tmr, trans_array_tmr, cb_from_ray_tmr = process_event_with_ray_tracing(
-                cloud_vars_tmr, lat, lon, sunset_azimuth_tmr, ds_cams_all_tmr, distance_km=700, num_points=DESIRED_NUM_POINTS, event_type='sunset', city_name=city_name, fcst_hr=sunset_fh_tmr, run=run, run_date_str=run_date_str
-            )
-            
-            # Use cloud base from ray tracing if available. Cloud base straight from model output to be implemented.
-            cloud_base_lvl_tdy = cb_from_ray_tdy
-            cloud_base_lvl_tmr = cb_from_ray_tmr
-            
-            logging.info(f"{city.name} sunset likelihood_index_tdy: {likelihood_index_tdy}")
-            logging.info(f"{city.name} sunset likelihood_index_tmr: {likelihood_index_tmr}")
-
-            if create_dashboard_flag:
-                pass
-            # Normalize selected_layers to a single key for frontend display
-            def _selected_layer_key(sel):
-                if not isinstance(sel, dict):
-                    return None
-                if sel.get('hcc', False):
-                    return 'hcc'
-                if sel.get('mcc', False):
-                    return 'mcc'
-                if sel.get('lcc', False):
-                    return 'lcc'
+        def _selected_layer_key(sel):
+            if not isinstance(sel, dict):
                 return None
+            if sel.get('hcc', False):
+                return 'hcc'
+            if sel.get('mcc', False):
+                return 'mcc'
+            if sel.get('lcc', False):
+                return 'lcc'
+            return None
 
-            key_sunset_tdy = _selected_layer_key(selected_layers_tdy)
-            key_sunset_tmr = _selected_layer_key(selected_layers_tmr)
-            
-            sunset_results = {
-                "sunset_likelihood_index_tdy": likelihood_index_tdy,
-                "sunset_likelihood_index_tmr": likelihood_index_tmr,
-                "sunset_possible_colors_tdy": possible_colors_tdy,
-                "sunset_possible_colors_tmr": possible_colors_tmr,
-                "sunset_afterglow_time_tdy": actual_afterglow_time_tdy,
-                "sunset_afterglow_time_tmr": actual_afterglow_time_tmr,
-                "sunset_cloud_base_lvl_tdy": cloud_base_lvl_tdy,
-                "sunset_cloud_base_lvl_tmr": cloud_base_lvl_tmr,
-                "sunset_cloud_local_cover_tdy": avg_first_three_tdy,
-                "sunset_cloud_local_cover_tmr": avg_first_three_tmr,
-                "sunset_cloud_present_tdy": cloud_present_tdy,
-                "sunset_cloud_present_tmr": cloud_present_tmr,
-                "sunset_time_tdy": sunset_time_tdy_local,
-                "sunset_time_tmr": sunset_time_tmr_local,
-                "sunset_cloud_layer_key_tdy": key_sunset_tdy,
-                "sunset_cloud_layer_key_tmr": key_sunset_tmr,
-                "sunset_azimuth_tdy": sunset_azimuth,
-                "sunset_azimuth_tmr": sunset_azimuth_tmr,
-                "sunset_cloud_profiles_tdy": sunset_profile_payload_tdy,
-                "sunset_cloud_profiles_tmr": sunset_profile_payload_tmr,
-            }
-        else:
-            logging.warning(f"Skipping sunset processing for {city.name}: sunset_fh_tdy={sunset_fh_tdy}, sunset_fh_tmr={sunset_fh_tmr}")
-            sunset_results = {
-                "sunset_likelihood_index_tdy": np.nan,
-                "sunset_likelihood_index_tmr": np.nan,
-                "sunset_possible_colors_tdy": ('none',),
-                "sunset_possible_colors_tmr": ('none',),
-                "sunset_afterglow_time_tdy": np.nan,
-                "sunset_afterglow_time_tmr": np.nan,
-                "sunset_cloud_base_lvl_tdy": np.nan,
-                "sunset_cloud_base_lvl_tmr": np.nan,
-                "sunset_cloud_local_cover_tdy": np.nan,
-                "sunset_cloud_local_cover_tmr": np.nan,
-                "sunset_cloud_present_tdy": False,
-                "sunset_cloud_present_tmr": False,
-                "sunset_time_tdy": sunset_time_tdy_local,
-                "sunset_time_tmr": sunset_time_tmr_local,
-                
-                "sunset_cloud_layer_key_tdy": None,
-                "sunset_cloud_layer_key_tmr": None,
-                
-                "sunset_azimuth_tdy": sunset_azimuth,
-                "sunset_azimuth_tmr": sunset_azimuth_tmr,
-                "sunset_cloud_profiles_tdy": build_profile_payload([], {}),
-                "sunset_cloud_profiles_tmr": build_profile_payload([], {}),
+        def _empty_event_slot():
+            return {
+                "likelihood_index": np.nan,
+                "possible_colors": ('none',),
+                "afterglow_time": np.nan,
+                "cloud_base_lvl": np.nan,
+                "cloud_local_cover": np.nan,
+                "cloud_present": False,
+                "cloud_layer_key": None,
+                "cloud_profiles": build_profile_payload([], {}),
             }
 
-        # Process sunrise 
-        sunrise_results = {}
-        sunrise_profile_payload_tdy = build_profile_payload([], {})
-        sunrise_profile_payload_tmr = build_profile_payload([], {})
-        if sunrise_fh_tdy is not None and sunrise_fh_tmr is not None:
-            logging.info(f"Processing sunrise for {city.name}")
-            
-            cams_cloud_grib= f"{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib"
+        def _process_event_slot(event_type, fcst_hr, event_azimuth, process_num_points):
+            if fcst_hr is None or event_azimuth is None:
+                logging.info(f"Skipping {event_type} slot for {city.name}: fcst_hr={fcst_hr}, azimuth={event_azimuth}")
+                return _empty_event_slot()
 
-            # Load combined cloud layers (lcc, mcc, hcc) with lvl dimension
-            # Prefer selecting the forecast-hour slice at load time so the
-            # returned dataset doesn't carry a forecast/time axis that can
-            # lead to mismatched broadcasting later.
-            sunrise_tdy_cloud_layers = combine_cloud_layers(cams_cloud_grib, fcst_hr=sunrise_fh_tdy)
-            sunrise_tmr_cloud_layers = combine_cloud_layers(cams_cloud_grib, fcst_hr=sunrise_fh_tmr)
-            
+            logging.info(f"Processing {event_type} for {city.name}: +{fcst_hr}h")
+            cams_cloud_grib = f"{input_path}/cams_cloud_cover_data_{today_str}{run}0000.grib"
             cams_grib = f'{input_path}/cams_data_{run_date_str}{run}0000.grib'
-            
-            ds_cams_all_tdy = open_cams_data_and_blend_clouds(cams_grib, sunrise_tdy_cloud_layers, sunrise_fh_tdy)
-            ds_cams_all_tmr = open_cams_data_and_blend_clouds(cams_grib, sunrise_tmr_cloud_layers, sunrise_fh_tmr)
-            
-            ds_cams_all_tdy = convert_pressure_coordinate_to_height(ds_cams_all_tdy)
-            ds_cams_all_tmr = convert_pressure_coordinate_to_height(ds_cams_all_tmr)
-            
-            cloud_vars_sunrise_tdy = {
-                "lcc": sunrise_tdy_cloud_layers['lcc'],
-                "mcc": sunrise_tdy_cloud_layers['mcc'],
-                "hcc": sunrise_tdy_cloud_layers['hcc'],
-                "cloud_layers": sunrise_tdy_cloud_layers  # combined with lvl dimension (Dataset)
+
+            # Use cached loader to avoid re-opening and reprocessing the same GRIBs
+            try:
+                cloud_layers, cams_all = load_prepared_cams(cams_cloud_grib, cams_grib, fcst_hr)
+            except Exception:
+                # Fallback to the original flow if caching path fails for any reason
+                cloud_layers = combine_cloud_layers(cams_cloud_grib, fcst_hr=fcst_hr)
+                cams_all = open_cams_data_and_blend_clouds(cams_grib, cloud_layers, fcst_hr)
+                cams_all = convert_pressure_coordinate_to_height(cams_all)
+
+            cloud_vars = {
+                "lcc": cloud_layers['lcc'],
+                "mcc": cloud_layers['mcc'],
+                "hcc": cloud_layers['hcc'],
+                "cloud_layers": cloud_layers,
             }
+            cloud_vars = reduce_clouds_to_roi(cloud_vars, lon, lat, event_azimuth, distance_km=700, pad_km=80)
 
-            cloud_vars_sunrise_tmr = {
-                "lcc": sunrise_tmr_cloud_layers['lcc'],
-                "mcc": sunrise_tmr_cloud_layers['mcc'],
-                "hcc": sunrise_tmr_cloud_layers['hcc'],
-                "cloud_layers": sunrise_tmr_cloud_layers  # combined with lvl dimension (Dataset)
-            }
+            avg_first_three, cloud_present, cloud_profiles, distance_axis = get_cloud_extent(
+                cloud_vars,
+                lon,
+                lat,
+                event_azimuth,
+            )
+            profile_payload = build_profile_payload(distance_axis, cloud_profiles)
 
-            # Slice to ROI around sunrise azimuth
-            cloud_vars_sunrise_tdy = reduce_clouds_to_roi(cloud_vars_sunrise_tdy, lon, lat, sunrise_azimuth, distance_km=700, pad_km=80)
-            cloud_vars_sunrise_tmr = reduce_clouds_to_roi(cloud_vars_sunrise_tmr, lon, lat, sunrise_azimuth_tmr, distance_km=700, pad_km=80)
-
-            if create_dashboard_flag:
-                pass
-            
-
-            avg_first_three_sunrise_tdy, cloud_present_sunrise_tdy, cloud_profiles_sunrise_tdy, distance_axis_sunrise_tdy = get_cloud_extent(
-                cloud_vars_sunrise_tdy, lon, lat, sunrise_azimuth
+            likelihood_index, afterglow_time, possible_colors, selected_layers, _, cloud_base_lvl = process_event_with_ray_tracing(
+                cloud_vars,
+                lat,
+                lon,
+                event_azimuth,
+                cams_all,
+                distance_km=700,
+                num_points=process_num_points,
+                event_type=event_type,
+                city_name=city_name,
+                fcst_hr=fcst_hr,
+                run=run,
+                run_date_str=run_date_str,
             )
 
-            avg_first_three_sunrise_tmr, cloud_present_sunrise_tmr, cloud_profiles_sunrise_tmr, distance_axis_sunrise_tmr = get_cloud_extent(
-                cloud_vars_sunrise_tmr, lon, lat, sunrise_azimuth_tmr
-            )
-
-            sunrise_profile_payload_tdy = build_profile_payload(distance_axis_sunrise_tdy, cloud_profiles_sunrise_tdy)
-            sunrise_profile_payload_tmr = build_profile_payload(distance_axis_sunrise_tmr, cloud_profiles_sunrise_tmr)
-
-            # Use ray tracing-based scoring and colors
-            likelihood_index_sunrise_tdy, actual_afterglow_time_sunrise_tdy, possible_colors_sunrise_tdy, selected_layers_sunrise_tdy, trans_array_sunrise_tdy, cb_from_ray_sunrise_tdy = process_event_with_ray_tracing(
-                cloud_vars_sunrise_tdy, lat, lon, sunrise_azimuth, ds_cams_all_tdy, distance_km=700, num_points=25, event_type='sunrise', city_name=city_name, fcst_hr=sunrise_fh_tdy, run=run, run_date_str=run_date_str
-            )
-            likelihood_index_sunrise_tmr, actual_afterglow_time_sunrise_tmr, possible_colors_sunrise_tmr, selected_layers_sunrise_tmr, trans_array_sunrise_tmr, cb_from_ray_sunrise_tmr = process_event_with_ray_tracing(
-                cloud_vars_sunrise_tmr, lat, lon, sunrise_azimuth_tmr, ds_cams_all_tmr , distance_km=700, num_points=25, event_type='sunrise', city_name=city_name, fcst_hr=sunrise_fh_tmr, run=run, run_date_str=run_date_str
-            )
-
-            cloud_base_lvl_sunrise_tdy = cb_from_ray_sunrise_tdy
-            cloud_base_lvl_sunrise_tmr = cb_from_ray_sunrise_tmr
-        
-            # Derive the selected layer key from selected_layers result
-            def _selected_layer_key(sel):
-                if not isinstance(sel, dict):
-                    return None
-                if sel.get('hcc', False):
-                    return 'hcc'
-                if sel.get('mcc', False):
-                    return 'mcc'
-                if sel.get('lcc', False):
-                    return 'lcc'
-                return None
-
-            key_sunrise_tdy = _selected_layer_key(selected_layers_sunrise_tdy)
-            key_sunrise_tmr = _selected_layer_key(selected_layers_sunrise_tmr)
-            
-            logging.info(f"{city.name} sunrise likelihood_index_tdy: {likelihood_index_sunrise_tdy}")
-            logging.info(f"{city.name} sunrise likelihood_index_tmr: {likelihood_index_sunrise_tmr}")
-
-            sunrise_results = {
-                "sunrise_likelihood_index_tdy": likelihood_index_sunrise_tdy,
-                "sunrise_likelihood_index_tmr": likelihood_index_sunrise_tmr,
-                "sunrise_possible_colors_tdy": possible_colors_sunrise_tdy,
-                "sunrise_possible_colors_tmr": possible_colors_sunrise_tmr,
-                "sunrise_afterglow_time_tdy": actual_afterglow_time_sunrise_tdy,
-                "sunrise_afterglow_time_tmr": actual_afterglow_time_sunrise_tmr,
-                "sunrise_cloud_base_lvl_tdy": cloud_base_lvl_sunrise_tdy,
-                "sunrise_cloud_base_lvl_tmr": cloud_base_lvl_sunrise_tmr,
-                "sunrise_cloud_local_cover_tdy": avg_first_three_sunrise_tdy,
-                "sunrise_cloud_local_cover_tmr": avg_first_three_sunrise_tmr,
-                "sunrise_cloud_present_tdy": cloud_present_sunrise_tdy,
-                "sunrise_cloud_present_tmr": cloud_present_sunrise_tmr,
-                "sunrise_time_tdy": sunrise_time_tdy_local,
-                "sunrise_time_tmr": sunrise_time_tmr_local,
-                
-                "sunrise_cloud_layer_key_tdy": key_sunrise_tdy,
-                "sunrise_cloud_layer_key_tmr": key_sunrise_tmr,
-                "sunrise_azimuth_tdy": sunrise_azimuth,
-                "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
-                "sunrise_cloud_profiles_tdy": sunrise_profile_payload_tdy,
-                "sunrise_cloud_profiles_tmr": sunrise_profile_payload_tmr,
+            logging.info(f"{city.name} {event_type} +{fcst_hr}h likelihood_index: {likelihood_index}")
+            return {
+                "likelihood_index": likelihood_index,
+                "possible_colors": possible_colors,
+                "afterglow_time": afterglow_time,
+                "cloud_base_lvl": cloud_base_lvl,
+                "cloud_local_cover": avg_first_three,
+                "cloud_present": cloud_present,
+                "cloud_layer_key": _selected_layer_key(selected_layers),
+                "cloud_profiles": profile_payload,
             }
-        else:
-            logging.warning(f"Skipping sunrise processing for {city.name}: sunrise_fh_tdy={sunrise_fh_tdy}, sunrise_fh_tmr={sunrise_fh_tmr}")
-            sunrise_results = {
-                "sunrise_likelihood_index_tdy": np.nan,
-                "sunrise_likelihood_index_tmr": np.nan,
-                "sunrise_possible_colors_tdy": ('none',),
-                "sunrise_possible_colors_tmr": ('none',),
-                "sunrise_afterglow_time_tdy": np.nan,
-                "sunrise_afterglow_time_tmr": np.nan,
-                "sunrise_cloud_base_lvl_tdy": np.nan,
-                "sunrise_cloud_base_lvl_tmr": np.nan,
-                "sunrise_cloud_local_cover_tdy": np.nan,
-                "sunrise_cloud_local_cover_tmr": np.nan,
-                "sunrise_cloud_present_tdy": False,
-                "sunrise_cloud_present_tmr": False,
-                "sunrise_time_tdy": sunrise_time_tdy_local,
-                "sunrise_time_tmr": sunrise_time_tmr_local,
-                
-                "sunrise_cloud_layer_key_tdy": None,
-                "sunrise_cloud_layer_key_tmr": None,
-                "sunrise_azimuth_tdy": sunrise_azimuth,
-                "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
-                "sunrise_cloud_profiles_tdy": build_profile_payload([], {}),
-                "sunrise_cloud_profiles_tmr": build_profile_payload([], {}),
-            }
-        
+
+        sunset_tdy_slot = _process_event_slot('sunset', sunset_fh_tdy, sunset_azimuth, DESIRED_NUM_POINTS)
+        sunset_tmr_slot = _process_event_slot('sunset', sunset_fh_tmr, sunset_azimuth_tmr, DESIRED_NUM_POINTS)
+        sunrise_tdy_slot = _process_event_slot('sunrise', sunrise_fh_tdy, sunrise_azimuth, 25)
+        sunrise_tmr_slot = _process_event_slot('sunrise', sunrise_fh_tmr, sunrise_azimuth_tmr, 25)
+
+        sunset_results = {
+            "sunset_likelihood_index_tdy": sunset_tdy_slot["likelihood_index"],
+            "sunset_likelihood_index_tmr": sunset_tmr_slot["likelihood_index"],
+            "sunset_possible_colors_tdy": sunset_tdy_slot["possible_colors"],
+            "sunset_possible_colors_tmr": sunset_tmr_slot["possible_colors"],
+            "sunset_afterglow_time_tdy": sunset_tdy_slot["afterglow_time"],
+            "sunset_afterglow_time_tmr": sunset_tmr_slot["afterglow_time"],
+            "sunset_cloud_base_lvl_tdy": sunset_tdy_slot["cloud_base_lvl"],
+            "sunset_cloud_base_lvl_tmr": sunset_tmr_slot["cloud_base_lvl"],
+            "sunset_cloud_local_cover_tdy": sunset_tdy_slot["cloud_local_cover"],
+            "sunset_cloud_local_cover_tmr": sunset_tmr_slot["cloud_local_cover"],
+            "sunset_cloud_present_tdy": sunset_tdy_slot["cloud_present"],
+            "sunset_cloud_present_tmr": sunset_tmr_slot["cloud_present"],
+            "sunset_time_tdy": sunset_time_tdy_local,
+            "sunset_time_tmr": sunset_time_tmr_local,
+            "sunset_cloud_layer_key_tdy": sunset_tdy_slot["cloud_layer_key"],
+            "sunset_cloud_layer_key_tmr": sunset_tmr_slot["cloud_layer_key"],
+            "sunset_azimuth_tdy": sunset_azimuth,
+            "sunset_azimuth_tmr": sunset_azimuth_tmr,
+            "sunset_cloud_profiles_tdy": sunset_tdy_slot["cloud_profiles"],
+            "sunset_cloud_profiles_tmr": sunset_tmr_slot["cloud_profiles"],
+        }
+
+        sunrise_results = {
+            "sunrise_likelihood_index_tdy": sunrise_tdy_slot["likelihood_index"],
+            "sunrise_likelihood_index_tmr": sunrise_tmr_slot["likelihood_index"],
+            "sunrise_possible_colors_tdy": sunrise_tdy_slot["possible_colors"],
+            "sunrise_possible_colors_tmr": sunrise_tmr_slot["possible_colors"],
+            "sunrise_afterglow_time_tdy": sunrise_tdy_slot["afterglow_time"],
+            "sunrise_afterglow_time_tmr": sunrise_tmr_slot["afterglow_time"],
+            "sunrise_cloud_base_lvl_tdy": sunrise_tdy_slot["cloud_base_lvl"],
+            "sunrise_cloud_base_lvl_tmr": sunrise_tmr_slot["cloud_base_lvl"],
+            "sunrise_cloud_local_cover_tdy": sunrise_tdy_slot["cloud_local_cover"],
+            "sunrise_cloud_local_cover_tmr": sunrise_tmr_slot["cloud_local_cover"],
+            "sunrise_cloud_present_tdy": sunrise_tdy_slot["cloud_present"],
+            "sunrise_cloud_present_tmr": sunrise_tmr_slot["cloud_present"],
+            "sunrise_time_tdy": sunrise_time_tdy_local,
+            "sunrise_time_tmr": sunrise_time_tmr_local,
+            "sunrise_cloud_layer_key_tdy": sunrise_tdy_slot["cloud_layer_key"],
+            "sunrise_cloud_layer_key_tmr": sunrise_tmr_slot["cloud_layer_key"],
+            "sunrise_azimuth_tdy": sunrise_azimuth,
+            "sunrise_azimuth_tmr": sunrise_azimuth_tmr,
+            "sunrise_cloud_profiles_tdy": sunrise_tdy_slot["cloud_profiles"],
+            "sunrise_cloud_profiles_tmr": sunrise_tmr_slot["cloud_profiles"],
+        }
+
         # Combine results
         return {
             "city": city.name,
@@ -2778,7 +2806,6 @@ def main():
     else:
         run_dt = latest_forecast_hours_run_to_download()
         run = str(run_dt.hour).zfill(2)
-    print(run)
     today_str = today.strftime("%Y%m%d")
     run_date_str = run_dt.strftime("%Y%m%d")
 

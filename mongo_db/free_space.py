@@ -66,7 +66,7 @@ def build_connection():
 	raise last_exc or RuntimeError("No MongoDB URI available")
 
 
-def cleanup_oldest_runs(limit: int = 1, yes: bool = False):
+def cleanup_oldest_runs(limit: int = 2, yes: bool = False):
 	"""Delete oldest forecast runs from MongoDB, or print a dry-run summary."""
 	client = build_connection()
 	db = client[db_name]

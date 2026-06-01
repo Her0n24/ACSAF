@@ -13,7 +13,7 @@
 
 # Result output
 ######################
-*.json
+output/*.json
 
 # OS generated files #
 ######################
@@ -32,7 +32,8 @@ Thumbs.db
 
 # Others
 ##################
-*.yml
 *.yaml
 *.env
 *.pyc
+.vscode
+__pycache__
