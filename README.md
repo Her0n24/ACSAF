@@ -1,27 +1,3 @@
-# ACSAF: Aerosols & Cloud geometry based Sunset/Sunrise cloud Afterglow Forecaster
-
-The ASCAF project attempts to provide a short-term (today and tomorrow) forecast for the occurrence of a vibrant sunset cloud afterglow. The computed index ranges from 0-100, with 0 indicating a dull, short-lived and less appreciable cloud afterglow is probable while 100 indicating a vilvid, long lasting and very visible cloud afterglow is probable.
-
-The index is based on the ECMWF IFS Cloud and Ice Water Content and CAMS atmosphere Total Aerosol Optical Depth forecast data for the next two days with 3 hours temporal resolution, 0.4 degrees horizontal resolution and 13 pressure levels. Various parameters are chosen when computing the index. While the computation is physically based on Beer-Lambert's law and as physical as possible, the final value of the index itself has limited physical meaning as it is normalised and weighted with other factors. 
-
-
-This index is provided for reference purposes only and what being regarded as "vibrant" display is quite subjective. It will not be reliable due to algorithm limitations and model erre. It should not be relied upon for legal, financial, or operational decisions. The creators accept no responsibility for any loss or liability arising from its use.
-
-The algorithm ignores physical limitations in the sun- Earth geometry, and will not work in mountaneous high latitude cities. The index also will not work when the presence of convective or broken cloud is predominant. The index is also 
-
-Further work is appreciated to calibrate the parameters based on global webcams and self learning algorithms. 
-
-
-### Quick Usage
-
-visit afterglow.top 
-
-or run locally with dependencies
-
-python calc_afterglow_realistic_path_lwc_global.py
-
-to generate a json schema of results.
-
 # ACSAF: Aerosols & Cloud geometry-based Sunset/Sunrise cloud Afterglow Forecaster
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
