@@ -63,10 +63,11 @@ python calc_afterglow_realistic_path_lwc_global.py
 
 ## Gallery
 
-[afterglow-1 (dragged).tiff](https://github.com/user-attachments/files/28464819/afterglow-1.dragged.tiff)
+<img width="3000" height="1687" alt="afterglow1-3 (dragged)" src="https://github.com/user-attachments/assets/3b485d9a-eada-469f-98c8-97d2c28be7c3" />
 Why such information is useful?
 
-[afterglow-3 (dragged).tiff](https://github.com/user-attachments/files/28464823/afterglow-3.dragged.tiff)
+
+<img width="3000" height="1687" alt="afterglow1-1 (dragged)" src="https://github.com/user-attachments/assets/fbe6848b-7fce-4eca-b987-ce4adde06b8c" />
 The principle of cloud afterglow forecasting
 
 ![20250418000000_afterglow_dashboard_Reading](https://github.com/user-attachments/assets/bb6f6f12-2cab-4159-9596-dcbc0c741ce1)
